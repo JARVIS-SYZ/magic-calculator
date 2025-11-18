@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>Calculator</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+
+  <style>
+    :root {
+      --bg-main: #000000;
+      --btn-orange: #ff9500;
+      --btn-dark: #333333;
+      --btn-dark-2: #1c1c1c;
+      --btn-light: #a5a5a5;
+      --text-main: #ffffff;
+      --text-dark: #000000;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
+      height: 100%;
+      background: #000;
+      color: var(--text-main);
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", system-ui, sans-serif;
+    }
+
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: stretch;
+    }
+
+    .app {
+      background: var(--bg-main);
+      width: 100%;
+      max-width: 430px; /* iPhone 15 Pro Max 정도 기준 */
+      padding: env(safe-area-inset-top, 10px) 12px env(safe-area-inset-bottom, 16px);
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+    }
+
+    /* 디스플레이 영역 */
+    .display {
+      min-height: 120px;
+      text-align: right;
+      padding: 0 8px 12px;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      gap: 4px;
+    }
+
+    .display-small {
+      font-size: 18px;
+      opacity: 0.5;
+    }
+
+    .display-main {
+      font-size: 64px;
+      line-height: 1;
+      font-weight: 200;
+      letter-spacing: 1px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    /* 버튼 영역 */
+    .keys {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+    }
+
+    .btn {
+      border-radius: 999px;
+      border: none;
+      font-size: 28px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 64px;
+      cursor: pointer;
+      outline: none;
+      user-select: none;
+    }
+
+    .btn:active {
+      filter: brightness(1.2);
+    }
+
+    .btn-light {
+      background: var(--btn-light);
+      color: var(--text-dark);
+      font-size: 20px;
+    }
+
+    .btn-dark {
+      background: var(--btn-dark);
+      color: var(--text-main);
+    }
+
+    .btn-dark-2 {
+      background: var(--btn-dark-2);
+      color: var(--text-main);
+    }
+
+    .btn-orange {
+      background: var(--btn-orange);
+      color: var(--text-main);
+    }
+
+    /* 0 버튼(두 칸 차지) */
+    .btn-zero {
+      grid-column: span 2;
+      justify-content: flex-start;
+      padding-left: 24px;
+      font-size: 28px;
+    }
+
+    /* 살짝 위로 띄워서 실제 계산기 비율 비슷하게 */
+    .bottom-space {
+      height: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="display">
+      <div class="display-small" id="prev"></div>
+      <div class="display-main" id="current">0</div>
+    </div>
+
+    <div class="keys">
+      <!-- 1줄 -->
+      <button class="btn btn-light" data-action="clear">AC</button>
+      <button class="btn btn-light" data-action="plus-minus">+/-</button>
+      <button class="btn btn-light" data-action="percent">%</button>
+      <button class="btn btn-orange" data-action="operator" data-value="÷">÷</button>
+
+      <!-- 2줄 -->
+      <button class="btn btn-dark" data-number="7">7</button>
+      <button class="btn btn-dark" data-number="8">8</button>
+      <button class="btn btn-dark" data-number="9">9</button>
+      <button class="btn btn-orange" data-action="operator" data-value="×">×</button>
+
+      <!-- 3줄 -->
+      <button class="btn btn-dark" data-number="4">4</button>
+      <button class="btn btn-dark" data-number="5">5</button>
+      <button class="btn btn-dark" data-number="6">6</button>
+      <button class="btn btn-orange" data-action="operator" data-value="-">-</button>
+
+      <!-- 4줄 -->
+      <button class="btn btn-dark" data-number="1">1</button>
+      <button class="btn btn-dark" data-number="2">2</button>
+      <button class="btn btn-dark" data-number="3">3</button>
+      <button class="btn btn-orange" data-action="operator" data-value="+">+</button>
+
+      <!-- 5줄 -->
+      <button class="btn btn-dark btn-zero" data-number="0">0</button>
+      <button class="btn btn-dark-2" data-action="dot">.</button>
+      <button class="btn btn-orange" data-action="equal">=</button>
+    </div>
+
+    <div class="bottom-space"></div>
+  </div>
+
+  <script>
+    const prevEl = document.getElementById('prev');
+    const currentEl = document.getElementById('current');
+
+    let current = '0';
+    let prev = '';
+    let operator = null;
+
+    function updateDisplay() {
+      currentEl.textContent = current;
+      prevEl.textContent = prev;
+    }
+
+    function inputNumber(num) {
+      if (current === '0') current = num;
+      else current += num;
+    }
+
+    function setOperator(op) {
+      if (operator && prev !== '' && current !== '') {
+        calculate();
+      }
+      operator = op;
+      prev = current + ' ' + op;
+      current = '0';
+    }
+
+    function calculate() {
+      if (!operator || prev === '' ) return;
+
+      const prevValue = parseFloat(prev);
+      const currentValue = parseFloat(current);
+      let result = currentValue;
+
+      switch (operator) {
+        case '+':
+          result = prevValue + currentValue; break;
+        case '-':
+          result = prevValue - currentValue; break;
+        case '×':
+          result = prevValue * currentValue; break;
+        case '÷':
+          result = currentValue === 0 ? 0 : prevValue / currentValue; break;
+      }
+      current = String(result);
+      prev = '';
+      operator = null;
+    }
+
+    function clearAll() {
+      current = '0';
+      prev = '';
+      operator = null;
+    }
+
+    function toggleSign() {
+      if (current === '0') return;
+      current = String(parseFloat(current) * -1);
+    }
+
+    function percent() {
+      current = String(parseFloat(current) / 100);
+    }
+
+    document.addEventListener('click', (e) => {
+      const btn = e.target.closest('.btn');
+      if (!btn) return;
+
+      const number = btn.dataset.number;
+      const action = btn.dataset.action;
+
+      if (number !== undefined) {
+        inputNumber(number);
+        updateDisplay();
+        return;
+      }
+
+      if (action === 'dot') {
+        if (!current.includes('.')) current += '.';
+        updateDisplay();
+        return;
+      }
+
+      if (action === 'clear') {
+        clearAll();
+        updateDisplay();
+        return;
+      }
+
+      if (action === 'plus-minus') {
+        toggleSign();
+        updateDisplay();
+        return;
+      }
+
+      if (action === 'percent') {
+        percent();
+        updateDisplay();
+        return;
+      }
+
+      if (action === 'operator') {
+        setOperator(btn.dataset.value);
+        updateDisplay();
+        return;
+      }
+
+      if (action === 'equal') {
+        calculate();
+        updateDisplay();
+        return;
+      }
+    });
+  </script>
+</body>
+</html>
