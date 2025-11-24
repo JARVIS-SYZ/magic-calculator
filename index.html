@@ -28,19 +28,20 @@
         }
 
         /* 🔹 전체 래퍼에서 safe-area 반영 + min-height 사용 */
-        .calculator {
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
-            min-height: 100dvh;
-            width: 100%;
-            background: #000;
-            justify-content: flex-end;
-            overflow: visible;
+       .calculator {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    min-height: 100dvh;
+    width: 100%;
+    background: #000;
+    justify-content: flex-end;
+    overflow: visible;
 
-            padding-top: env(safe-area-inset-top);
-            padding-bottom: env(safe-area-inset-bottom);
-        }
+    /* 🔻 상단 여백 과하게 들어가던 부분 줄이기 */
+    padding-top: calc(env(safe-area-inset-top) * 0.35);
+    padding-bottom: env(safe-area-inset-bottom);
+}
 
         .header {
             padding: 4px 20px 4px 20px; /* 위 여백 최소화 */
@@ -90,17 +91,16 @@
             opacity: 1;
         }
 
-        .display {
-            flex: 0;
-            display: flex;
-            flex-direction: column;
-            justify-content: flex-end;
-            padding: 10px 24px 16px 24px;
-            overflow: hidden;
-            background: #000;
-            min-height: 140px;
-        }
-
+      .display {
+    flex: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 4px 24px 22px 24px; /* 위 살짝 줄이고, 아래 살짝 늘림 */
+    overflow: hidden;
+    background: #000;
+    min-height: 210px;  /* 🔻 140 → 210으로 늘려서 버튼을 아래로 내림 */
+}
         .expression-text {
             font-size: 28px;
             font-weight: 400;
