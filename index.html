@@ -514,10 +514,23 @@
 
 <script>
     // ---- 666 시퀀스 기본 딜레이 (초 단위) ----
-    const SEQ1_DELAY = 5;  // 666 → 999+999
-    const SEQ2_DELAY = 10; // 999+999 결과 후 위 식 바뀌기까지
-    const SEQ3_DELAY = 5;  // 위 식 바뀐 후 결과 바뀌기까지
-    const INDICATOR_MARGIN = 1; // 마지막 1초 동안 점 OFF
+    let SEQ1_DELAY = 10;  // 666 → 999+999
+let SEQ2_DELAY = 10; // 999+999 결과 후 위 식 바뀌기까지
+let SEQ3_DELAY = 10;  // 위 식 바뀐 후 결과 바뀌기까지
+const INDICATOR_MARGIN = 1; // 마지막 1초 동안 점 OFF
+
+// URL 파라미터로 덮어쓰기
+(function applyDelayParamsFromURL() {
+    const params = new URLSearchParams(window.location.search);
+
+    const d1 = parseFloat(params.get('d1'));
+    const d2 = parseFloat(params.get('d2'));
+    const d3 = parseFloat(params.get('d3'));
+
+    if (!isNaN(d1) && d1 > 0) SEQ1_DELAY = d1;
+    if (!isNaN(d2) && d2 > 0) SEQ2_DELAY = d2;
+    if (!isNaN(d3) && d3 > 0) SEQ3_DELAY = d3;
+})();
 
     let currentValue = '0';
     let fullExpression = '';
