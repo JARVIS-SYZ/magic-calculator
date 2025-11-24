@@ -36,15 +36,15 @@
             background: #000;
             padding-top: env(safe-area-inset-top);
             justify-content: flex-end;
+            padding-bottom: env(safe-area-inset-bottom);
         }
 
         .header {
-            padding: 12px 20px;
+            padding: 8px 20px;
             display: flex;
             justify-content: space-between;
             align-items: center;
             background: #000;
-            min-height: 50px;
         }
 
         .menu-icon {
@@ -86,19 +86,19 @@
             display: flex;
             flex-direction: column;
             justify-content: flex-end;
-            padding: 20px 24px;
+            padding: 12px 24px;
             overflow: hidden;
             background: #000;
-            min-height: 180px;
+            min-height: 140px;
         }
 
         .expression-text {
-            font-size: 30px;
+            font-size: 28px;
             font-weight: 400;
             text-align: right;
             color: #888;
-            margin-bottom: 8px;
-            min-height: 36px;
+            margin-bottom: 6px;
+            min-height: 32px;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
@@ -115,15 +115,23 @@
             font-weight: 300;
             text-align: right;
             line-height: 1;
-            overflow: hidden;
-            text-overflow: ellipsis;
             white-space: nowrap;
+            transition: font-size 0.1s;
+            overflow-x: auto;
+            overflow-y: hidden;
+            scrollbar-width: none; /* Firefox */
+            -ms-overflow-style: none; /* IE and Edge */
+            direction: ltr;
+            text-align: right;
+        }
+
+        .display-text::-webkit-scrollbar {
+            display: none; /* Chrome, Safari, Opera */
         }
 
         .buttons {
             background: #000;
-            padding: 8px;
-            padding-bottom: calc(8px + env(safe-area-inset-bottom));
+            padding: 6px;
         }
 
         .button-grid {
@@ -588,19 +596,46 @@
 
         function updateDisplay(value) {
             const displayElement = document.getElementById('display');
+            const containerWidth = displayElement.parentElement.offsetWidth - 48; // 패딩 고려
             
             // 숫자에 쉼표 추가
-            const formattedValue = formatDisplayExpression(value);
+            let formattedValue = formatDisplayExpression(value);
             
-            // 길이에 따라 폰트 크기 조정
-            if (formattedValue.length > 12) {
-                displayElement.style.fontSize = '48px';
-            } else if (formattedValue.length > 9) {
-                displayElement.style.fontSize = '60px';
-            } else {
-                displayElement.style.fontSize = '80px';
+            // 폰트 크기 초기화
+            let fontSize = 80;
+            displayElement.style.fontSize = fontSize + 'px';
+            displayElement.textContent = formattedValue;
+            
+            // 임시 측정용 요소 생성 (더 정확한 너비 측정)
+            const measureElement = document.createElement('span');
+            measureElement.style.fontSize = fontSize + 'px';
+            measureElement.style.fontWeight = '300';
+            measureElement.style.fontFamily = displayElement.style.fontFamily;
+            measureElement.style.visibility = 'hidden';
+            measureElement.style.position = 'absolute';
+            measureElement.style.whiteSpace = 'nowrap';
+            measureElement.textContent = formattedValue;
+            document.body.appendChild(measureElement);
+            
+            // 폰트 크기를 줄이면서 확인
+            let textWidth = measureElement.offsetWidth;
+            let attempts = 0;
+            while (textWidth > containerWidth && fontSize > 30 && attempts < 20) {
+                fontSize -= 4;
+                measureElement.style.fontSize = fontSize + 'px';
+                displayElement.style.fontSize = fontSize + 'px';
+                textWidth = measureElement.offsetWidth;
+                attempts++;
             }
-            display.textContent = formattedValue;
+            
+            document.body.removeChild(measureElement);
+            
+            // 폰트를 줄여도 여전히 넘치면 오른쪽 끝으로 스크롤
+            setTimeout(() => {
+                if (displayElement.scrollWidth > displayElement.clientWidth) {
+                    displayElement.scrollLeft = displayElement.scrollWidth - displayElement.clientWidth;
+                }
+            }, 0);
         }
 
         function updateExpression(text) {
@@ -759,12 +794,17 @@
             
             if (isNaN(num)) return '0';
             
+            // 매우 큰 숫자나 작은 숫자는 지수 표기
+            if (Math.abs(num) >= 1e10 || (Math.abs(num) < 1e-6 && num !== 0)) {
+                return num.toExponential(6).replace(/e\+?/, 'e');
+            }
+            
             // 소수점 처리
             let numStr = num.toString();
             
-            // 지수 표기법 처리
+            // 지수 표기법이면 그대로 반환
             if (numStr.includes('e')) {
-                return num.toExponential(6);
+                return numStr;
             }
             
             // 정수와 소수 분리
@@ -777,7 +817,7 @@
             
             // 소수점이 있으면 합치기
             if (decimalPart) {
-                // 소수점 자리수 제한 (최대 8자리)
+                // 소수점 자리수 제한
                 decimalPart = decimalPart.substring(0, 8);
                 // 끝의 0 제거
                 decimalPart = decimalPart.replace(/0+$/, '');
@@ -795,6 +835,7 @@
                 let num = parseFloat(match);
                 if (isNaN(num)) return match;
                 
+                // 큰 숫자는 지수 표기 안함 (입력 중에는)
                 let parts = match.split('.');
                 parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
                 return parts.join('.');
