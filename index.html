@@ -35,7 +35,6 @@
             background: #000;
             justify-content: flex-end;
             overflow: visible;
-            /* 전체를 3px 더 아래로 */
             padding-top: calc(env(safe-area-inset-top) * 0.85 + 3px);
             padding-bottom: env(safe-area-inset-bottom);
         }
@@ -130,7 +129,6 @@
             -ms-overflow-style: none;
             direction: ltr;
             text-align: right;
-            /* 숫자 줄을 실제로 3px 아래로 */
             transform: translateY(3px);
         }
 
@@ -191,11 +189,11 @@
             color: #fff;
         }
 
-       .button.operator .button-content {
-    font-size: 63px;         /* 42 × 1.5 */
-    font-weight: 300;
-    transform: translateY(-3px); /* 도형(기호)만 3px 위로 */
-}
+        .button.operator .button-content {
+            font-size: 63px;
+            font-weight: 300;
+            transform: translateY(-3px);
+        }
 
         .button.function {
             background: #505050;
@@ -225,19 +223,16 @@
             font-size: 24px;
         }
 
-        /* 계산기 아이콘: 조금 더 크게 */
         .calc-icon-svg {
             width: 42px;
             height: 45px;
         }
 
-        /* 지우개 아이콘: 더 크게 */
         .backspace-icon {
             width: 45px;
             height: 45px;
         }
 
-        /* ± / 슬래시 아이콘 */
         .pm-icon {
             width: 39px;
             height: 39px;
@@ -305,63 +300,6 @@
             color: #a5a5a5;
         }
 
-        .toggle-container {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: #2c2c2e;
-            padding: 15px 20px;
-            border-radius: 12px;
-        }
-
-        .toggle-label {
-            font-size: 18px;
-        }
-
-        .toggle-switch {
-            position: relative;
-            width: 51px;
-            height: 31px;
-        }
-
-        .toggle-switch input {
-            opacity: 0;
-            width: 0;
-            height: 0;
-        }
-
-        .slider {
-            position: absolute;
-            cursor: pointer;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: #39393d;
-            transition: .3s;
-            border-radius: 31px;
-        }
-
-        .slider:before {
-            position: absolute;
-            content: "";
-            height: 27px;
-            width: 27px;
-            left: 2px;
-            bottom: 2px;
-            background-color: white;
-            transition: .3s;
-            border-radius: 50%;
-        }
-
-        input:checked + .slider {
-            background-color: #34c759;
-        }
-
-        input:checked + .slider:before {
-            transform: translateX(20px);
-        }
-
         .force-input {
             width: 100%;
             background: #2c2c2e;
@@ -377,10 +315,6 @@
         .force-input:focus {
             outline: none;
             background: #3a3a3c;
-        }
-
-        .force-input:disabled {
-            opacity: 0.4;
         }
 
         .close-button {
@@ -429,7 +363,7 @@
                     <line class="menu-line" x1="7" y1="19" x2="21" y2="19"></line>
                 </svg>
             </div>
-            <div class="mode-indicator" id="modeIndicator">FORCE</div>
+            <div class="mode-indicator" id="modeIndicator"></div>
         </div>
 
         <div class="display">
@@ -439,46 +373,17 @@
 
         <div class="buttons">
             <div class="button-grid">
-                <!-- AC / 지우개 토글 버튼 -->
                 <button class="button function" id="clearButton" onclick="handleClear()">
                     <div class="button-content" id="clearButtonContent">AC</div>
                 </button>
 
-                <!-- ± 슬래시 아이콘 버튼 -->
                 <button class="button function" onclick="handleFunction('±')">
                     <div class="button-content">
                         <svg class="pm-icon" viewBox="0 0 24 24">
-                            <!-- 대각선 슬래시 (조금 얇게) -->
-                            <line
-                                x1="6"  y1="18"
-                                x2="18" y2="6"
-                                stroke="currentColor"
-                                stroke-width="1.6"
-                                stroke-linecap="round"
-                            />
-                            <!-- 위쪽 + -->
-                            <line
-                                x1="7"   y1="5.2"
-                                x2="7"   y2="10.2"
-                                stroke="currentColor"
-                                stroke-width="1.6"
-                                stroke-linecap="round"
-                            />
-                            <line
-                                x1="4.2" y1="7.7"
-                                x2="9.8" y2="7.7"
-                                stroke="currentColor"
-                                stroke-width="1.6"
-                                stroke-linecap="round"
-                            />
-                            <!-- 아래쪽 - -->
-                            <line
-                                x1="12.2" y1="17.8"
-                                x2="17.2" y2="17.8"
-                                stroke="currentColor"
-                                stroke-width="1.6"
-                                stroke-linecap="round"
-                            />
+                            <line x1="6" y1="18" x2="18" y2="6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+                            <line x1="7" y1="5.2" x2="7" y2="10.2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+                            <line x1="4.2" y1="7.7" x2="9.8" y2="7.7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+                            <line x1="12.2" y1="17.8" x2="17.2" y2="17.8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
                         </svg>
                     </div>
                 </button>
@@ -529,41 +434,23 @@
                     <div class="button-content">+</div>
                 </button>
 
-                <!-- 계산기 아이콘 버튼 (3초 길게 눌러 설정 열기) -->
                 <button class="button calc-icon" id="calcIconButton">
-  <div class="button-content">
-    <svg class="calc-icon-svg" viewBox="0 0 24 24">
-      <!-- 바깥 본체: 살짝 얇게 / 조금 작게 -->
-      <rect
-        x="5.5" y="3.5"
-        width="13" height="17"
-        rx="1.4"
-        fill="currentColor"
-        stroke="currentColor"
-        stroke-width="1.4"
-      />
-      <!-- 윗 창: 진한 회색 -->
-      <rect
-        x="7.2" y="5.2"
-        width="9.6" height="4.2"
-        rx="0.9"
-        fill="#333"
-      />
-      <!-- 그리드 점: 조금 아래로 내리고, 더 두껍게 -->
-      <circle cx="8.5" cy="11.8"   r="1.2" fill="#333"/>
-      <circle cx="12"  cy="11.8"   r="1.2" fill="#333"/>
-      <circle cx="15.5"cy="11.8"   r="1.2" fill="#333"/>
-
-      <circle cx="8.5" cy="15.3"   r="1.2" fill="#333"/>
-      <circle cx="12"  cy="15.3"   r="1.2" fill="#333"/>
-      <circle cx="15.5"cy="15.3"   r="1.2" fill="#333"/>
-
-      <circle cx="8.5" cy="18.8"   r="1.2" fill="#333"/>
-      <circle cx="12"  cy="18.8"   r="1.2" fill="#333"/>
-      <circle cx="15.5"cy="18.8"   r="1.2" fill="#333"/>
-    </svg>
-  </div>
-</button>
+                    <div class="button-content">
+                        <svg class="calc-icon-svg" viewBox="0 0 24 24">
+                            <rect x="5.5" y="3.5" width="13" height="17" rx="1.4" fill="currentColor" stroke="currentColor" stroke-width="1.4"/>
+                            <rect x="7.2" y="5.2" width="9.6" height="4.2" rx="0.9" fill="#333"/>
+                            <circle cx="8.5" cy="11.8" r="1.2" fill="#333"/>
+                            <circle cx="12" cy="11.8" r="1.2" fill="#333"/>
+                            <circle cx="15.5" cy="11.8" r="1.2" fill="#333"/>
+                            <circle cx="8.5" cy="15.3" r="1.2" fill="#333"/>
+                            <circle cx="12" cy="15.3" r="1.2" fill="#333"/>
+                            <circle cx="15.5" cy="15.3" r="1.2" fill="#333"/>
+                            <circle cx="8.5" cy="18.8" r="1.2" fill="#333"/>
+                            <circle cx="12" cy="18.8" r="1.2" fill="#333"/>
+                            <circle cx="15.5" cy="18.8" r="1.2" fill="#333"/>
+                        </svg>
+                    </div>
+                </button>
 
                 <button class="button number zero" onclick="handleNumber('0')">
                     <div class="button-content">0</div>
@@ -571,7 +458,7 @@
                 <button class="button number" onclick="handleNumber('.')">
                     <div class="button-content">.</div>
                 </button>
-                <button class="button operator" onclick="handleEquals()">
+                <button class="button operator" id="equalsButton" onclick="handleEquals()">
                     <div class="button-content">=</div>
                 </button>
             </div>
@@ -584,23 +471,8 @@
             <div class="settings-title">설정</div>
             
             <div class="setting-item">
-                <div class="toggle-container">
-                    <div class="toggle-label">포스 모드</div>
-                    <label class="toggle-switch">
-                        <input type="checkbox" id="forceModeToggle">
-                        <span class="slider"></span>
-                    </label>
-                </div>
-            </div>
-
-            <div class="setting-item">
-                <div class="setting-label">포스할 숫자</div>
-                <input type="number" class="force-input" id="forceNumberInput" placeholder="숫자 입력" disabled>
-            </div>
-
-            <div class="setting-item">
-                <div class="setting-label">특수 트리거 숫자</div>
-                <input type="number" class="force-input" id="triggerNumberInput" placeholder="예: 666">
+                <div class="setting-label">포스 모드 숫자</div>
+                <input type="number" class="force-input" id="forceNumberInput" placeholder="숫자 입력">
             </div>
 
             <button class="close-button" onclick="closeSettings()">완료</button>
@@ -611,43 +483,37 @@
         let currentValue = '0';
         let fullExpression = '';
         let shouldResetDisplay = false;
-        let forceMode = false;
         let forceNumber = null;
         let longPressTimer = null;
-        const LONG_PRESS_DURATION = 3000; // 3초로 변경
-        let triggerNumber = null; // 특수 트리거 숫자
-        let specialSequenceActive = false; // 특수 시퀀스 진행 중 플래그
+        const LONG_PRESS_DURATION = 3000;
+        
+        // 모드: 'normal', 'force', '666'
+        let currentMode = 'normal';
+        let specialSequenceActive = false;
 
-        // clear 버튼 모드: 'all' = AC, 'backspace' = 지우개
+        // 3번 탭 감지
+        let calcIconTapCount = 0;
+        let calcIconTapTimer = null;
+        let equalsTapCount = 0;
+        let equalsTapTimer = null;
+        const TAP_TIMEOUT = 500;
+
         let clearMode = 'all';
 
         const display = document.getElementById('display');
         const expressionDisplay = document.getElementById('expression');
         const settingsModal = document.getElementById('settingsModal');
-        const forceModeToggle = document.getElementById('forceModeToggle');
         const forceNumberInput = document.getElementById('forceNumberInput');
-        const triggerNumberInput = document.getElementById('triggerNumberInput');
         const modeIndicator = document.getElementById('modeIndicator');
         const clearButtonContent = document.getElementById('clearButtonContent');
         const calcIconButton = document.getElementById('calcIconButton');
+        const equalsButton = document.getElementById('equalsButton');
 
-        // 지우개 아이콘 (조금 더 왼쪽으로 이동)
         const BACKSPACE_SVG = `
             <svg viewBox="0 0 24 24" class="backspace-icon">
                 <g transform="translate(-1.6 0)">
-                    <path
-                        d="M4 12 L9 5 H21 V19 H9 Z"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="1.8"
-                        stroke-linejoin="round"
-                    />
-                    <path
-                        d="M12.3 10.3 L16.7 14.7 M16.7 10.3 L12.3 14.7"
-                        stroke="currentColor"
-                        stroke-width="1.8"
-                        stroke-linecap="round"
-                    />
+                    <path d="M4 12 L9 5 H21 V19 H9 Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+                    <path d="M12.3 10.3 L16.7 14.7 M16.7 10.3 L12.3 14.7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
                 </g>
             </svg>
         `;
@@ -663,9 +529,45 @@
             }
         }
 
-        // 계산기 아이콘 3초 길게 눌러 설정창 열기
-        calcIconButton.addEventListener('touchstart', (e) => {
+        function updateModeIndicator() {
+            if (currentMode === 'force') {
+                modeIndicator.textContent = 'FORCE';
+                modeIndicator.classList.add('active');
+            } else if (currentMode === '666') {
+                modeIndicator.textContent = '666';
+                modeIndicator.classList.add('active');
+            } else {
+                modeIndicator.textContent = '';
+                modeIndicator.classList.remove('active');
+            }
+        }
+
+        // 계산기 아이콘 3번 탭 감지 → 포스 모드
+        calcIconButton.addEventListener('click', (e) => {
             e.preventDefault();
+            e.stopPropagation();
+            
+            calcIconTapCount++;
+            
+            if (calcIconTapTimer) {
+                clearTimeout(calcIconTapTimer);
+            }
+            
+            calcIconTapTimer = setTimeout(() => {
+                calcIconTapCount = 0;
+            }, TAP_TIMEOUT);
+            
+            if (calcIconTapCount === 3) {
+                calcIconTapCount = 0;
+                clearTimeout(calcIconTapTimer);
+                vibrateDevice();
+                currentMode = 'force';
+                updateModeIndicator();
+            }
+        });
+
+        // 계산기 아이콘 길게 눌러 설정창 열기
+        calcIconButton.addEventListener('touchstart', (e) => {
             longPressTimer = setTimeout(() => {
                 vibrateDevice();
                 openSettings();
@@ -694,25 +596,9 @@
             clearTimeout(longPressTimer);
         });
 
-        forceModeToggle.addEventListener('change', (e) => {
-            forceMode = e.target.checked;
-            forceNumberInput.disabled = !forceMode;
-            
-            if (forceMode) {
-                modeIndicator.classList.add('active');
-            } else {
-                modeIndicator.classList.remove('active');
-            }
-        });
-
         forceNumberInput.addEventListener('input', (e) => {
             const value = e.target.value;
             forceNumber = value === '' ? null : parseFloat(value);
-        });
-
-        triggerNumberInput.addEventListener('input', (e) => {
-            const value = e.target.value;
-            triggerNumber = value === '' ? null : parseFloat(value);
         });
 
         function openSettings() {
@@ -768,31 +654,6 @@
             expressionDisplay.textContent = text;
         }
 
-        // 666 트리거 체크 함수
-        function checkTriggerSequence() {
-            if (triggerNumber === null || specialSequenceActive) return;
-            
-            const cleanExpr = fullExpression.replace(/,/g, '');
-            const pattern = `${triggerNumber}+${triggerNumber}`;
-            
-            if (cleanExpr === pattern) {
-                specialSequenceActive = true;
-                startSpecialSequence();
-            }
-        }
-
-        // 특수 시퀀스 시작
-        function startSpecialSequence() {
-            // 5초 후: 999+999로 변경
-            setTimeout(() => {
-                const newPattern = `${triggerNumber * 1.5}+${triggerNumber * 1.5}`;
-                fullExpression = newPattern;
-                currentValue = String(triggerNumber * 1.5);
-                updateDisplay(fullExpression);
-                updateClearButtonState();
-            }, 5000);
-        }
-
         function handleNumber(num) {
             vibrateDevice();
             
@@ -835,9 +696,6 @@
             currentValue = '0';
             updateDisplay(fullExpression);
             updateClearButtonState();
-            
-            // 연산자 입력 후 트리거 체크
-            checkTriggerSequence();
         }
 
         function handleFunction(func) {
@@ -913,6 +771,25 @@
         function handleEquals() {
             vibrateDevice();
             
+            // = 버튼 3번 탭 감지 → 666 모드
+            equalsTapCount++;
+            
+            if (equalsTapTimer) {
+                clearTimeout(equalsTapTimer);
+            }
+            
+            equalsTapTimer = setTimeout(() => {
+                equalsTapCount = 0;
+            }, TAP_TIMEOUT);
+            
+            if (equalsTapCount === 3) {
+                equalsTapCount = 0;
+                clearTimeout(equalsTapTimer);
+                currentMode = '666';
+                updateModeIndicator();
+                return;
+            }
+            
             if (!fullExpression || fullExpression === '0') return;
             
             const displayExpr = formatDisplayExpression(fullExpression);
@@ -921,9 +798,52 @@
             
             let result;
             
-            if (forceMode && forceNumber !== null) {
+            // 포스 모드 처리
+            if (currentMode === 'force' && forceNumber !== null) {
                 result = forceNumber;
-            } else {
+                currentMode = 'normal'; // 계산 후 일반 모드로 복귀
+                updateModeIndicator();
+            }
+            // 666 모드 처리
+            else if (currentMode === '666') {
+                const cleanExpr = fullExpression.replace(/,/g, '');
+                
+                // 666+666 패턴 감지
+                if (cleanExpr === '666+666') {
+                    specialSequenceActive = true;
+                    
+                    // 5초 후: 999+999로 변경
+                    setTimeout(() => {
+                        fullExpression = '999+999';
+                        currentValue = '999';
+                        updateDisplay(fullExpression);
+                        updateClearButtonState();
+                    }, 5000);
+                    
+                    result = 1332; // 666+666의 결과
+                } else {
+                    // 999+999 계산
+                    result = evaluateExpression(cleanExpr);
+                    
+                    if (specialSequenceActive && result === 1998) {
+                        // 10초 후: 계산식만 666+666=로 변경
+                        setTimeout(() => {
+                            updateExpression('666+666=');
+                            
+                            // 5초 후: 결과값을 1332로 변경
+                            setTimeout(() => {
+                                currentValue = '1332';
+                                updateDisplay(formatNumber(1332));
+                                specialSequenceActive = false;
+                                currentMode = 'normal'; // 시퀀스 완료 후 일반 모드로
+                                updateModeIndicator();
+                            }, 5000);
+                        }, 10000);
+                    }
+                }
+            }
+            // 일반 모드 계산
+            else {
                 try {
                     const cleanExpr = fullExpression.replace(/,/g, '');
                     result = evaluateExpression(cleanExpr);
@@ -938,27 +858,6 @@
             } else {
                 currentValue = result.toString();
                 updateDisplay(formatNumber(result));
-                
-                // 특수 시퀀스가 진행 중이라면 후속 단계 시작
-                if (specialSequenceActive && triggerNumber !== null) {
-                    const expectedResult = triggerNumber * 3; // 999+999 = 1998
-                    
-                    if (Math.abs(result - expectedResult) < 0.01) {
-                        // 10초 후: 계산식만 666+666=로 변경
-                        setTimeout(() => {
-                            const originalPattern = `${triggerNumber}+${triggerNumber}`;
-                            updateExpression(formatDisplayExpression(originalPattern) + '=');
-                            
-                            // 5초 후: 결과값을 1332로 변경
-                            setTimeout(() => {
-                                const finalResult = triggerNumber * 2; // 666 * 2 = 1332
-                                currentValue = finalResult.toString();
-                                updateDisplay(formatNumber(finalResult));
-                                specialSequenceActive = false;
-                            }, 5000);
-                        }, 10000);
-                    }
-                }
             }
             
             fullExpression = '';
