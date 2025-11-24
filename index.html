@@ -117,20 +117,21 @@
             opacity: 1;
         }
 
-        .display-text {
-            font-size: 80px;
-            font-weight: 400; /* 살짝 두껍게 */
-            text-align: right;
-            line-height: 1;
-            white-space: nowrap;
-            overflow-x: auto;
-            overflow-y: hidden;
-            scrollbar-width: none;
-            -ms-overflow-style: none;
-            direction: ltr;
-            text-align: right;
-            margin-top: 6px; /* 숫자 라인만 6px 내려줌 */
-        }
+.display-text {
+    font-size: 80px;
+    font-weight: 400;
+    text-align: right;
+    line-height: 1;
+    white-space: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    direction: ltr;
+    text-align: right;
+
+    transform: translateY(3px);  /* ✅ 숫자 줄 전체를 실제로 3px 아래로 */
+}
 
         .display-text::-webkit-scrollbar {
             display: none;
@@ -229,10 +230,10 @@
         }
 
         /* 지우개(백스페이스) 아이콘 */
-        .backspace-icon {
-            width: 24px;
-            height: 24px;
-        }
+.backspace-icon {
+    width: 26px;
+    height: 26px;
+}
 
         .settings-modal {
             position: fixed;
@@ -559,12 +560,25 @@
         const modeIndicator = document.getElementById('modeIndicator');
         const clearButtonContent = document.getElementById('clearButtonContent');
 
-        const BACKSPACE_SVG = `
-            <svg viewBox="0 0 24 24" class="backspace-icon">
-                <rect x="6" y="5" width="12" height="14" rx="2" ry="2" fill="none" stroke="currentColor" stroke-width="1.7" />
-                <path d="M9 10l6 6M15 10l-6 6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
-            </svg>
-        `;
+const BACKSPACE_SVG = `
+    <svg viewBox="0 0 24 24" class="backspace-icon">
+        <!-- 왼쪽이 삼각형으로 파인 백스페이스 모양 -->
+        <path
+            d="M4 12 L9 5 H21 V19 H9 Z"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linejoin="round"
+        />
+        <!-- 안쪽 X -->
+        <path
+            d="M12.3 10.3 L16.7 14.7 M16.7 10.3 L12.3 14.7"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+        />
+    </svg>
+`;
 
         function updateClearButtonState() {
             const hasInput = (fullExpression !== '' || currentValue !== '0');
