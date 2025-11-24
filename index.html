@@ -682,9 +682,9 @@
                 fullExpression = fullExpression.slice(0, -1) + op;
             } else {
                 if (fullExpression === '') {
-                    fullExpression = currentValue + ' ' + op;
+                    fullExpression = currentValue + op;
                 } else {
-                    fullExpression += ' ' + op;
+                    fullExpression += op;
                 }
             }
             
@@ -743,7 +743,7 @@
             if (!fullExpression || fullExpression === '0') return;
             
             // 계산식을 위로 올리기 (쉼표 포함)
-            updateExpression(formatDisplayExpression(fullExpression) + ' =');
+            updateExpression(formatDisplayExpression(fullExpression) + '=');
             expressionDisplay.classList.add('visible');
             
             // 수식 계산 (쉼표 제거 후 계산)
