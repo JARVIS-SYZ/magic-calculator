@@ -5,11 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black">
-    <meta name="theme-color" content="#000000">
-    <meta name="format-detection" content="telephone=no">
+    <meta name="mobile-web-app-capable" content="yes">
     <title>계산기</title>
-    <link rel="manifest" href="manifest.json">
-    <link rel="apple-touch-icon" href="icon-192.png">
     <style>
         * {
             margin: 0;
@@ -22,61 +19,60 @@
 
         html {
             background: #000;
+            height: 100%;
         }
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
             background: #000;
             color: #fff;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
+            height: 100%;
             margin: 0;
             padding: 0;
+            overflow: hidden;
         }
 
         .calculator {
             display: flex;
             flex-direction: column;
-            min-height: 100vh;
+            height: 100vh;
+            height: 100dvh;
             max-width: 600px;
             margin: 0 auto;
             width: 100%;
             background: #000;
-            padding-top: env(safe-area-inset-top);
-            padding-bottom: env(safe-area-inset-bottom);
         }
 
         .header {
-            padding: 10px 20px;
+            padding: 15px 20px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            min-height: 44px;
+            background: #000;
+            z-index: 10;
         }
 
         .history-icon {
-            width: 40px;
-            height: 40px;
+            width: 44px;
+            height: 44px;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
             touch-action: none;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 8px;
+            background: rgba(118, 118, 128, 0.24);
+            border-radius: 10px;
         }
 
         .history-icon svg {
-            width: 24px;
-            height: 24px;
+            width: 26px;
+            height: 26px;
             stroke: #fff;
-            opacity: 0.9;
+            fill: none;
         }
 
         .mode-indicator {
-            font-size: 12px;
+            font-size: 13px;
             color: #ff9500;
             font-weight: 600;
             opacity: 0;
@@ -88,17 +84,18 @@
         }
 
         .display {
-            flex: 0.8;
+            flex: 1;
             display: flex;
             flex-direction: column;
             justify-content: flex-end;
-            padding: 20px;
+            padding: 0 20px 20px 20px;
             overflow: hidden;
+            background: #000;
         }
 
         .display-text {
             font-size: 80px;
-            font-weight: 300;
+            font-weight: 200;
             text-align: right;
             line-height: 1;
             overflow: hidden;
@@ -111,6 +108,8 @@
             grid-template-columns: repeat(4, 1fr);
             gap: 12px;
             padding: 12px;
+            background: #000;
+            padding-bottom: max(12px, env(safe-area-inset-bottom));
         }
 
         .button {
@@ -127,7 +126,7 @@
         }
 
         .button:active {
-            filter: brightness(0.8);
+            filter: brightness(0.7);
             transform: scale(0.95);
         }
 
@@ -162,8 +161,9 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: rgba(0, 0, 0, 0.8);
-            backdrop-filter: blur(10px);
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
             display: none;
             align-items: center;
             justify-content: center;
@@ -311,25 +311,15 @@
         .close-button:active {
             opacity: 0.8;
         }
-
-        /* 햅틱 피드백 시뮬레이션 */
-        @keyframes vibrate {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-2px); }
-            75% { transform: translateX(2px); }
-        }
-
-        .vibrate {
-            animation: vibrate 0.1s;
-        }
     </style>
 </head>
 <body>
     <div class="calculator">
         <div class="header">
             <div class="history-icon" id="historyIcon">
-                <svg fill="none" viewBox="0 0 24 24" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                <svg viewBox="0 0 24 24" stroke-width="2.5">
+                    <circle cx="12" cy="12" r="9"></circle>
+                    <polyline points="12 6 12 12 16 14"></polyline>
                 </svg>
             </div>
             <div class="mode-indicator" id="modeIndicator">FORCE</div>
@@ -398,7 +388,7 @@
         let forceMode = false;
         let forceNumber = null;
         let longPressTimer = null;
-        const LONG_PRESS_DURATION = 800; // 0.8초
+        const LONG_PRESS_DURATION = 800;
 
         const display = document.getElementById('display');
         const historyIcon = document.getElementById('historyIcon');
@@ -472,7 +462,6 @@
         }
 
         function updateDisplay(value) {
-            // 숫자가 너무 길면 폰트 크기 조정
             const displayElement = document.getElementById('display');
             if (value.length > 9) {
                 displayElement.style.fontSize = '50px';
@@ -549,11 +538,9 @@
             const current = parseFloat(currentValue);
             let result;
 
-            // 포스 모드가 활성화되고 포스 숫자가 설정되어 있으면
             if (forceMode && forceNumber !== null) {
                 result = forceNumber;
             } else {
-                // 일반 계산
                 switch(operation) {
                     case '+':
                         result = prev + current;
@@ -575,7 +562,6 @@
             if (result === 'Error') {
                 currentValue = 'Error';
             } else {
-                // 결과가 너무 길면 반올림
                 if (result.toString().length > 12) {
                     currentValue = result.toExponential(6);
                 } else {
@@ -586,14 +572,12 @@
             updateDisplay(currentValue);
         }
 
-        // 모달 배경 클릭시 닫기
         settingsModal.addEventListener('click', (e) => {
             if (e.target === settingsModal) {
                 closeSettings();
             }
         });
 
-        // 초기 디스플레이
         updateDisplay(currentValue);
     </script>
 </body>
