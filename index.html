@@ -191,10 +191,11 @@
             color: #fff;
         }
 
-        .button.operator .button-content {
-            font-size: 42px;
-            font-weight: 300;
-        }
+       .button.operator .button-content {
+    font-size: 63px;         /* 42 × 1.5 */
+    font-weight: 300;
+    transform: translateY(-3px); /* 도형(기호)만 3px 위로 */
+}
 
         .button.function {
             background: #505050;
@@ -226,20 +227,20 @@
 
         /* 계산기 아이콘: 조금 더 크게 */
         .calc-icon-svg {
-            width: 28px;
-            height: 28px;
+            width: 42px;
+            height: 42px;
         }
 
         /* 지우개 아이콘: 더 크게 */
         .backspace-icon {
-            width: 30px;
-            height: 30px;
+            width: 45px;
+            height: 45px;
         }
 
         /* ± / 슬래시 아이콘 */
         .pm-icon {
-            width: 26px;
-            height: 26px;
+            width: 39px;
+            height: 39px;
         }
 
         .settings-modal {
@@ -530,32 +531,39 @@
 
                 <!-- 계산기 아이콘 버튼 -->
                 <button class="button calc-icon" onclick="handleCalcIcon()">
-                    <div class="button-content">
-                        <svg class="calc-icon-svg" viewBox="0 0 24 24">
-                            <!-- 바탕: 흰색 -->
-                            <rect
-                                x="5" y="3"
-                                width="14" height="18"
-                                rx="1.5"
-                                fill="currentColor"
-                                stroke="currentColor"
-                                stroke-width="1.8"
-                            />
-                            <!-- 안쪽 그리드(점들을 검정색으로) -->
-                            <circle cx="8.5" cy="11" r="0.7" fill="#000"/>
-                            <circle cx="12"  cy="11" r="0.7" fill="#000"/>
-                            <circle cx="15.5" cy="11" r="0.7" fill="#000"/>
+  <div class="button-content">
+    <svg class="calc-icon-svg" viewBox="0 0 24 24">
+      <!-- 바깥 본체는 그대로 흰색 -->
+      <rect
+        x="5" y="3"
+        width="14" height="18"
+        rx="1.5"
+        fill="currentColor"
+        stroke="currentColor"
+        stroke-width="1.8"
+      />
+      <!-- 그리드 위의 작은 창: 진한 회색 -->
+      <rect
+        x="7" y="5"
+        width="10" height="4"
+        rx="0.8"
+        fill="#333"
+      />
+      <!-- 안쪽 그리드 점: 진한 회색 -->
+      <circle cx="8.5" cy="11"   r="0.7" fill="#333"/>
+      <circle cx="12"  cy="11"   r="0.7" fill="#333"/>
+      <circle cx="15.5"cy="11"   r="0.7" fill="#333"/>
 
-                            <circle cx="8.5" cy="14.5" r="0.7" fill="#000"/>
-                            <circle cx="12"  cy="14.5" r="0.7" fill="#000"/>
-                            <circle cx="15.5" cy="14.5" r="0.7" fill="#000"/>
+      <circle cx="8.5" cy="14.5" r="0.7" fill="#333"/>
+      <circle cx="12"  cy="14.5" r="0.7" fill="#333"/>
+      <circle cx="15.5"cy="14.5" r="0.7" fill="#333"/>
 
-                            <circle cx="8.5" cy="18" r="0.7" fill="#000"/>
-                            <circle cx="12"  cy="18" r="0.7" fill="#000"/>
-                            <circle cx="15.5" cy="18" r="0.7" fill="#000"/>
-                        </svg>
-                    </div>
-                </button>
+      <circle cx="8.5" cy="18"   r="0.7" fill="#333"/>
+      <circle cx="12"  cy="18"   r="0.7" fill="#333"/>
+      <circle cx="15.5"cy="18"   r="0.7" fill="#333"/>
+    </svg>
+  </div>
+</button>
 
                 <button class="button number zero" onclick="handleNumber('0')">
                     <div class="button-content">0</div>
