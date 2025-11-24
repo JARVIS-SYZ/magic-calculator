@@ -235,7 +235,7 @@
             height: 45px;
         }
 
-        /* 파란 점: 더 작게 + 더 아래 */
+        /* 파란 점: 조금 더 작고 아래 */
         .calc-indicator {
             position: absolute;
             bottom: -5px;
@@ -327,7 +327,7 @@
 
         .force-input {
             width: 100%;
-            background: #2c2c2e;
+            background: #2c2ce;
             border: none;
             border-radius: 12px;
             padding: 15px 20px;
@@ -514,23 +514,22 @@
 
 <script>
     // ---- 666 시퀀스 기본 딜레이 (초 단위) ----
-    let SEQ1_DELAY = 10;  // 666 → 999+999
-let SEQ2_DELAY = 10; // 999+999 결과 후 위 식 바뀌기까지
-let SEQ3_DELAY = 10;  // 위 식 바뀐 후 결과 바뀌기까지
-const INDICATOR_MARGIN = 1; // 마지막 1초 동안 점 OFF
+    let SEQ1_DELAY = 13;  // 666 → 999+999
+    let SEQ2_DELAY = 10; // 999+999 결과 후 위 식 바뀌기까지
+    let SEQ3_DELAY = 15;  // 위 식 바뀐 후 결과 바뀌기까지
+    const INDICATOR_MARGIN = 2; // 딜레이 끝나기 2초 전에 점 OFF
 
-// URL 파라미터로 덮어쓰기
-(function applyDelayParamsFromURL() {
-    const params = new URLSearchParams(window.location.search);
+    // URL 파라미터로 딜레이 덮어쓰기 (예: ?d1=3&d2=8&d3=4.5)
+    (function applyDelayParamsFromURL() {
+        const params = new URLSearchParams(window.location.search);
+        const d1 = parseFloat(params.get('d1'));
+        const d2 = parseFloat(params.get('d2'));
+        const d3 = parseFloat(params.get('d3'));
 
-    const d1 = parseFloat(params.get('d1'));
-    const d2 = parseFloat(params.get('d2'));
-    const d3 = parseFloat(params.get('d3'));
-
-    if (!isNaN(d1) && d1 > 0) SEQ1_DELAY = d1;
-    if (!isNaN(d2) && d2 > 0) SEQ2_DELAY = d2;
-    if (!isNaN(d3) && d3 > 0) SEQ3_DELAY = d3;
-})();
+        if (!isNaN(d1) && d1 > 0) SEQ1_DELAY = d1;
+        if (!isNaN(d2) && d2 > 0) SEQ2_DELAY = d2;
+        if (!isNaN(d3) && d3 > 0) SEQ3_DELAY = d3;
+    })();
 
     let currentValue = '0';
     let fullExpression = '';
@@ -559,7 +558,8 @@ const INDICATOR_MARGIN = 1; // 마지막 1초 동안 점 OFF
     const equalsButton = document.getElementById('equalsButton');
     const calcIndicator = document.getElementById('calcIndicator');
 
-    let indicatorTimer = null;
+    let indicatorOnTimer = null;
+    let indicatorOffTimer = null;
     let sequenceTimer1 = null;
     let sequenceTimer2 = null;
     let sequenceTimer3 = null;
@@ -595,34 +595,46 @@ const INDICATOR_MARGIN = 1; // 마지막 1초 동안 점 OFF
     }
 
     function clearAllTimers() {
-        if (indicatorTimer) clearTimeout(indicatorTimer);
+        if (indicatorOnTimer) clearTimeout(indicatorOnTimer);
+        if (indicatorOffTimer) clearTimeout(indicatorOffTimer);
         if (sequenceTimer1) clearTimeout(sequenceTimer1);
         if (sequenceTimer2) clearTimeout(sequenceTimer2);
         if (sequenceTimer3) clearTimeout(sequenceTimer3);
-        indicatorTimer = sequenceTimer1 = sequenceTimer2 = sequenceTimer3 = null;
+
+        indicatorOnTimer = null;
+        indicatorOffTimer = null;
+        sequenceTimer1 = sequenceTimer2 = sequenceTimer3 = null;
+
         if (calcIndicator) calcIndicator.classList.remove('active');
     }
 
-    // 공통: 딜레이 동안 점 켜고, 끝나기 1초 전에 끄기
-    function startIndicator(durationSec) {
+    // 공통: 딜레이 동안 점 켜고, 끝나기 2초 전에 끄기
+    // offsetStartSec: 몇 초 뒤에 점을 켤지 (기본 0초 = 바로 켜기)
+    function startIndicator(durationSec, offsetStartSec = 0) {
         if (!calcIndicator) return;
-        if (indicatorTimer) {
-            clearTimeout(indicatorTimer);
-        }
-        // 전체 딜레이 시작 시 점 ON
-        calcIndicator.classList.add('active');
 
-        const hideTime = Math.max(durationSec - INDICATOR_MARGIN, 0);
-        if (hideTime <= 0) {
-            // 딜레이가 1초 이하라면 바로 OFF
-            indicatorTimer = setTimeout(() => {
-                calcIndicator.classList.remove('active');
-            }, durationSec * 1000);
+        if (indicatorOnTimer) clearTimeout(indicatorOnTimer);
+        if (indicatorOffTimer) clearTimeout(indicatorOffTimer);
+
+        const total = Math.max(durationSec, 0);
+        const startAt = Math.max(offsetStartSec, 0);
+        const hideAt = Math.max(total - INDICATOR_MARGIN, startAt);
+
+        const show = () => {
+            calcIndicator.classList.add('active');
+        };
+        const hide = () => {
+            calcIndicator.classList.remove('active');
+        };
+
+        if (startAt === 0) {
+            show();
         } else {
-            indicatorTimer = setTimeout(() => {
-                calcIndicator.classList.remove('active');
-            }, hideTime * 1000);
+            calcIndicator.classList.remove('active');
+            indicatorOnTimer = setTimeout(show, startAt * 1000);
         }
+
+        indicatorOffTimer = setTimeout(hide, hideAt * 1000);
     }
 
     function updateClearButtonState() {
@@ -696,7 +708,7 @@ const INDICATOR_MARGIN = 1; // 마지막 1초 동안 점 OFF
             // 1단계 딜레이 동안 점 표시
             startIndicator(SEQ1_DELAY);
 
-            // SEQ1_DELAY 초 후 999+999로 수식 변경
+            // SEQ1_DELAY 후 999+999로 변경
             sequenceTimer1 = setTimeout(() => {
                 fullExpression = '999+999';
                 currentValue = '999';
@@ -876,7 +888,7 @@ const INDICATOR_MARGIN = 1; // 마지막 1초 동안 점 OFF
         else if (currentMode === '666') {
             const cleanExpr = fullExpression.replace(/,/g, '');
 
-            // 2단계: 이미 999+999 상태에서 = 눌렀을 때
+            // 2단계: 이미 999+999 상태에서 = 를 눌렀을 때
             if (specialSequenceActive && cleanExpr === '999+999') {
                 result = evaluateExpression(cleanExpr); // 1998
 
@@ -888,8 +900,8 @@ const INDICATOR_MARGIN = 1; // 마지막 1초 동안 점 OFF
                     updateExpression('666+666=');
                     expressionDisplay.classList.add('visible');
 
-                    // 3단계 딜레이 동안 점 표시
-                    startIndicator(SEQ3_DELAY);
+                    // 3단계 딜레이 동안 점 표시 (3초 후 켜졌다가, 끝나기 2초 전에 OFF)
+                    startIndicator(SEQ3_DELAY, 3);
 
                     // SEQ3_DELAY 후: 결과값 1332로 변경 후 일반 모드 복귀
                     sequenceTimer3 = setTimeout(() => {
