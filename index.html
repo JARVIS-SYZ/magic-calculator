@@ -533,34 +533,34 @@
                 <button class="button calc-icon" onclick="handleCalcIcon()">
   <div class="button-content">
     <svg class="calc-icon-svg" viewBox="0 0 24 24">
-      <!-- 바깥 본체는 그대로 흰색 -->
+      <!-- 바깥 본체: 살짝 얇게 / 조금 작게 -->
       <rect
-        x="5" y="3"
-        width="14" height="18"
-        rx="1.5"
+        x="5.5" y="3.5"                <!-- 5,3 에서 살짝 안쪽으로 -->
+        width="13" height="17"        <!-- 14×18 → 13×17 로 슬림하게 -->
+        rx="1.4"
         fill="currentColor"
         stroke="currentColor"
-        stroke-width="1.8"
+        stroke-width="1.4"            <!-- 1.8 → 1.4 로 얇게 -->
       />
-      <!-- 그리드 위의 작은 창: 진한 회색 -->
+      <!-- 윗 창: 진한 회색, 살짝만 크게 -->
       <rect
-        x="7" y="5"
-        width="10" height="4"
-        rx="0.8"
+        x="7.2" y="5.2"
+        width="9.6" height="4.2"
+        rx="0.9"
         fill="#333"
       />
-      <!-- 안쪽 그리드 점: 진한 회색 -->
-      <circle cx="8.5" cy="11"   r="0.7" fill="#333"/>
-      <circle cx="12"  cy="11"   r="0.7" fill="#333"/>
-      <circle cx="15.5"cy="11"   r="0.7" fill="#333"/>
+      <!-- 그리드 점: 더 크게 (r 0.7 → 1.0) -->
+      <circle cx="8.5" cy="11"   r="1.0" fill="#333"/>
+      <circle cx="12"  cy="11"   r="1.0" fill="#333"/>
+      <circle cx="15.5"cy="11"   r="1.0" fill="#333"/>
 
-      <circle cx="8.5" cy="14.5" r="0.7" fill="#333"/>
-      <circle cx="12"  cy="14.5" r="0.7" fill="#333"/>
-      <circle cx="15.5"cy="14.5" r="0.7" fill="#333"/>
+      <circle cx="8.5" cy="14.5" r="1.0" fill="#333"/>
+      <circle cx="12"  cy="14.5" r="1.0" fill="#333"/>
+      <circle cx="15.5"cy="14.5" r="1.0" fill="#333"/>
 
-      <circle cx="8.5" cy="18"   r="0.7" fill="#333"/>
-      <circle cx="12"  cy="18"   r="0.7" fill="#333"/>
-      <circle cx="15.5"cy="18"   r="0.7" fill="#333"/>
+      <circle cx="8.5" cy="18"   r="1.0" fill="#333"/>
+      <circle cx="12"  cy="18"   r="1.0" fill="#333"/>
+      <circle cx="15.5"cy="18"   r="1.0" fill="#333"/>
     </svg>
   </div>
 </button>
