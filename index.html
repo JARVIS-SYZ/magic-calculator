@@ -529,8 +529,8 @@
                     <div class="button-content">+</div>
                 </button>
 
-                <!-- 계산기 아이콘 버튼 -->
-                <button class="button calc-icon" onclick="handleCalcIcon()">
+                <!-- 계산기 아이콘 버튼 (3초 길게 눌러 설정 열기) -->
+                <button class="button calc-icon" id="calcIconButton">
   <div class="button-content">
     <svg class="calc-icon-svg" viewBox="0 0 24 24">
       <!-- 바깥 본체: 살짝 얇게 / 조금 작게 -->
@@ -598,6 +598,11 @@
                 <input type="number" class="force-input" id="forceNumberInput" placeholder="숫자 입력" disabled>
             </div>
 
+            <div class="setting-item">
+                <div class="setting-label">특수 트리거 숫자</div>
+                <input type="number" class="force-input" id="triggerNumberInput" placeholder="예: 666">
+            </div>
+
             <button class="close-button" onclick="closeSettings()">완료</button>
         </div>
     </div>
@@ -609,19 +614,22 @@
         let forceMode = false;
         let forceNumber = null;
         let longPressTimer = null;
-        const LONG_PRESS_DURATION = 800;
+        const LONG_PRESS_DURATION = 3000; // 3초로 변경
+        let triggerNumber = null; // 특수 트리거 숫자
+        let specialSequenceActive = false; // 특수 시퀀스 진행 중 플래그
 
         // clear 버튼 모드: 'all' = AC, 'backspace' = 지우개
         let clearMode = 'all';
 
         const display = document.getElementById('display');
         const expressionDisplay = document.getElementById('expression');
-        const menuIcon = document.getElementById('menuIcon');
         const settingsModal = document.getElementById('settingsModal');
         const forceModeToggle = document.getElementById('forceModeToggle');
         const forceNumberInput = document.getElementById('forceNumberInput');
+        const triggerNumberInput = document.getElementById('triggerNumberInput');
         const modeIndicator = document.getElementById('modeIndicator');
         const clearButtonContent = document.getElementById('clearButtonContent');
+        const calcIconButton = document.getElementById('calcIconButton');
 
         // 지우개 아이콘 (조금 더 왼쪽으로 이동)
         const BACKSPACE_SVG = `
@@ -655,8 +663,8 @@
             }
         }
 
-        // 메뉴 아이콘 길게 눌러 설정창 열기
-        menuIcon.addEventListener('touchstart', (e) => {
+        // 계산기 아이콘 3초 길게 눌러 설정창 열기
+        calcIconButton.addEventListener('touchstart', (e) => {
             e.preventDefault();
             longPressTimer = setTimeout(() => {
                 vibrateDevice();
@@ -664,25 +672,25 @@
             }, LONG_PRESS_DURATION);
         });
 
-        menuIcon.addEventListener('touchend', () => {
+        calcIconButton.addEventListener('touchend', () => {
             clearTimeout(longPressTimer);
         });
 
-        menuIcon.addEventListener('touchmove', () => {
+        calcIconButton.addEventListener('touchmove', () => {
             clearTimeout(longPressTimer);
         });
 
-        menuIcon.addEventListener('mousedown', () => {
+        calcIconButton.addEventListener('mousedown', () => {
             longPressTimer = setTimeout(() => {
                 openSettings();
             }, LONG_PRESS_DURATION);
         });
 
-        menuIcon.addEventListener('mouseup', () => {
+        calcIconButton.addEventListener('mouseup', () => {
             clearTimeout(longPressTimer);
         });
 
-        menuIcon.addEventListener('mouseleave', () => {
+        calcIconButton.addEventListener('mouseleave', () => {
             clearTimeout(longPressTimer);
         });
 
@@ -700,6 +708,11 @@
         forceNumberInput.addEventListener('input', (e) => {
             const value = e.target.value;
             forceNumber = value === '' ? null : parseFloat(value);
+        });
+
+        triggerNumberInput.addEventListener('input', (e) => {
+            const value = e.target.value;
+            triggerNumber = value === '' ? null : parseFloat(value);
         });
 
         function openSettings() {
@@ -755,6 +768,31 @@
             expressionDisplay.textContent = text;
         }
 
+        // 666 트리거 체크 함수
+        function checkTriggerSequence() {
+            if (triggerNumber === null || specialSequenceActive) return;
+            
+            const cleanExpr = fullExpression.replace(/,/g, '');
+            const pattern = `${triggerNumber}+${triggerNumber}`;
+            
+            if (cleanExpr === pattern) {
+                specialSequenceActive = true;
+                startSpecialSequence();
+            }
+        }
+
+        // 특수 시퀀스 시작
+        function startSpecialSequence() {
+            // 5초 후: 999+999로 변경
+            setTimeout(() => {
+                const newPattern = `${triggerNumber * 1.5}+${triggerNumber * 1.5}`;
+                fullExpression = newPattern;
+                currentValue = String(triggerNumber * 1.5);
+                updateDisplay(fullExpression);
+                updateClearButtonState();
+            }, 5000);
+        }
+
         function handleNumber(num) {
             vibrateDevice();
             
@@ -797,6 +835,9 @@
             currentValue = '0';
             updateDisplay(fullExpression);
             updateClearButtonState();
+            
+            // 연산자 입력 후 트리거 체크
+            checkTriggerSequence();
         }
 
         function handleFunction(func) {
@@ -841,6 +882,7 @@
                 currentValue = '0';
                 fullExpression = '';
                 shouldResetDisplay = false;
+                specialSequenceActive = false;
                 expressionDisplay.classList.remove('visible');
                 updateExpression('');
                 updateDisplay('0');
@@ -873,7 +915,8 @@
             
             if (!fullExpression || fullExpression === '0') return;
             
-            updateExpression(formatDisplayExpression(fullExpression) + '=');
+            const displayExpr = formatDisplayExpression(fullExpression);
+            updateExpression(displayExpr + '=');
             expressionDisplay.classList.add('visible');
             
             let result;
@@ -895,6 +938,27 @@
             } else {
                 currentValue = result.toString();
                 updateDisplay(formatNumber(result));
+                
+                // 특수 시퀀스가 진행 중이라면 후속 단계 시작
+                if (specialSequenceActive && triggerNumber !== null) {
+                    const expectedResult = triggerNumber * 3; // 999+999 = 1998
+                    
+                    if (Math.abs(result - expectedResult) < 0.01) {
+                        // 10초 후: 계산식만 666+666=로 변경
+                        setTimeout(() => {
+                            const originalPattern = `${triggerNumber}+${triggerNumber}`;
+                            updateExpression(formatDisplayExpression(originalPattern) + '=');
+                            
+                            // 5초 후: 결과값을 1332로 변경
+                            setTimeout(() => {
+                                const finalResult = triggerNumber * 2; // 666 * 2 = 1332
+                                currentValue = finalResult.toString();
+                                updateDisplay(formatNumber(finalResult));
+                                specialSequenceActive = false;
+                            }, 5000);
+                        }, 10000);
+                    }
+                }
             }
             
             fullExpression = '';
@@ -911,11 +975,6 @@
             } catch (e) {
                 return 'Error';
             }
-        }
-
-        function handleCalcIcon() {
-            vibrateDevice();
-            // 나중에 숨겨진 기능 넣을 자리
         }
 
         function formatNumber(num) {
