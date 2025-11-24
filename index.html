@@ -40,7 +40,7 @@
         }
 
         .header {
-            padding: 8px 20px;
+            padding: 4px 20px;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -86,10 +86,10 @@
             display: flex;
             flex-direction: column;
             justify-content: flex-end;
-            padding: 12px 24px;
+            padding: 8px 24px;
             overflow: hidden;
             background: #000;
-            min-height: 140px;
+            min-height: 110px;
         }
 
         .expression-text {
@@ -97,7 +97,7 @@
             font-weight: 400;
             text-align: right;
             color: #888;
-            margin-bottom: 6px;
+            margin-bottom: 2px;
             min-height: 32px;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -116,7 +116,6 @@
             text-align: right;
             line-height: 1;
             white-space: nowrap;
-            transition: font-size 0.2s ease-out;
             overflow-x: auto;
             overflow-y: hidden;
             scrollbar-width: none; /* Firefox */
@@ -634,7 +633,7 @@
                 if (displayElement.scrollWidth > displayElement.clientWidth) {
                     displayElement.scrollLeft = displayElement.scrollWidth - displayElement.clientWidth;
                 }
-            }, 250); // transition 시간과 맞춤
+            }, 0);
         }
 
         function updateExpression(text) {
