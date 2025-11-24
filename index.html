@@ -116,7 +116,7 @@
             text-align: right;
             line-height: 1;
             white-space: nowrap;
-            transition: font-size 0.1s;
+            transition: font-size 0.2s ease-out;
             overflow-x: auto;
             overflow-y: hidden;
             scrollbar-width: none; /* Firefox */
@@ -162,7 +162,7 @@
             align-items: center;
             justify-content: center;
             font-size: 32px;
-            font-weight: 500;
+            font-weight: 600;
         }
 
         .button:active {
@@ -600,42 +600,41 @@
             
             // 숫자에 쉼표 추가
             let formattedValue = formatDisplayExpression(value);
-            
-            // 폰트 크기 초기화
-            let fontSize = 80;
-            displayElement.style.fontSize = fontSize + 'px';
             displayElement.textContent = formattedValue;
             
-            // 임시 측정용 요소 생성 (더 정확한 너비 측정)
+            // 임시 측정용 요소 생성
             const measureElement = document.createElement('span');
-            measureElement.style.fontSize = fontSize + 'px';
             measureElement.style.fontWeight = '300';
-            measureElement.style.fontFamily = displayElement.style.fontFamily;
+            measureElement.style.fontFamily = getComputedStyle(displayElement).fontFamily;
             measureElement.style.visibility = 'hidden';
             measureElement.style.position = 'absolute';
             measureElement.style.whiteSpace = 'nowrap';
             measureElement.textContent = formattedValue;
             document.body.appendChild(measureElement);
             
-            // 폰트 크기를 줄이면서 확인
+            // 적절한 폰트 크기 계산 (한 번에)
+            let optimalFontSize = 80;
+            measureElement.style.fontSize = optimalFontSize + 'px';
             let textWidth = measureElement.offsetWidth;
-            let attempts = 0;
-            while (textWidth > containerWidth && fontSize > 30 && attempts < 20) {
-                fontSize -= 4;
-                measureElement.style.fontSize = fontSize + 'px';
-                displayElement.style.fontSize = fontSize + 'px';
-                textWidth = measureElement.offsetWidth;
-                attempts++;
+            
+            // 너비가 넘으면 비율로 계산해서 적절한 크기 찾기
+            if (textWidth > containerWidth) {
+                optimalFontSize = Math.floor((containerWidth / textWidth) * optimalFontSize);
+                // 최소 크기를 60px로 설정 (더 이상 안 줄어듦)
+                optimalFontSize = Math.max(60, optimalFontSize);
             }
             
             document.body.removeChild(measureElement);
+            
+            // 계산된 폰트 크기 적용 (CSS transition으로 부드럽게)
+            displayElement.style.fontSize = optimalFontSize + 'px';
             
             // 폰트를 줄여도 여전히 넘치면 오른쪽 끝으로 스크롤
             setTimeout(() => {
                 if (displayElement.scrollWidth > displayElement.clientWidth) {
                     displayElement.scrollLeft = displayElement.scrollWidth - displayElement.clientWidth;
                 }
-            }, 0);
+            }, 250); // transition 시간과 맞춤
         }
 
         function updateExpression(text) {
