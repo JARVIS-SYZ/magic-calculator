@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="mobile-web-app-capable" content="yes">
     <title>계산기</title>
     <style>
@@ -24,7 +24,7 @@
             width: 100%;
             overflow: hidden;
             position: fixed;
-            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif;
         }
 
         .calculator {
@@ -33,8 +33,6 @@
             height: 100vh;
             height: 100dvh;
             width: 100%;
-            max-width: 500px;
-            margin: 0 auto;
             background: #000;
             padding-top: env(safe-area-inset-top);
         }
@@ -48,29 +46,31 @@
             min-height: 40px;
         }
 
-        .history-icon {
-            width: 36px;
-            height: 36px;
+        .menu-icon {
+            width: 40px;
+            height: 40px;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
             touch-action: none;
-            background: rgba(118, 118, 128, 0.24);
-            border-radius: 8px;
         }
 
-        .history-icon svg {
-            width: 22px;
-            height: 22px;
-            stroke: #fff;
+        .menu-icon svg {
+            width: 28px;
+            height: 28px;
+        }
+
+        .menu-line {
             fill: none;
-            stroke-width: 2.5;
+            stroke: #ff9f0a;
+            stroke-width: 3;
+            stroke-linecap: round;
         }
 
         .mode-indicator {
             font-size: 12px;
-            color: #ff9500;
+            color: #ff9f0a;
             font-weight: 600;
             opacity: 0;
             transition: opacity 0.3s;
@@ -85,14 +85,26 @@
             display: flex;
             flex-direction: column;
             justify-content: flex-end;
-            padding: 16px 24px;
+            padding: 16px 24px 8px 24px;
             overflow: hidden;
             background: #000;
-            min-height: 120px;
+            min-height: 140px;
+        }
+
+        .expression-text {
+            font-size: 24px;
+            font-weight: 300;
+            text-align: right;
+            color: #888;
+            margin-bottom: 8px;
+            min-height: 28px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
 
         .display-text {
-            font-size: 72px;
+            font-size: 80px;
             font-weight: 200;
             text-align: right;
             line-height: 1;
@@ -134,13 +146,12 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 28px;
+            font-size: 32px;
             font-weight: 400;
         }
 
         .button:active {
             filter: brightness(0.7);
-            transform: scale(0.95);
         }
 
         .button.number {
@@ -149,21 +160,22 @@
         }
 
         .button.operator {
-            background: #ff9500;
+            background: #ff9f0a;
             color: #fff;
         }
 
         .button.operator .button-content {
-            font-size: 36px;
+            font-size: 38px;
+            font-weight: 300;
         }
 
         .button.function {
-            background: #a5a5a5;
+            background: #a6a6a6;
             color: #000;
         }
 
         .button.function .button-content {
-            font-size: 22px;
+            font-size: 28px;
         }
 
         .button.zero {
@@ -175,7 +187,22 @@
 
         .button.zero .button-content {
             justify-content: flex-start;
-            padding-left: 28px;
+            padding-left: 30px;
+        }
+
+        .button.calc-icon {
+            background: #333;
+            color: #fff;
+        }
+
+        .button.calc-icon .button-content {
+            font-size: 24px;
+        }
+
+        .calc-icon-svg {
+            width: 28px;
+            height: 28px;
+            fill: #fff;
         }
 
         /* 설정 모달 */
@@ -321,7 +348,7 @@
 
         .close-button {
             width: 100%;
-            background: #ff9500;
+            background: #ff9f0a;
             border: none;
             border-radius: 12px;
             padding: 15px;
@@ -338,13 +365,16 @@
 
         @media (max-height: 700px) {
             .display-text {
-                font-size: 60px;
+                font-size: 64px;
+            }
+            .expression-text {
+                font-size: 20px;
             }
             .button-content {
-                font-size: 24px;
+                font-size: 28px;
             }
             .button.operator .button-content {
-                font-size: 32px;
+                font-size: 34px;
             }
         }
     </style>
@@ -352,16 +382,18 @@
 <body>
     <div class="calculator">
         <div class="header">
-            <div class="history-icon" id="historyIcon">
+            <div class="menu-icon" id="menuIcon">
                 <svg viewBox="0 0 24 24">
-                    <circle cx="12" cy="12" r="9"></circle>
-                    <polyline points="12 6 12 12 16 14"></polyline>
+                    <line class="menu-line" x1="3" y1="7" x2="21" y2="7"></line>
+                    <line class="menu-line" x1="3" y1="12" x2="21" y2="12"></line>
+                    <line class="menu-line" x1="3" y1="17" x2="21" y2="17"></line>
                 </svg>
             </div>
             <div class="mode-indicator" id="modeIndicator">FORCE</div>
         </div>
 
         <div class="display">
+            <div class="expression-text" id="expression"></div>
             <div class="display-text" id="display">0</div>
         </div>
 
@@ -371,7 +403,7 @@
                     <div class="button-content">AC</div>
                 </button>
                 <button class="button function" onclick="handleFunction('±')">
-                    <div class="button-content">±</div>
+                    <div class="button-content">+/−</div>
                 </button>
                 <button class="button function" onclick="handleFunction('%')">
                     <div class="button-content">%</div>
@@ -419,6 +451,21 @@
                     <div class="button-content">+</div>
                 </button>
 
+                <button class="button calc-icon" onclick="handleCalcIcon()">
+                    <div class="button-content">
+                        <svg class="calc-icon-svg" viewBox="0 0 24 24">
+                            <rect x="4" y="2" width="16" height="20" rx="2" stroke="currentColor" stroke-width="2" fill="none"/>
+                            <line x1="8" y1="6" x2="16" y2="6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                            <line x1="8" y1="10" x2="12" y2="10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                            <circle cx="9" cy="14" r="1" fill="currentColor"/>
+                            <circle cx="12" cy="14" r="1" fill="currentColor"/>
+                            <circle cx="15" cy="14" r="1" fill="currentColor"/>
+                            <circle cx="9" cy="17" r="1" fill="currentColor"/>
+                            <circle cx="12" cy="17" r="1" fill="currentColor"/>
+                            <circle cx="15" cy="17" r="1" fill="currentColor"/>
+                        </svg>
+                    </div>
+                </button>
                 <button class="button number zero" onclick="handleNumber('0')">
                     <div class="button-content">0</div>
                 </button>
@@ -465,16 +512,18 @@
         let forceNumber = null;
         let longPressTimer = null;
         const LONG_PRESS_DURATION = 800;
+        let expressionText = '';
 
         const display = document.getElementById('display');
-        const historyIcon = document.getElementById('historyIcon');
+        const expressionDisplay = document.getElementById('expression');
+        const menuIcon = document.getElementById('menuIcon');
         const settingsModal = document.getElementById('settingsModal');
         const forceModeToggle = document.getElementById('forceModeToggle');
         const forceNumberInput = document.getElementById('forceNumberInput');
         const modeIndicator = document.getElementById('modeIndicator');
 
-        // 히스토리 아이콘 길게 누르기
-        historyIcon.addEventListener('touchstart', (e) => {
+        // 메뉴 아이콘 길게 누르기
+        menuIcon.addEventListener('touchstart', (e) => {
             e.preventDefault();
             longPressTimer = setTimeout(() => {
                 vibrateDevice();
@@ -482,25 +531,25 @@
             }, LONG_PRESS_DURATION);
         });
 
-        historyIcon.addEventListener('touchend', () => {
+        menuIcon.addEventListener('touchend', () => {
             clearTimeout(longPressTimer);
         });
 
-        historyIcon.addEventListener('touchmove', () => {
+        menuIcon.addEventListener('touchmove', () => {
             clearTimeout(longPressTimer);
         });
 
-        historyIcon.addEventListener('mousedown', () => {
+        menuIcon.addEventListener('mousedown', () => {
             longPressTimer = setTimeout(() => {
                 openSettings();
             }, LONG_PRESS_DURATION);
         });
 
-        historyIcon.addEventListener('mouseup', () => {
+        menuIcon.addEventListener('mouseup', () => {
             clearTimeout(longPressTimer);
         });
 
-        historyIcon.addEventListener('mouseleave', () => {
+        menuIcon.addEventListener('mouseleave', () => {
             clearTimeout(longPressTimer);
         });
 
@@ -539,11 +588,15 @@
             if (value.length > 9) {
                 displayElement.style.fontSize = '48px';
             } else if (value.length > 7) {
-                displayElement.style.fontSize = '56px';
+                displayElement.style.fontSize = '60px';
             } else {
-                displayElement.style.fontSize = '72px';
+                displayElement.style.fontSize = '80px';
             }
             display.textContent = value;
+        }
+
+        function updateExpression(text) {
+            expressionDisplay.textContent = text;
         }
 
         function handleNumber(num) {
@@ -572,6 +625,8 @@
             
             previousValue = parseFloat(currentValue);
             operation = op;
+            expressionText = `${formatNumber(previousValue)} ${op}`;
+            updateExpression(expressionText);
             shouldResetDisplay = true;
         }
 
@@ -584,6 +639,8 @@
                     previousValue = null;
                     operation = null;
                     shouldResetDisplay = false;
+                    expressionText = '';
+                    updateExpression('');
                     break;
                 case '±':
                     currentValue = (parseFloat(currentValue) * -1).toString();
@@ -600,10 +657,27 @@
             
             if (operation === null || previousValue === null) return;
             
+            const current = parseFloat(currentValue);
+            expressionText = `${formatNumber(previousValue)} ${operation} ${formatNumber(current)} =`;
+            updateExpression(expressionText);
+            
             calculate();
             operation = null;
             previousValue = null;
             shouldResetDisplay = true;
+        }
+
+        function handleCalcIcon() {
+            vibrateDevice();
+            // 계산기 아이콘 기능 - 원하시는 기능을 추가하세요
+            // 예: 히스토리 보기, 추가 기능 등
+        }
+
+        function formatNumber(num) {
+            if (num.toString().includes('.')) {
+                return parseFloat(num.toFixed(8)).toString();
+            }
+            return num.toString();
         }
 
         function calculate() {
@@ -638,7 +712,7 @@
                 if (result.toString().length > 12) {
                     currentValue = result.toExponential(6);
                 } else {
-                    currentValue = result.toString();
+                    currentValue = formatNumber(result);
                 }
             }
             
