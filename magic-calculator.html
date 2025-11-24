@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#000000">
+    <title>계산기</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+            background: #000;
+            color: #fff;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+        }
+
+        .calculator {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            max-width: 600px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .header {
+            padding: 20px 20px 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .history-icon {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            touch-action: none;
+        }
+
+        .history-icon svg {
+            width: 24px;
+            height: 24px;
+            stroke: #fff;
+            opacity: 0.6;
+        }
+
+        .mode-indicator {
+            font-size: 12px;
+            color: #ff9500;
+            font-weight: 600;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .mode-indicator.active {
+            opacity: 1;
+        }
+
+        .display {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            padding: 20px;
+            overflow: hidden;
+        }
+
+        .display-text {
+            font-size: 80px;
+            font-weight: 300;
+            text-align: right;
+            line-height: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .buttons {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            padding: 12px;
+        }
+
+        .button {
+            aspect-ratio: 1;
+            border-radius: 50%;
+            border: none;
+            font-size: 32px;
+            font-weight: 400;
+            cursor: pointer;
+            transition: all 0.1s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .button:active {
+            filter: brightness(0.8);
+            transform: scale(0.95);
+        }
+
+        .button.number {
+            background: #333;
+            color: #fff;
+        }
+
+        .button.operator {
+            background: #ff9500;
+            color: #fff;
+            font-size: 40px;
+        }
+
+        .button.function {
+            background: #a5a5a5;
+            color: #000;
+            font-size: 24px;
+        }
+
+        .button.zero {
+            grid-column: span 2;
+            border-radius: 50px;
+            justify-content: flex-start;
+            padding-left: 32px;
+        }
+
+        /* 설정 모달 */
+        .settings-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            animation: fadeIn 0.3s;
+        }
+
+        .settings-modal.active {
+            display: flex;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .settings-content {
+            background: #1c1c1e;
+            border-radius: 20px;
+            padding: 30px;
+            width: 90%;
+            max-width: 400px;
+            animation: slideUp 0.3s;
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .settings-title {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .setting-item {
+            margin-bottom: 25px;
+        }
+
+        .setting-label {
+            font-size: 16px;
+            margin-bottom: 10px;
+            color: #a5a5a5;
+        }
+
+        .toggle-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #2c2c2e;
+            padding: 15px 20px;
+            border-radius: 12px;
+        }
+
+        .toggle-label {
+            font-size: 18px;
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 51px;
+            height: 31px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #39393d;
+            transition: .3s;
+            border-radius: 31px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 27px;
+            width: 27px;
+            left: 2px;
+            bottom: 2px;
+            background-color: white;
+            transition: .3s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: #34c759;
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(20px);
+        }
+
+        .force-input {
+            width: 100%;
+            background: #2c2c2e;
+            border: none;
+            border-radius: 12px;
+            padding: 15px 20px;
+            font-size: 24px;
+            color: #fff;
+            text-align: center;
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+        }
+
+        .force-input:focus {
+            outline: none;
+            background: #3a3a3c;
+        }
+
+        .force-input:disabled {
+            opacity: 0.4;
+        }
+
+        .close-button {
+            width: 100%;
+            background: #ff9500;
+            border: none;
+            border-radius: 12px;
+            padding: 15px;
+            font-size: 18px;
+            color: #fff;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+
+        .close-button:active {
+            opacity: 0.8;
+        }
+
+        /* 햅틱 피드백 시뮬레이션 */
+        @keyframes vibrate {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-2px); }
+            75% { transform: translateX(2px); }
+        }
+
+        .vibrate {
+            animation: vibrate 0.1s;
+        }
+    </style>
+</head>
+<body>
+    <div class="calculator">
+        <div class="header">
+            <div class="history-icon" id="historyIcon">
+                <svg fill="none" viewBox="0 0 24 24" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+            </div>
+            <div class="mode-indicator" id="modeIndicator">FORCE</div>
+        </div>
+
+        <div class="display">
+            <div class="display-text" id="display">0</div>
+        </div>
+
+        <div class="buttons">
+            <button class="button function" onclick="handleFunction('AC')">AC</button>
+            <button class="button function" onclick="handleFunction('±')">±</button>
+            <button class="button function" onclick="handleFunction('%')">%</button>
+            <button class="button operator" onclick="handleOperator('÷')">÷</button>
+
+            <button class="button number" onclick="handleNumber('7')">7</button>
+            <button class="button number" onclick="handleNumber('8')">8</button>
+            <button class="button number" onclick="handleNumber('9')">9</button>
+            <button class="button operator" onclick="handleOperator('×')">×</button>
+
+            <button class="button number" onclick="handleNumber('4')">4</button>
+            <button class="button number" onclick="handleNumber('5')">5</button>
+            <button class="button number" onclick="handleNumber('6')">6</button>
+            <button class="button operator" onclick="handleOperator('−')">−</button>
+
+            <button class="button number" onclick="handleNumber('1')">1</button>
+            <button class="button number" onclick="handleNumber('2')">2</button>
+            <button class="button number" onclick="handleNumber('3')">3</button>
+            <button class="button operator" onclick="handleOperator('+')">+</button>
+
+            <button class="button number zero" onclick="handleNumber('0')">0</button>
+            <button class="button number" onclick="handleNumber('.')">.</button>
+            <button class="button operator" onclick="handleEquals()">=</button>
+        </div>
+    </div>
+
+    <!-- 설정 모달 -->
+    <div class="settings-modal" id="settingsModal">
+        <div class="settings-content">
+            <div class="settings-title">설정</div>
+            
+            <div class="setting-item">
+                <div class="toggle-container">
+                    <div class="toggle-label">포스 모드</div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="forceModeToggle">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="setting-item">
+                <div class="setting-label">포스할 숫자</div>
+                <input type="number" class="force-input" id="forceNumberInput" placeholder="숫자 입력" disabled>
+            </div>
+
+            <button class="close-button" onclick="closeSettings()">완료</button>
+        </div>
+    </div>
+
+    <script>
+        let currentValue = '0';
+        let previousValue = null;
+        let operation = null;
+        let shouldResetDisplay = false;
+        let forceMode = false;
+        let forceNumber = null;
+        let longPressTimer = null;
+        const LONG_PRESS_DURATION = 800; // 0.8초
+
+        const display = document.getElementById('display');
+        const historyIcon = document.getElementById('historyIcon');
+        const settingsModal = document.getElementById('settingsModal');
+        const forceModeToggle = document.getElementById('forceModeToggle');
+        const forceNumberInput = document.getElementById('forceNumberInput');
+        const modeIndicator = document.getElementById('modeIndicator');
+
+        // 히스토리 아이콘 길게 누르기
+        historyIcon.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            longPressTimer = setTimeout(() => {
+                vibrateDevice();
+                openSettings();
+            }, LONG_PRESS_DURATION);
+        });
+
+        historyIcon.addEventListener('touchend', () => {
+            clearTimeout(longPressTimer);
+        });
+
+        historyIcon.addEventListener('touchmove', () => {
+            clearTimeout(longPressTimer);
+        });
+
+        // 마우스 이벤트 (데스크톱 테스트용)
+        historyIcon.addEventListener('mousedown', () => {
+            longPressTimer = setTimeout(() => {
+                openSettings();
+            }, LONG_PRESS_DURATION);
+        });
+
+        historyIcon.addEventListener('mouseup', () => {
+            clearTimeout(longPressTimer);
+        });
+
+        historyIcon.addEventListener('mouseleave', () => {
+            clearTimeout(longPressTimer);
+        });
+
+        // 포스 모드 토글
+        forceModeToggle.addEventListener('change', (e) => {
+            forceMode = e.target.checked;
+            forceNumberInput.disabled = !forceMode;
+            
+            if (forceMode) {
+                modeIndicator.classList.add('active');
+            } else {
+                modeIndicator.classList.remove('active');
+            }
+        });
+
+        // 포스 숫자 입력
+        forceNumberInput.addEventListener('input', (e) => {
+            const value = e.target.value;
+            forceNumber = value === '' ? null : parseFloat(value);
+        });
+
+        function openSettings() {
+            settingsModal.classList.add('active');
+        }
+
+        function closeSettings() {
+            settingsModal.classList.remove('active');
+        }
+
+        function vibrateDevice() {
+            if ('vibrate' in navigator) {
+                navigator.vibrate(50);
+            }
+        }
+
+        function updateDisplay(value) {
+            // 숫자가 너무 길면 폰트 크기 조정
+            const displayElement = document.getElementById('display');
+            if (value.length > 9) {
+                displayElement.style.fontSize = '50px';
+            } else if (value.length > 7) {
+                displayElement.style.fontSize = '60px';
+            } else {
+                displayElement.style.fontSize = '80px';
+            }
+            display.textContent = value;
+        }
+
+        function handleNumber(num) {
+            vibrateDevice();
+            
+            if (shouldResetDisplay) {
+                currentValue = num;
+                shouldResetDisplay = false;
+            } else {
+                if (currentValue === '0' && num !== '.') {
+                    currentValue = num;
+                } else {
+                    if (num === '.' && currentValue.includes('.')) return;
+                    currentValue += num;
+                }
+            }
+            updateDisplay(currentValue);
+        }
+
+        function handleOperator(op) {
+            vibrateDevice();
+            
+            if (previousValue !== null && operation !== null && !shouldResetDisplay) {
+                calculate();
+            }
+            
+            previousValue = parseFloat(currentValue);
+            operation = op;
+            shouldResetDisplay = true;
+        }
+
+        function handleFunction(func) {
+            vibrateDevice();
+            
+            switch(func) {
+                case 'AC':
+                    currentValue = '0';
+                    previousValue = null;
+                    operation = null;
+                    shouldResetDisplay = false;
+                    break;
+                case '±':
+                    currentValue = (parseFloat(currentValue) * -1).toString();
+                    break;
+                case '%':
+                    currentValue = (parseFloat(currentValue) / 100).toString();
+                    break;
+            }
+            updateDisplay(currentValue);
+        }
+
+        function handleEquals() {
+            vibrateDevice();
+            
+            if (operation === null || previousValue === null) return;
+            
+            calculate();
+            operation = null;
+            previousValue = null;
+            shouldResetDisplay = true;
+        }
+
+        function calculate() {
+            const prev = previousValue;
+            const current = parseFloat(currentValue);
+            let result;
+
+            // 포스 모드가 활성화되고 포스 숫자가 설정되어 있으면
+            if (forceMode && forceNumber !== null) {
+                result = forceNumber;
+            } else {
+                // 일반 계산
+                switch(operation) {
+                    case '+':
+                        result = prev + current;
+                        break;
+                    case '−':
+                        result = prev - current;
+                        break;
+                    case '×':
+                        result = prev * current;
+                        break;
+                    case '÷':
+                        result = current === 0 ? 'Error' : prev / current;
+                        break;
+                    default:
+                        return;
+                }
+            }
+
+            if (result === 'Error') {
+                currentValue = 'Error';
+            } else {
+                // 결과가 너무 길면 반올림
+                if (result.toString().length > 12) {
+                    currentValue = result.toExponential(6);
+                } else {
+                    currentValue = result.toString();
+                }
+            }
+            
+            updateDisplay(currentValue);
+        }
+
+        // 모달 배경 클릭시 닫기
+        settingsModal.addEventListener('click', (e) => {
+            if (e.target === settingsModal) {
+                closeSettings();
+            }
+        });
+
+        // 초기 디스플레이
+        updateDisplay(currentValue);
+    </script>
+</body>
+</html>
