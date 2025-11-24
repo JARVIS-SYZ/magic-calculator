@@ -24,7 +24,7 @@
             height: 100%;
             width: 100%;
             overflow: hidden;
-            position: fixed; /* 화면 전체 고정 */
+            position: fixed;
             top: 0;
             left: 0;
             right: 0;
@@ -235,13 +235,14 @@
             height: 45px;
         }
 
+        /* 파란 점: 더 작게 + 더 아래 */
         .calc-indicator {
             position: absolute;
-            bottom: -2px;
+            bottom: -5px;
             left: 50%;
             transform: translateX(-50%);
-            width: 6px;
-            height: 6px;
+            width: 4px;
+            height: 4px;
             border-radius: 50%;
             background: #0A84FF;
             opacity: 0;
@@ -512,6 +513,12 @@
 </div>
 
 <script>
+    // ---- 666 시퀀스 기본 딜레이 (초 단위) ----
+    const SEQ1_DELAY = 5;  // 666 → 999+999
+    const SEQ2_DELAY = 10; // 999+999 결과 후 위 식 바뀌기까지
+    const SEQ3_DELAY = 5;  // 위 식 바뀐 후 결과 바뀌기까지
+    const INDICATOR_MARGIN = 1; // 마지막 1초 동안 점 OFF
+
     let currentValue = '0';
     let fullExpression = '';
     let shouldResetDisplay = false;
@@ -539,11 +546,10 @@
     const equalsButton = document.getElementById('equalsButton');
     const calcIndicator = document.getElementById('calcIndicator');
 
-    let indicatorTimer1 = null;
-    let indicatorTimer2 = null;
-    let sequenceTimer1 = null; // 5초 후 999+999 변경
-    let sequenceTimer2 = null; // 10초 후 위 식 변경
-    let sequenceTimer3 = null; // 5초 후 결과값 변경
+    let indicatorTimer = null;
+    let sequenceTimer1 = null;
+    let sequenceTimer2 = null;
+    let sequenceTimer3 = null;
 
     const BACKSPACE_SVG = `
         <svg viewBox="0 0 24 24" class="backspace-icon">
@@ -576,18 +582,37 @@
     }
 
     function clearAllTimers() {
-        if (indicatorTimer1) clearTimeout(indicatorTimer1);
-        if (indicatorTimer2) clearTimeout(indicatorTimer2);
+        if (indicatorTimer) clearTimeout(indicatorTimer);
         if (sequenceTimer1) clearTimeout(sequenceTimer1);
         if (sequenceTimer2) clearTimeout(sequenceTimer2);
         if (sequenceTimer3) clearTimeout(sequenceTimer3);
-        indicatorTimer1 = indicatorTimer2 = null;
-        sequenceTimer1 = sequenceTimer2 = sequenceTimer3 = null;
+        indicatorTimer = sequenceTimer1 = sequenceTimer2 = sequenceTimer3 = null;
         if (calcIndicator) calcIndicator.classList.remove('active');
     }
 
+    // 공통: 딜레이 동안 점 켜고, 끝나기 1초 전에 끄기
+    function startIndicator(durationSec) {
+        if (!calcIndicator) return;
+        if (indicatorTimer) {
+            clearTimeout(indicatorTimer);
+        }
+        // 전체 딜레이 시작 시 점 ON
+        calcIndicator.classList.add('active');
+
+        const hideTime = Math.max(durationSec - INDICATOR_MARGIN, 0);
+        if (hideTime <= 0) {
+            // 딜레이가 1초 이하라면 바로 OFF
+            indicatorTimer = setTimeout(() => {
+                calcIndicator.classList.remove('active');
+            }, durationSec * 1000);
+        } else {
+            indicatorTimer = setTimeout(() => {
+                calcIndicator.classList.remove('active');
+            }, hideTime * 1000);
+        }
+    }
+
     function updateClearButtonState() {
-        // = 직후에는 무조건 AC
         if (shouldResetDisplay) {
             clearMode = 'all';
             clearButtonContent.textContent = 'AC';
@@ -643,7 +668,7 @@
         expressionDisplay.textContent = text;
     }
 
-    // 666 모드: 666 입력 시 시퀀스 시작
+    // 666 모드: 마지막 숫자가 666이면 1단계 시퀀스 시작
     function maybeStart666SequenceFromNumber() {
         if (currentMode !== '666' || specialSequenceActive) return;
 
@@ -653,9 +678,12 @@
 
         if (lastNumMatch[1] === '666') {
             specialSequenceActive = true;
-            scheduleCalcIconIndicator();
+            clearAllTimers();
 
-            // 5초 뒤에 999+999로 수식 전체 변경
+            // 1단계 딜레이 동안 점 표시
+            startIndicator(SEQ1_DELAY);
+
+            // SEQ1_DELAY 초 후 999+999로 수식 변경
             sequenceTimer1 = setTimeout(() => {
                 fullExpression = '999+999';
                 currentValue = '999';
@@ -664,7 +692,7 @@
                 updateExpression('');
                 updateDisplay(fullExpression);
                 updateClearButtonState();
-            }, 5000);
+            }, SEQ1_DELAY * 1000);
         }
     }
 
@@ -695,14 +723,13 @@
         updateDisplay(fullExpression || currentValue);
         updateClearButtonState();
 
-        // 666 모드일 때, 마지막 숫자가 666이면 시퀀스 시작
+        // 666 모드일 때 666 입력 감지
         maybeStart666SequenceFromNumber();
     }
 
     function handleOperator(op) {
         vibrateDevice();
 
-        // = 직후 연산자 → 결과 이어서 새 수식
         if (shouldResetDisplay) {
             shouldResetDisplay = false;
             expressionDisplay.classList.remove('visible');
@@ -801,7 +828,7 @@
     function handleEquals() {
         vibrateDevice();
 
-        // = 버튼 3번 탭 → 666 모드 진입
+        // = 버튼 3번 탭 → 666 모드 켜기
         equalsTapCount++;
         if (equalsTapTimer) {
             clearTimeout(equalsTapTimer);
@@ -835,16 +862,23 @@
         // 666 모드
         else if (currentMode === '666') {
             const cleanExpr = fullExpression.replace(/,/g, '');
-            // 2단계: 이미 시퀀스 시작된 상태에서 999+999 계산
+
+            // 2단계: 이미 999+999 상태에서 = 눌렀을 때
             if (specialSequenceActive && cleanExpr === '999+999') {
                 result = evaluateExpression(cleanExpr); // 1998
 
-                // 10초 후: 위 계산식만 666+666= 로 변경
+                // 2단계 딜레이 동안 점 표시
+                startIndicator(SEQ2_DELAY);
+
+                // SEQ2_DELAY 후: 위 계산식만 666+666= 으로 변경
                 sequenceTimer2 = setTimeout(() => {
                     updateExpression('666+666=');
                     expressionDisplay.classList.add('visible');
 
-                    // 5초 후: 결과값 1332로 변경 후 일반 모드 복귀
+                    // 3단계 딜레이 동안 점 표시
+                    startIndicator(SEQ3_DELAY);
+
+                    // SEQ3_DELAY 후: 결과값 1332로 변경 후 일반 모드 복귀
                     sequenceTimer3 = setTimeout(() => {
                         currentValue = '1332';
                         updateDisplay(formatNumber(1332));
@@ -854,10 +888,9 @@
                         currentMode = 'normal';
                         updateModeIndicator();
                         updateClearButtonState();
-                    }, 5000);
-                }, 10000);
+                    }, SEQ3_DELAY * 1000);
+                }, SEQ2_DELAY * 1000);
             } else {
-                // 그 외는 일반 계산
                 result = evaluateExpression(cleanExpr);
             }
         }
@@ -932,19 +965,6 @@
         });
     }
 
-    // 파란 점: 자동 변경 3초 전 예고 (2~4초 구간에 표시)
-    function scheduleCalcIconIndicator() {
-        if (!calcIndicator) return;
-        clearTimeout(indicatorTimer1);
-        clearTimeout(indicatorTimer2);
-        indicatorTimer1 = setTimeout(() => {
-            calcIndicator.classList.add('active');
-            indicatorTimer2 = setTimeout(() => {
-                calcIndicator.classList.remove('active');
-            }, 2000);
-        }, 2000);
-    }
-
     // 계산기 아이콘 3번 탭 → 포스 숫자 입력
     calcIconButton.addEventListener('click', (e) => {
         e.preventDefault();
@@ -1006,11 +1026,10 @@
         }
     });
 
-    // 숫자 연타 시 화면 스크롤 방지
+    // 숫자 연타 시 화면 전체 스크롤 방지
     document.addEventListener('touchmove', (e) => {
         const displayTextEl = document.querySelector('.display-text');
         if (displayTextEl && displayTextEl.contains(e.target)) {
-            // 숫자 표시 영역의 가로 스크롤만 허용
             return;
         }
         e.preventDefault();
