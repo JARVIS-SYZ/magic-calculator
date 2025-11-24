@@ -26,7 +26,7 @@
             font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif;
         }
 
-        /* 전체 래퍼: safe area + 상단 여백 살짝 더 */
+        /* 전체 래퍼: safe area + 상단 여백 */
         .calculator {
             display: flex;
             flex-direction: column;
@@ -50,7 +50,7 @@
             overflow: visible;
         }
 
-        /* 아이콘 사이즈 업 */
+        /* 아이콘: 약간 더 크게 + 3px 아래로 */
         .menu-icon {
             width: 40px;
             height: 40px;
@@ -59,7 +59,7 @@
             justify-content: center;
             cursor: pointer;
             touch-action: none;
-            margin-top: 0;
+            margin-top: 3px;
         }
 
         .menu-icon svg {
@@ -90,7 +90,7 @@
             opacity: 1;
         }
 
-        /* 디스플레이 영역 키워서 버튼 줄을 전체적으로 아래로 */
+        /* 디스플레이 영역 */
         .display {
             flex: 0;
             display: flex;
@@ -143,13 +143,13 @@
             padding: 0;
         }
 
-        /* 버튼 그리드 여백/패딩 조정 */
+        /* 좌우 여백 ↑, 버튼 간 여백 ↓ */
         .button-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
-            gap: 10px;
+            gap: 6px;
             width: 100%;
-            padding: 4px 14px 12px;
+            padding: 4px 20px 12px;
         }
 
         .button {
@@ -161,8 +161,8 @@
             cursor: pointer;
             transition: all 0.1s;
             overflow: visible;
-            transform: scale(0.9);           /* 버튼 지름 살짝 축소 */
-            transform-origin: center center;  /* 가운데 기준으로 축소 */
+            transform: scale(0.96);          /* 버튼 지름 살짝 크게 */
+            transform-origin: center center;
         }
 
         .button-content {
@@ -781,7 +781,7 @@
 
         function handleCalcIcon() {
             vibrateDevice();
-            // 여기에는 나중에 다른 기능 넣기
+            // 나중에 다른 기능 넣을 자리
         }
 
         function formatNumber(num) {
