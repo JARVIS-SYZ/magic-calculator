@@ -26,7 +26,6 @@
             font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif;
         }
 
-        /* 전체 래퍼: safe area + 상단 여백 */
         .calculator {
             display: flex;
             flex-direction: column;
@@ -36,7 +35,6 @@
             background: #000;
             justify-content: flex-end;
             overflow: visible;
-
             padding-top: calc(env(safe-area-inset-top) * 0.85);
             padding-bottom: env(safe-area-inset-bottom);
         }
@@ -50,7 +48,6 @@
             overflow: visible;
         }
 
-        /* 아이콘: 약간 더 크게 + 3px 아래로 */
         .menu-icon {
             width: 40px;
             height: 40px;
@@ -90,18 +87,17 @@
             opacity: 1;
         }
 
-        /* 디스플레이 영역 */
-       .display {
-    flex: 0;
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-end;
-    padding: 8px 24px 24px 24px;
-    overflow: hidden;
-    background: #000;
-    min-height: 230px;
-    margin-top: 12px;   /* ✅ 이 줄 추가 (10~16px 사이에서 취향대로) */
-}
+        .display {
+            flex: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            padding: 8px 24px 24px 24px;
+            overflow: hidden;
+            background: #000;
+            min-height: 230px;
+            margin-top: 12px;
+        }
 
         .expression-text {
             font-size: 24px;
@@ -123,7 +119,7 @@
 
         .display-text {
             font-size: 80px;
-            font-weight: 350;
+            font-weight: 400; /* 살짝 두껍게 */
             text-align: right;
             line-height: 1;
             white-space: nowrap;
@@ -133,7 +129,7 @@
             -ms-overflow-style: none;
             direction: ltr;
             text-align: right;
-            margin-top: 6px;   /* ✅ 이 줄 추가 */
+            margin-top: 6px; /* 숫자 라인만 6px 내려줌 */
         }
 
         .display-text::-webkit-scrollbar {
@@ -145,13 +141,12 @@
             padding: 0;
         }
 
-        /* 좌우 여백 ↑, 버튼 간 여백 ↓ */
         .button-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
-            gap: 6px;
+            gap: 6px;              /* 버튼끼리 간격 좁게 */
             width: 100%;
-            padding: 4px 20px 12px;
+            padding: 4px 20px 12px; /* 좌우 여백 조금 넓게 */
         }
 
         .button {
@@ -163,7 +158,7 @@
             cursor: pointer;
             transition: all 0.1s;
             overflow: visible;
-            transform: scale(0.96);          /* 버튼 지름 살짝 크게 */
+            transform: scale(0.96);
             transform-origin: center center;
         }
 
@@ -233,7 +228,12 @@
             fill: #fff;
         }
 
-        /* 설정 모달 */
+        /* 지우개(백스페이스) 아이콘 */
+        .backspace-icon {
+            width: 24px;
+            height: 24px;
+        }
+
         .settings-modal {
             position: fixed;
             top: 0;
@@ -430,9 +430,11 @@
 
         <div class="buttons">
             <div class="button-grid">
-                <button class="button function" onclick="handleFunction('AC')">
-                    <div class="button-content">AC</div>
+                <!-- ✳️ 여기: AC → clear 버튼 (아이콘/동작 동적으로 변경) -->
+                <button class="button function" id="clearButton" onclick="handleClear()">
+                    <div class="button-content" id="clearButtonContent">AC</div>
                 </button>
+
                 <button class="button function" onclick="handleFunction('±')">
                     <div class="button-content">+/−</div>
                 </button>
@@ -545,6 +547,9 @@
         let longPressTimer = null;
         const LONG_PRESS_DURATION = 800;
 
+        // clear 버튼 모드: 'all' = AC, 'backspace' = 지우개
+        let clearMode = 'all';
+
         const display = document.getElementById('display');
         const expressionDisplay = document.getElementById('expression');
         const menuIcon = document.getElementById('menuIcon');
@@ -552,7 +557,27 @@
         const forceModeToggle = document.getElementById('forceModeToggle');
         const forceNumberInput = document.getElementById('forceNumberInput');
         const modeIndicator = document.getElementById('modeIndicator');
+        const clearButtonContent = document.getElementById('clearButtonContent');
 
+        const BACKSPACE_SVG = `
+            <svg viewBox="0 0 24 24" class="backspace-icon">
+                <rect x="6" y="5" width="12" height="14" rx="2" ry="2" fill="none" stroke="currentColor" stroke-width="1.7" />
+                <path d="M9 10l6 6M15 10l-6 6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+            </svg>
+        `;
+
+        function updateClearButtonState() {
+            const hasInput = (fullExpression !== '' || currentValue !== '0');
+            if (hasInput) {
+                clearMode = 'backspace';
+                clearButtonContent.innerHTML = BACKSPACE_SVG;
+            } else {
+                clearMode = 'all';
+                clearButtonContent.textContent = 'AC';
+            }
+        }
+
+        // 길게 눌러 설정
         menuIcon.addEventListener('touchstart', (e) => {
             e.preventDefault();
             longPressTimer = setTimeout(() => {
@@ -621,7 +646,7 @@
             displayElement.textContent = formattedValue;
             
             const measureElement = document.createElement('span');
-            measureElement.style.fontWeight = '300';
+            measureElement.style.fontWeight = '400';
             measureElement.style.fontFamily = getComputedStyle(displayElement).fontFamily;
             measureElement.style.visibility = 'hidden';
             measureElement.style.position = 'absolute';
@@ -675,6 +700,7 @@
             }
             
             updateDisplay(fullExpression || currentValue);
+            updateClearButtonState();
         }
 
         function handleOperator(op) {
@@ -692,25 +718,17 @@
             
             currentValue = '0';
             updateDisplay(fullExpression);
+            updateClearButtonState();
         }
 
         function handleFunction(func) {
             vibrateDevice();
             
             switch(func) {
-                case 'AC':
-                    currentValue = '0';
-                    fullExpression = '';
-                    shouldResetDisplay = false;
-                    expressionDisplay.classList.remove('visible');
-                    updateExpression('');
-                    updateDisplay('0');
-                    break;
                 case '±':
                     if (currentValue !== '0') {
                         const num = parseFloat(currentValue);
                         currentValue = (-num).toString();
-                        
                         const lastNumMatch = fullExpression.match(/[\d.]+$/);
                         if (lastNumMatch) {
                             fullExpression = fullExpression.slice(0, -lastNumMatch[0].length) + currentValue;
@@ -724,7 +742,6 @@
                     if (currentValue !== '0') {
                         const num = parseFloat(currentValue) / 100;
                         currentValue = num.toString();
-                        
                         const lastNumMatch = fullExpression.match(/[\d.]+$/);
                         if (lastNumMatch) {
                             fullExpression = fullExpression.slice(0, -lastNumMatch[0].length) + currentValue;
@@ -735,6 +752,47 @@
                     }
                     break;
             }
+
+            updateClearButtonState();
+        }
+
+        // ✳️ AC / 지우개 버튼 동작
+        function handleClear() {
+            vibrateDevice();
+
+            if (clearMode === 'all') {
+                // 전체 초기화
+                currentValue = '0';
+                fullExpression = '';
+                shouldResetDisplay = false;
+                expressionDisplay.classList.remove('visible');
+                updateExpression('');
+                updateDisplay('0');
+            } else {
+                // 지우개: 한 글자씩 삭제
+                if (fullExpression) {
+                    fullExpression = fullExpression.slice(0, -1);
+                    // 남은 수식에서 마지막 숫자 추출
+                    const lastNumMatch = fullExpression.match(/([\d.]+)$/);
+                    currentValue = lastNumMatch ? lastNumMatch[1] : '0';
+                } else {
+                    // fullExpression이 비어 있으면 currentValue만 지움
+                    if (currentValue.length > 1) {
+                        currentValue = currentValue.slice(0, -1);
+                    } else {
+                        currentValue = '0';
+                    }
+                }
+
+                if (fullExpression === '' && currentValue === '0') {
+                    expressionDisplay.classList.remove('visible');
+                    updateExpression('');
+                }
+
+                updateDisplay(fullExpression || currentValue);
+            }
+
+            updateClearButtonState();
         }
 
         function handleEquals() {
@@ -768,6 +826,7 @@
             
             fullExpression = '';
             shouldResetDisplay = true;
+            updateClearButtonState();
         }
 
         function evaluateExpression(expr) {
@@ -783,7 +842,7 @@
 
         function handleCalcIcon() {
             vibrateDevice();
-            // 나중에 다른 기능 넣을 자리
+            // 나중에 숨겨진 기능 넣을 자리
         }
 
         function formatNumber(num) {
@@ -831,7 +890,9 @@
             }
         });
 
+        // 초기 상태 반영
         updateDisplay(currentValue);
+        updateClearButtonState();
     </script>
 </body>
 </html>
