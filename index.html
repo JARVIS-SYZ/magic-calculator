@@ -17,29 +17,33 @@
             -webkit-user-select: none;
         }
 
+        /* 🔹 position: fixed 제거, safe-area를 calculator 쪽에서 처리 */
         html, body {
             background: #000;
             color: #fff;
             height: 100%;
             width: 100%;
             overflow: hidden;
-            position: fixed;
             font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif;
         }
 
+        /* 🔹 전체 래퍼에서 safe-area 반영 + min-height 사용 */
         .calculator {
             display: flex;
             flex-direction: column;
-            height: 100vh;
-            height: 100dvh;
+            min-height: 100vh;
+            min-height: 100dvh;
             width: 100%;
             background: #000;
             justify-content: flex-end;
             overflow: visible;
+
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: env(safe-area-inset-bottom);
         }
 
         .header {
-            padding: 12px 20px 4px 20px;
+            padding: 4px 20px 4px 20px; /* 위 여백 최소화 */
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -55,7 +59,7 @@
             justify-content: center;
             cursor: pointer;
             touch-action: none;
-            margin-top: -8px;
+            margin-top: 0; /* 위로 최대한 붙이기 위해 0으로 */
         }
 
         .menu-icon svg {
@@ -636,7 +640,7 @@
             
             document.body.removeChild(measureElement);
             
-            // 계산된 폰트 크기 적용 (CSS transition으로 부드럽게)
+            // 계산된 폰트 크기 적용
             displayElement.style.fontSize = optimalFontSize + 'px';
             
             // 폰트를 줄여도 여전히 넘치면 오른쪽 끝으로 스크롤
@@ -782,9 +786,7 @@
             // 연산자를 JavaScript 형식으로 변환
             expr = expr.replace(/×/g, '*').replace(/÷/g, '/').replace(/−/g, '-');
             
-            // 간단한 수식 파싱 및 계산
             try {
-                // eval 대신 안전한 계산
                 return Function('"use strict"; return (' + expr + ')')();
             } catch (e) {
                 return 'Error';
@@ -793,7 +795,7 @@
 
         function handleCalcIcon() {
             vibrateDevice();
-            // 계산기 아이콘 기능 - 원하시는 기능을 추가하세요
+            // 계산기 아이콘 기능 - 원하는 기능 추가 가능
         }
 
         function formatNumber(num) {
@@ -803,32 +805,24 @@
             
             if (isNaN(num)) return '0';
             
-            // 매우 큰 숫자나 작은 숫자는 지수 표기
+            // 매우 큰/작은 숫자는 지수 표기
             if (Math.abs(num) >= 1e10 || (Math.abs(num) < 1e-6 && num !== 0)) {
                 return num.toExponential(6).replace(/e\+?/, 'e');
             }
             
-            // 소수점 처리
             let numStr = num.toString();
-            
-            // 지수 표기법이면 그대로 반환
             if (numStr.includes('e')) {
                 return numStr;
             }
             
-            // 정수와 소수 분리
             let parts = numStr.split('.');
             let integerPart = parts[0];
             let decimalPart = parts[1] || '';
             
-            // 천 단위 쉼표 추가
             integerPart = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
             
-            // 소수점이 있으면 합치기
             if (decimalPart) {
-                // 소수점 자리수 제한
                 decimalPart = decimalPart.substring(0, 8);
-                // 끝의 0 제거
                 decimalPart = decimalPart.replace(/0+$/, '');
                 if (decimalPart) {
                     return integerPart + '.' + decimalPart;
@@ -839,12 +833,10 @@
         }
 
         function formatDisplayExpression(expr) {
-            // 계산식의 숫자들에 쉼표 추가
             return expr.replace(/\d+\.?\d*/g, (match) => {
                 let num = parseFloat(match);
                 if (isNaN(num)) return match;
                 
-                // 큰 숫자는 지수 표기 안함 (입력 중에는)
                 let parts = match.split('.');
                 parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
                 return parts.join('.');
