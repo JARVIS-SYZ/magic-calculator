@@ -17,7 +17,6 @@
             -webkit-user-select: none;
         }
 
-        /* 🔹 position: fixed 제거, safe-area를 calculator 쪽에서 처리 */
         html, body {
             background: #000;
             color: #fff;
@@ -27,24 +26,23 @@
             font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif;
         }
 
-        /* 🔹 전체 래퍼에서 safe-area 반영 + min-height 사용 */
-       .calculator {
-    display: flex;
-    flex-direction: column;
-    min-height: 100vh;
-    min-height: 100dvh;
-    width: 100%;
-    background: #000;
-    justify-content: flex-end;
-    overflow: visible;
+        /* 전체 래퍼: safe area + 상단 여백 살짝 더 */
+        .calculator {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            min-height: 100dvh;
+            width: 100%;
+            background: #000;
+            justify-content: flex-end;
+            overflow: visible;
 
-    /* 🔻 상단 여백 과하게 들어가던 부분 줄이기 */
-    padding-top: calc(env(safe-area-inset-top) * 0.35);
-    padding-bottom: env(safe-area-inset-bottom);
-}
+            padding-top: calc(env(safe-area-inset-top) * 0.85);
+            padding-bottom: env(safe-area-inset-bottom);
+        }
 
         .header {
-            padding: 4px 20px 4px 20px; /* 위 여백 최소화 */
+            padding: 4px 20px 4px 20px;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -52,20 +50,21 @@
             overflow: visible;
         }
 
+        /* 아이콘 사이즈 업 */
         .menu-icon {
-            width: 32px;
-            height: 32px;
+            width: 40px;
+            height: 40px;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
             touch-action: none;
-            margin-top: 0; /* 위로 최대한 붙이기 위해 0으로 */
+            margin-top: 0;
         }
 
         .menu-icon svg {
-            width: 24px;
-            height: 20px;
+            width: 30px;
+            height: 24px;
         }
 
         .menu-dot {
@@ -91,23 +90,25 @@
             opacity: 1;
         }
 
-      .display {
-    flex: 0;
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-end;
-    padding: 4px 24px 22px 24px; /* 위 살짝 줄이고, 아래 살짝 늘림 */
-    overflow: hidden;
-    background: #000;
-    min-height: 210px;  /* 🔻 140 → 210으로 늘려서 버튼을 아래로 내림 */
-}
+        /* 디스플레이 영역 키워서 버튼 줄을 전체적으로 아래로 */
+        .display {
+            flex: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            padding: 8px 24px 24px 24px;
+            overflow: hidden;
+            background: #000;
+            min-height: 230px;
+        }
+
         .expression-text {
-            font-size: 28px;
+            font-size: 24px;
             font-weight: 400;
             text-align: right;
             color: #888;
             margin-bottom: 2px;
-            min-height: 32px;
+            min-height: 28px;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
@@ -127,14 +128,14 @@
             white-space: nowrap;
             overflow-x: auto;
             overflow-y: hidden;
-            scrollbar-width: none; /* Firefox */
-            -ms-overflow-style: none; /* IE and Edge */
+            scrollbar-width: none;
+            -ms-overflow-style: none;
             direction: ltr;
             text-align: right;
         }
 
         .display-text::-webkit-scrollbar {
-            display: none; /* Chrome, Safari, Opera */
+            display: none;
         }
 
         .buttons {
@@ -142,12 +143,13 @@
             padding: 0;
         }
 
+        /* 버튼 그리드 여백/패딩 조정 */
         .button-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
-            gap: 8px;
+            gap: 10px;
             width: 100%;
-            padding: 0 8px;
+            padding: 4px 14px 12px;
         }
 
         .button {
@@ -158,7 +160,9 @@
             border: none;
             cursor: pointer;
             transition: all 0.1s;
-            overflow: hidden;
+            overflow: visible;
+            transform: scale(0.9);           /* 버튼 지름 살짝 축소 */
+            transform-origin: center center;  /* 가운데 기준으로 축소 */
         }
 
         .button-content {
@@ -532,7 +536,7 @@
 
     <script>
         let currentValue = '0';
-        let fullExpression = ''; // 전체 계산식을 문자열로 저장
+        let fullExpression = '';
         let shouldResetDisplay = false;
         let forceMode = false;
         let forceNumber = null;
@@ -547,7 +551,6 @@
         const forceNumberInput = document.getElementById('forceNumberInput');
         const modeIndicator = document.getElementById('modeIndicator');
 
-        // 메뉴 아이콘 길게 누르기
         menuIcon.addEventListener('touchstart', (e) => {
             e.preventDefault();
             longPressTimer = setTimeout(() => {
@@ -610,13 +613,11 @@
 
         function updateDisplay(value) {
             const displayElement = document.getElementById('display');
-            const containerWidth = displayElement.parentElement.offsetWidth - 48; // 패딩 고려
+            const containerWidth = displayElement.parentElement.offsetWidth - 48;
             
-            // 숫자에 쉼표 추가
             let formattedValue = formatDisplayExpression(value);
             displayElement.textContent = formattedValue;
             
-            // 임시 측정용 요소 생성
             const measureElement = document.createElement('span');
             measureElement.style.fontWeight = '300';
             measureElement.style.fontFamily = getComputedStyle(displayElement).fontFamily;
@@ -626,24 +627,18 @@
             measureElement.textContent = formattedValue;
             document.body.appendChild(measureElement);
             
-            // 적절한 폰트 크기 계산 (한 번에)
             let optimalFontSize = 80;
             measureElement.style.fontSize = optimalFontSize + 'px';
             let textWidth = measureElement.offsetWidth;
             
-            // 너비가 넘으면 비율로 계산해서 적절한 크기 찾기
             if (textWidth > containerWidth) {
                 optimalFontSize = Math.floor((containerWidth / textWidth) * optimalFontSize);
-                // 최소 크기를 60px로 설정 (더 이상 안 줄어듦)
                 optimalFontSize = Math.max(60, optimalFontSize);
             }
             
             document.body.removeChild(measureElement);
-            
-            // 계산된 폰트 크기 적용
             displayElement.style.fontSize = optimalFontSize + 'px';
             
-            // 폰트를 줄여도 여전히 넘치면 오른쪽 끝으로 스크롤
             setTimeout(() => {
                 if (displayElement.scrollWidth > displayElement.clientWidth) {
                     displayElement.scrollLeft = displayElement.scrollWidth - displayElement.clientWidth;
@@ -683,7 +678,6 @@
         function handleOperator(op) {
             vibrateDevice();
             
-            // 마지막이 연산자면 교체, 아니면 추가
             if (fullExpression && '÷×−+'.includes(fullExpression.slice(-1))) {
                 fullExpression = fullExpression.slice(0, -1) + op;
             } else {
@@ -715,7 +709,6 @@
                         const num = parseFloat(currentValue);
                         currentValue = (-num).toString();
                         
-                        // fullExpression에서 마지막 숫자 교체
                         const lastNumMatch = fullExpression.match(/[\d.]+$/);
                         if (lastNumMatch) {
                             fullExpression = fullExpression.slice(0, -lastNumMatch[0].length) + currentValue;
@@ -730,7 +723,6 @@
                         const num = parseFloat(currentValue) / 100;
                         currentValue = num.toString();
                         
-                        // fullExpression에서 마지막 숫자 교체
                         const lastNumMatch = fullExpression.match(/[\d.]+$/);
                         if (lastNumMatch) {
                             fullExpression = fullExpression.slice(0, -lastNumMatch[0].length) + currentValue;
@@ -748,18 +740,15 @@
             
             if (!fullExpression || fullExpression === '0') return;
             
-            // 계산식을 위로 올리기 (쉼표 포함)
             updateExpression(formatDisplayExpression(fullExpression) + '=');
             expressionDisplay.classList.add('visible');
             
-            // 수식 계산 (쉼표 제거 후 계산)
             let result;
             
             if (forceMode && forceNumber !== null) {
                 result = forceNumber;
             } else {
                 try {
-                    // 쉼표 제거하고 계산
                     const cleanExpr = fullExpression.replace(/,/g, '');
                     result = evaluateExpression(cleanExpr);
                 } catch (e) {
@@ -780,10 +769,7 @@
         }
 
         function evaluateExpression(expr) {
-            // 공백 제거
             expr = expr.replace(/\s/g, '');
-            
-            // 연산자를 JavaScript 형식으로 변환
             expr = expr.replace(/×/g, '*').replace(/÷/g, '/').replace(/−/g, '-');
             
             try {
@@ -795,25 +781,21 @@
 
         function handleCalcIcon() {
             vibrateDevice();
-            // 계산기 아이콘 기능 - 원하는 기능 추가 가능
+            // 여기에는 나중에 다른 기능 넣기
         }
 
         function formatNumber(num) {
             if (typeof num === 'string') {
                 num = parseFloat(num);
             }
-            
             if (isNaN(num)) return '0';
             
-            // 매우 큰/작은 숫자는 지수 표기
             if (Math.abs(num) >= 1e10 || (Math.abs(num) < 1e-6 && num !== 0)) {
                 return num.toExponential(6).replace(/e\+?/, 'e');
             }
             
             let numStr = num.toString();
-            if (numStr.includes('e')) {
-                return numStr;
-            }
+            if (numStr.includes('e')) return numStr;
             
             let parts = numStr.split('.');
             let integerPart = parts[0];
@@ -828,7 +810,6 @@
                     return integerPart + '.' + decimalPart;
                 }
             }
-            
             return integerPart;
         }
 
@@ -836,7 +817,6 @@
             return expr.replace(/\d+\.?\d*/g, (match) => {
                 let num = parseFloat(match);
                 if (isNaN(num)) return match;
-                
                 let parts = match.split('.');
                 parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
                 return parts.join('.');
