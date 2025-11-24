@@ -441,19 +441,42 @@
                     <div class="button-content" id="clearButtonContent">AC</div>
                 </button>
 
-                <button class="button function" onclick="handleFunction('±')">
-    <div class="button-content">
-        <svg class="pm-icon" viewBox="0 0 24 24">
-            <!-- 위쪽 + -->
-            <line x1="12" y1="5"  x2="12" y2="13"
-                  stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
-            <line x1="8"  y1="9"  x2="16" y2="9"
-                  stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
-            <!-- 아래쪽 - -->
-            <line x1="8"  y1="18" x2="16" y2="18"
-                  stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
-        </svg>
-    </div>
+             <button class="button function" onclick="handleFunction('±')">
+  <div class="button-content">
+    <svg class="pm-icon" viewBox="0 0 24 24">
+      <!-- 대각선 슬래시 -->
+      <line
+        x1="6"  y1="18"
+        x2="18" y2="6"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+      />
+      <!-- 위쪽 + -->
+      <line
+        x1="8" y1="6"
+        x2="8" y2="11"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+      />
+      <line
+        x1="5.5" y1="8.5"
+        x2="10.5" y2="8.5"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+      />
+      <!-- 아래쪽 - -->
+      <line
+        x1="11.5" y1="17"
+        x2="16.5" y2="17"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+      />
+    </svg>
+  </div>
 </button>
                 <button class="button function" onclick="handleFunction('%')">
                     <div class="button-content">%</div>
