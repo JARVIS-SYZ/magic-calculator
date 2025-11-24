@@ -91,16 +91,17 @@
         }
 
         /* 디스플레이 영역 */
-        .display {
-            flex: 0;
-            display: flex;
-            flex-direction: column;
-            justify-content: flex-end;
-            padding: 8px 24px 24px 24px;
-            overflow: hidden;
-            background: #000;
-            min-height: 230px;
-        }
+       .display {
+    flex: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 8px 24px 24px 24px;
+    overflow: hidden;
+    background: #000;
+    min-height: 230px;
+    margin-top: 12px;   /* ✅ 이 줄 추가 (10~16px 사이에서 취향대로) */
+}
 
         .expression-text {
             font-size: 24px;
