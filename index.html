@@ -2,7 +2,8 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="mobile-web-app-capable" content="yes">
@@ -23,6 +24,11 @@
             height: 100%;
             width: 100%;
             overflow: hidden;
+            position: fixed; /* 화면 전체 고정 */
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
             font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif;
         }
 
@@ -320,7 +326,7 @@
 
         .force-input {
             width: 100%;
-            background: #2c2ce;
+            background: #2c2c2e;
             border: none;
             border-radius: 12px;
             padding: 15px 20px;
@@ -369,621 +375,650 @@
     </style>
 </head>
 <body>
-    <div class="calculator">
-        <div class="header">
-            <div class="menu-icon" id="menuIcon">
-                <svg viewBox="0 0 24 24">
-                    <circle class="menu-dot" cx="3" cy="5" r="1.5"/>
-                    <line class="menu-line" x1="7" y1="5" x2="21" y2="5"></line>
-                    <circle class="menu-dot" cx="3" cy="12" r="1.5"/>
-                    <line class="menu-line" x1="7" y1="12" x2="21" y2="12"></line>
-                    <circle class="menu-dot" cx="3" cy="19" r="1.5"/>
-                    <line class="menu-line" x1="7" y1="19" x2="21" y2="19"></line>
-                </svg>
-            </div>
-            <div class="mode-indicator" id="modeIndicator"></div>
-        </div>
-
-        <div class="display">
-            <div class="expression-text" id="expression"></div>
-            <div class="display-text" id="display">0</div>
-        </div>
-
-        <div class="buttons">
-            <div class="button-grid">
-                <button class="button function" id="clearButton" onclick="handleClear()">
-                    <div class="button-content" id="clearButtonContent">AC</div>
-                </button>
-
-                <button class="button function" onclick="handleFunction('±')">
-                    <div class="button-content">
-                        <svg class="pm-icon" viewBox="0 0 24 24">
-                            <line x1="6" y1="18" x2="18" y2="6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
-                            <line x1="7" y1="5.2" x2="7" y2="10.2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
-                            <line x1="4.2" y1="7.7" x2="9.8" y2="7.7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
-                            <line x1="12.2" y1="17.8" x2="17.2" y2="17.8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
-                        </svg>
-                    </div>
-                </button>
-
-                <button class="button function" onclick="handleFunction('%')">
-                    <div class="button-content">%</div>
-                </button>
-                <button class="button operator" onclick="handleOperator('÷')">
-                    <div class="button-content">÷</div>
-                </button>
-
-                <button class="button number" onclick="handleNumber('7')">
-                    <div class="button-content">7</div>
-                </button>
-                <button class="button number" onclick="handleNumber('8')">
-                    <div class="button-content">8</div>
-                </button>
-                <button class="button number" onclick="handleNumber('9')">
-                    <div class="button-content">9</div>
-                </button>
-                <button class="button operator" onclick="handleOperator('×')">
-                    <div class="button-content">×</div>
-                </button>
-
-                <button class="button number" onclick="handleNumber('4')">
-                    <div class="button-content">4</div>
-                </button>
-                <button class="button number" onclick="handleNumber('5')">
-                    <div class="button-content">5</div>
-                </button>
-                <button class="button number" onclick="handleNumber('6')">
-                    <div class="button-content">6</div>
-                </button>
-                <button class="button operator" onclick="handleOperator('−')">
-                    <div class="button-content">−</div>
-                </button>
-
-                <button class="button number" onclick="handleNumber('1')">
-                    <div class="button-content">1</div>
-                </button>
-                <button class="button number" onclick="handleNumber('2')">
-                    <div class="button-content">2</div>
-                </button>
-                <button class="button number" onclick="handleNumber('3')">
-                    <div class="button-content">3</div>
-                </button>
-                <button class="button operator" onclick="handleOperator('+')">
-                    <div class="button-content">+</div>
-                </button>
-
-                <button class="button calc-icon" id="calcIconButton">
-                    <div class="button-content">
-                        <svg class="calc-icon-svg" viewBox="0 0 24 24">
-                            <rect x="5.5" y="3.5" width="13" height="18" rx="1.4" fill="currentColor" stroke="currentColor" stroke-width="1.4"/>
-                            <rect x="7.2" y="5.2" width="9.6" height="4.2" rx="0.9" fill="#333"/>
-                            <circle cx="8.5" cy="11.8" r="1.2" fill="#333"/>
-                            <circle cx="12" cy="11.8" r="1.2" fill="#333"/>
-                            <circle cx="15.5" cy="11.8" r="1.2" fill="#333"/>
-                            <circle cx="8.5" cy="15.3" r="1.2" fill="#333"/>
-                            <circle cx="12" cy="15.3" r="1.2" fill="#333"/>
-                            <circle cx="15.5" cy="15.3" r="1.2" fill="#333"/>
-                            <circle cx="8.5" cy="18.8" r="1.2" fill="#333"/>
-                            <circle cx="12" cy="18.8" r="1.2" fill="#333"/>
-                            <circle cx="15.5" cy="18.8" r="1.2" fill="#333"/>
-                        </svg>
-                    </div>
-                    <div class="calc-indicator" id="calcIndicator"></div>
-                </button>
-
-                <button class="button number zero" onclick="handleNumber('0')">
-                    <div class="button-content">0</div>
-                </button>
-                <button class="button number" onclick="handleNumber('.')">
-                    <div class="button-content">.</div>
-                </button>
-                <button class="button operator" id="equalsButton" onclick="handleEquals()">
-                    <div class="button-content">=</div>
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- 설정 모달 (포스 숫자 입력) -->
-    <div class="settings-modal" id="settingsModal">
-        <div class="settings-content">
-            <div class="settings-title">포스 숫자 설정</div>
-            
-            <div class="setting-item">
-                <div class="setting-label">포스할 숫자</div>
-                <input type="number" class="force-input" id="forceNumberInput" placeholder="숫자 입력">
-            </div>
-
-            <button class="close-button" onclick="closeSettings()">완료</button>
-        </div>
-    </div>
-
-    <script>
-        let currentValue = '0';
-        let fullExpression = '';
-        let shouldResetDisplay = false;
-        let forceNumber = null;
-
-        // 모드: 'normal', 'force', '666'
-        let currentMode = 'normal';
-        let specialSequenceActive = false;
-
-        // calc 아이콘 / = 버튼 탭 카운트
-        let calcIconTapCount = 0;
-        let calcIconTapTimer = null;
-        let equalsTapCount = 0;
-        let equalsTapTimer = null;
-        const TAP_TIMEOUT = 500;
-
-        let clearMode = 'all';
-
-        const display = document.getElementById('display');
-        const expressionDisplay = document.getElementById('expression');
-        const settingsModal = document.getElementById('settingsModal');
-        const forceNumberInput = document.getElementById('forceNumberInput');
-        const modeIndicator = document.getElementById('modeIndicator');
-        const clearButtonContent = document.getElementById('clearButtonContent');
-        const calcIconButton = document.getElementById('calcIconButton');
-        const equalsButton = document.getElementById('equalsButton');
-        const calcIndicator = document.getElementById('calcIndicator');
-
-        let indicatorTimer1 = null;
-        let indicatorTimer2 = null;
-
-        const BACKSPACE_SVG = `
-            <svg viewBox="0 0 24 24" class="backspace-icon">
-                <g transform="translate(-1.6 0)">
-                    <path d="M4 12 L9 5 H21 V19 H9 Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
-                    <path d="M12.3 10.3 L16.7 14.7 M16.7 10.3 L12.3 14.7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-                </g>
+<div class="calculator">
+    <div class="header">
+        <div class="menu-icon" id="menuIcon">
+            <svg viewBox="0 0 24 24">
+                <circle class="menu-dot" cx="3" cy="5" r="1.5"/>
+                <line class="menu-line" x1="7" y1="5" x2="21" y2="5"></line>
+                <circle class="menu-dot" cx="3" cy="12" r="1.5"/>
+                <line class="menu-line" x1="7" y1="12" x2="21" y2="12"></line>
+                <circle class="menu-dot" cx="3" cy="19" r="1.5"/>
+                <line class="menu-line" x1="7" y1="19" x2="21" y2="19"></line>
             </svg>
-        `;
+        </div>
+        <div class="mode-indicator" id="modeIndicator"></div>
+    </div>
 
-        function vibrateDevice() {
-            if ('vibrate' in navigator) {
-                navigator.vibrate(50);
-            }
+    <div class="display">
+        <div class="expression-text" id="expression"></div>
+        <div class="display-text" id="display">0</div>
+    </div>
+
+    <div class="buttons">
+        <div class="button-grid">
+            <!-- AC / 지우개 -->
+            <button class="button function" id="clearButton" onclick="handleClear()">
+                <div class="button-content" id="clearButtonContent">AC</div>
+            </button>
+
+            <!-- ± 버튼 -->
+            <button class="button function" onclick="handleFunction('±')">
+                <div class="button-content">
+                    <svg class="pm-icon" viewBox="0 0 24 24">
+                        <line x1="6" y1="18" x2="18" y2="6"
+                              stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+                        <line x1="7" y1="5.2" x2="7" y2="10.2"
+                              stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+                        <line x1="4.2" y1="7.7" x2="9.8" y2="7.7"
+                              stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+                        <line x1="12.2" y1="17.8" x2="17.2" y2="17.8"
+                              stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+                    </svg>
+                </div>
+            </button>
+
+            <button class="button function" onclick="handleFunction('%')">
+                <div class="button-content">%</div>
+            </button>
+            <button class="button operator" onclick="handleOperator('÷')">
+                <div class="button-content">÷</div>
+            </button>
+
+            <button class="button number" onclick="handleNumber('7')">
+                <div class="button-content">7</div>
+            </button>
+            <button class="button number" onclick="handleNumber('8')">
+                <div class="button-content">8</div>
+            </button>
+            <button class="button number" onclick="handleNumber('9')">
+                <div class="button-content">9</div>
+            </button>
+            <button class="button operator" onclick="handleOperator('×')">
+                <div class="button-content">×</div>
+            </button>
+
+            <button class="button number" onclick="handleNumber('4')">
+                <div class="button-content">4</div>
+            </button>
+            <button class="button number" onclick="handleNumber('5')">
+                <div class="button-content">5</div>
+            </button>
+            <button class="button number" onclick="handleNumber('6')">
+                <div class="button-content">6</div>
+            </button>
+            <button class="button operator" onclick="handleOperator('−')">
+                <div class="button-content">−</div>
+            </button>
+
+            <button class="button number" onclick="handleNumber('1')">
+                <div class="button-content">1</div>
+            </button>
+            <button class="button number" onclick="handleNumber('2')">
+                <div class="button-content">2</div>
+            </button>
+            <button class="button number" onclick="handleNumber('3')">
+                <div class="button-content">3</div>
+            </button>
+            <button class="button operator" onclick="handleOperator('+')">
+                <div class="button-content">+</div>
+            </button>
+
+            <!-- 계산기 아이콘 -->
+            <button class="button calc-icon" id="calcIconButton">
+                <div class="button-content">
+                    <svg class="calc-icon-svg" viewBox="0 0 24 24">
+                        <rect x="5.5" y="3.5" width="13" height="18"
+                              rx="1.4" fill="currentColor" stroke="currentColor" stroke-width="1.4"/>
+                        <rect x="7.2" y="5.2" width="9.6" height="4.2"
+                              rx="0.9" fill="#333"/>
+                        <circle cx="8.5" cy="11.8" r="1.2" fill="#333"/>
+                        <circle cx="12"  cy="11.8" r="1.2" fill="#333"/>
+                        <circle cx="15.5" cy="11.8" r="1.2" fill="#333"/>
+                        <circle cx="8.5" cy="15.3" r="1.2" fill="#333"/>
+                        <circle cx="12"  cy="15.3" r="1.2" fill="#333"/>
+                        <circle cx="15.5" cy="15.3" r="1.2" fill="#333"/>
+                        <circle cx="8.5" cy="18.8" r="1.2" fill="#333"/>
+                        <circle cx="12"  cy="18.8" r="1.2" fill="#333"/>
+                        <circle cx="15.5" cy="18.8" r="1.2" fill="#333"/>
+                    </svg>
+                </div>
+                <div class="calc-indicator" id="calcIndicator"></div>
+            </button>
+
+            <button class="button number zero" onclick="handleNumber('0')">
+                <div class="button-content">0</div>
+            </button>
+            <button class="button number" onclick="handleNumber('.')">
+                <div class="button-content">.</div>
+            </button>
+            <button class="button operator" id="equalsButton" onclick="handleEquals()">
+                <div class="button-content">=</div>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- 포스 숫자 설정 모달 -->
+<div class="settings-modal" id="settingsModal">
+    <div class="settings-content">
+        <div class="settings-title">포스 숫자 설정</div>
+        <div class="setting-item">
+            <div class="setting-label">포스할 숫자</div>
+            <input type="number" class="force-input" id="forceNumberInput" placeholder="숫자 입력">
+        </div>
+        <button class="close-button" onclick="closeSettings()">완료</button>
+    </div>
+</div>
+
+<script>
+    let currentValue = '0';
+    let fullExpression = '';
+    let shouldResetDisplay = false;
+    let forceNumber = null;
+
+    // 모드: 'normal', 'force', '666'
+    let currentMode = 'normal';
+    let specialSequenceActive = false;
+
+    let calcIconTapCount = 0;
+    let calcIconTapTimer = null;
+    let equalsTapCount = 0;
+    let equalsTapTimer = null;
+    const TAP_TIMEOUT = 800;
+
+    let clearMode = 'all';
+
+    const display = document.getElementById('display');
+    const expressionDisplay = document.getElementById('expression');
+    const settingsModal = document.getElementById('settingsModal');
+    const forceNumberInput = document.getElementById('forceNumberInput');
+    const modeIndicator = document.getElementById('modeIndicator');
+    const clearButtonContent = document.getElementById('clearButtonContent');
+    const calcIconButton = document.getElementById('calcIconButton');
+    const equalsButton = document.getElementById('equalsButton');
+    const calcIndicator = document.getElementById('calcIndicator');
+
+    let indicatorTimer1 = null;
+    let indicatorTimer2 = null;
+    let sequenceTimer1 = null; // 5초 후 999+999 변경
+    let sequenceTimer2 = null; // 10초 후 위 식 변경
+    let sequenceTimer3 = null; // 5초 후 결과값 변경
+
+    const BACKSPACE_SVG = `
+        <svg viewBox="0 0 24 24" class="backspace-icon">
+            <g transform="translate(-1.6 0)">
+                <path d="M4 12 L9 5 H21 V19 H9 Z"
+                      fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+                <path d="M12.3 10.3 L16.7 14.7 M16.7 10.3 L12.3 14.7"
+                      stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            </g>
+        </svg>
+    `;
+
+    function vibrateDevice() {
+        if ('vibrate' in navigator) {
+            navigator.vibrate(50);
+        }
+    }
+
+    function updateModeIndicator() {
+        if (currentMode === 'force') {
+            modeIndicator.textContent = 'FORCE';
+            modeIndicator.classList.add('active');
+        } else if (currentMode === '666') {
+            modeIndicator.textContent = '666';
+            modeIndicator.classList.add('active');
+        } else {
+            modeIndicator.textContent = '';
+            modeIndicator.classList.remove('active');
+        }
+    }
+
+    function clearAllTimers() {
+        if (indicatorTimer1) clearTimeout(indicatorTimer1);
+        if (indicatorTimer2) clearTimeout(indicatorTimer2);
+        if (sequenceTimer1) clearTimeout(sequenceTimer1);
+        if (sequenceTimer2) clearTimeout(sequenceTimer2);
+        if (sequenceTimer3) clearTimeout(sequenceTimer3);
+        indicatorTimer1 = indicatorTimer2 = null;
+        sequenceTimer1 = sequenceTimer2 = sequenceTimer3 = null;
+        if (calcIndicator) calcIndicator.classList.remove('active');
+    }
+
+    function updateClearButtonState() {
+        // = 직후에는 무조건 AC
+        if (shouldResetDisplay) {
+            clearMode = 'all';
+            clearButtonContent.textContent = 'AC';
+            return;
         }
 
-        function updateModeIndicator() {
-            if (currentMode === 'force') {
-                modeIndicator.textContent = 'FORCE';
-                modeIndicator.classList.add('active');
-            } else if (currentMode === '666') {
-                modeIndicator.textContent = '666';
-                modeIndicator.classList.add('active');
-            } else {
-                modeIndicator.textContent = '';
-                modeIndicator.classList.remove('active');
-            }
+        const hasInput = (fullExpression !== '' || currentValue !== '0');
+        if (hasInput) {
+            clearMode = 'backspace';
+            clearButtonContent.innerHTML = BACKSPACE_SVG;
+        } else {
+            clearMode = 'all';
+            clearButtonContent.textContent = 'AC';
+        }
+    }
+
+    function updateDisplay(value) {
+        const displayElement = document.getElementById('display');
+        const containerWidth = displayElement.parentElement.offsetWidth - 48;
+
+        let formattedValue = formatDisplayExpression(value);
+        displayElement.textContent = formattedValue;
+
+        const measureElement = document.createElement('span');
+        measureElement.style.fontWeight = '400';
+        measureElement.style.fontFamily = getComputedStyle(displayElement).fontFamily;
+        measureElement.style.visibility = 'hidden';
+        measureElement.style.position = 'absolute';
+        measureElement.style.whiteSpace = 'nowrap';
+        measureElement.textContent = formattedValue;
+        document.body.appendChild(measureElement);
+
+        let optimalFontSize = 80;
+        measureElement.style.fontSize = optimalFontSize + 'px';
+        let textWidth = measureElement.offsetWidth;
+
+        if (textWidth > containerWidth) {
+            optimalFontSize = Math.floor((containerWidth / textWidth) * optimalFontSize);
+            optimalFontSize = Math.max(60, optimalFontSize);
         }
 
-        function updateClearButtonState() {
-            // = 이후(shouldResetDisplay true)에는 무조건 AC 표시
-            if (shouldResetDisplay) {
-                clearMode = 'all';
-                clearButtonContent.textContent = 'AC';
-                return;
+        document.body.removeChild(measureElement);
+        displayElement.style.fontSize = optimalFontSize + 'px';
+
+        setTimeout(() => {
+            if (displayElement.scrollWidth > displayElement.clientWidth) {
+                displayElement.scrollLeft = displayElement.scrollWidth - displayElement.clientWidth;
             }
+        }, 0);
+    }
 
-            const hasInput = (fullExpression !== '' || currentValue !== '0');
-            if (hasInput) {
-                clearMode = 'backspace';
-                clearButtonContent.innerHTML = BACKSPACE_SVG;
-            } else {
-                clearMode = 'all';
-                clearButtonContent.textContent = 'AC';
-            }
-        }
+    function updateExpression(text) {
+        expressionDisplay.textContent = text;
+    }
 
-        function updateDisplay(value) {
-            const displayElement = document.getElementById('display');
-            const containerWidth = displayElement.parentElement.offsetWidth - 48;
-            
-            let formattedValue = formatDisplayExpression(value);
-            displayElement.textContent = formattedValue;
-            
-            const measureElement = document.createElement('span');
-            measureElement.style.fontWeight = '400';
-            measureElement.style.fontFamily = getComputedStyle(displayElement).fontFamily;
-            measureElement.style.visibility = 'hidden';
-            measureElement.style.position = 'absolute';
-            measureElement.style.whiteSpace = 'nowrap';
-            measureElement.textContent = formattedValue;
-            document.body.appendChild(measureElement);
-            
-            let optimalFontSize = 80;
-            measureElement.style.fontSize = optimalFontSize + 'px';
-            let textWidth = measureElement.offsetWidth;
-            
-            if (textWidth > containerWidth) {
-                optimalFontSize = Math.floor((containerWidth / textWidth) * optimalFontSize);
-                optimalFontSize = Math.max(60, optimalFontSize);
-            }
-            
-            document.body.removeChild(measureElement);
-            displayElement.style.fontSize = optimalFontSize + 'px';
-            
-            setTimeout(() => {
-                if (displayElement.scrollWidth > displayElement.clientWidth) {
-                    displayElement.scrollLeft = displayElement.scrollWidth - displayElement.clientWidth;
-                }
-            }, 0);
-        }
+    // 666 모드: 666 입력 시 시퀀스 시작
+    function maybeStart666SequenceFromNumber() {
+        if (currentMode !== '666' || specialSequenceActive) return;
 
-        function updateExpression(text) {
-            expressionDisplay.textContent = text;
-        }
+        const cleanExpr = fullExpression.replace(/,/g, '');
+        const lastNumMatch = cleanExpr.match(/(\d+\.?\d*)$/);
+        if (!lastNumMatch) return;
 
-        function handleNumber(num) {
-            vibrateDevice();
-            
-            if (shouldResetDisplay) {
-                // = 이후 첫 숫자 입력이면 새로운 수식 시작
-                currentValue = num;
-                fullExpression = num;
+        if (lastNumMatch[1] === '666') {
+            specialSequenceActive = true;
+            scheduleCalcIconIndicator();
+
+            // 5초 뒤에 999+999로 수식 전체 변경
+            sequenceTimer1 = setTimeout(() => {
+                fullExpression = '999+999';
+                currentValue = '999';
                 shouldResetDisplay = false;
-            } else {
-                if (currentValue === '0' && num !== '.') {
-                    currentValue = num;
-                    if (fullExpression === '0' || fullExpression === '') {
-                        fullExpression = num;
-                    } else {
-                        fullExpression += num;
-                    }
+                expressionDisplay.classList.remove('visible');
+                updateExpression('');
+                updateDisplay(fullExpression);
+                updateClearButtonState();
+            }, 5000);
+        }
+    }
+
+    function handleNumber(num) {
+        vibrateDevice();
+
+        if (shouldResetDisplay) {
+            currentValue = num;
+            fullExpression = num;
+            shouldResetDisplay = false;
+            expressionDisplay.classList.remove('visible');
+            updateExpression('');
+        } else {
+            if (currentValue === '0' && num !== '.') {
+                currentValue = num;
+                if (fullExpression === '0' || fullExpression === '') {
+                    fullExpression = num;
                 } else {
-                    if (num === '.' && currentValue.includes('.')) return;
-                    currentValue += num;
                     fullExpression += num;
                 }
-            }
-            
-            updateDisplay(fullExpression || currentValue);
-            updateClearButtonState();
-        }
-
-        function handleOperator(op) {
-            vibrateDevice();
-
-            // = 직후에 연산자를 누르면, 결과를 이어서 새 수식을 만들고
-            // 위쪽 계산식은 지워준다
-            if (shouldResetDisplay) {
-                shouldResetDisplay = false;
-                expressionDisplay.classList.remove('visible');
-                updateExpression('');
-                fullExpression = currentValue; // 예: 666
-            }
-
-            if (fullExpression && '÷×−+'.includes(fullExpression.slice(-1))) {
-                fullExpression = fullExpression.slice(0, -1) + op;
             } else {
-                if (fullExpression === '') {
-                    fullExpression = currentValue + op;
-                } else {
-                    fullExpression += op;
-                }
+                if (num === '.' && currentValue.includes('.')) return;
+                currentValue += num;
+                fullExpression += num;
             }
-            
-            currentValue = '0';
-            updateDisplay(fullExpression);
-            updateClearButtonState();
         }
 
-        function handleFunction(func) {
-            vibrateDevice();
-            
-            switch(func) {
-                case '±':
-                    if (currentValue !== '0') {
-                        const num = parseFloat(currentValue);
-                        currentValue = (-num).toString();
-                        const lastNumMatch = fullExpression.match(/[\d.]+$/);
-                        if (lastNumMatch) {
-                            fullExpression = fullExpression.slice(0, -lastNumMatch[0].length) + currentValue;
-                        } else {
-                            fullExpression = currentValue;
-                        }
-                        updateDisplay(fullExpression || currentValue);
-                    }
-                    break;
-                case '%':
-                    if (currentValue !== '0') {
-                        const num = parseFloat(currentValue) / 100;
-                        currentValue = num.toString();
-                        const lastNumMatch = fullExpression.match(/[\d.]+$/);
-                        if (lastNumMatch) {
-                            fullExpression = fullExpression.slice(0, -lastNumMatch[0].length) + currentValue;
-                        } else {
-                            fullExpression = currentValue;
-                        }
-                        updateDisplay(fullExpression || currentValue);
-                    }
-                    break;
-            }
+        updateDisplay(fullExpression || currentValue);
+        updateClearButtonState();
 
-            updateClearButtonState();
+        // 666 모드일 때, 마지막 숫자가 666이면 시퀀스 시작
+        maybeStart666SequenceFromNumber();
+    }
+
+    function handleOperator(op) {
+        vibrateDevice();
+
+        // = 직후 연산자 → 결과 이어서 새 수식
+        if (shouldResetDisplay) {
+            shouldResetDisplay = false;
+            expressionDisplay.classList.remove('visible');
+            updateExpression('');
+            fullExpression = currentValue;
         }
 
-        function handleClear() {
-            vibrateDevice();
-
-            if (clearMode === 'all') {
-                currentValue = '0';
-                fullExpression = '';
-                shouldResetDisplay = false;
-                specialSequenceActive = false;
-                expressionDisplay.classList.remove('visible');
-                updateExpression('');
-                updateDisplay('0');
-
-                if (calcIndicator) {
-                    calcIndicator.classList.remove('active');
-                }
+        if (fullExpression && '÷×−+'.includes(fullExpression.slice(-1))) {
+            fullExpression = fullExpression.slice(0, -1) + op;
+        } else {
+            if (fullExpression === '') {
+                fullExpression = currentValue + op;
             } else {
-                if (fullExpression) {
-                    fullExpression = fullExpression.slice(0, -1);
-                    const lastNumMatch = fullExpression.match(/([\d.]+)$/);
-                    currentValue = lastNumMatch ? lastNumMatch[1] : '0';
-                } else {
-                    if (currentValue.length > 1) {
-                        currentValue = currentValue.slice(0, -1);
+                fullExpression += op;
+            }
+        }
+
+        currentValue = '0';
+        updateDisplay(fullExpression);
+        updateClearButtonState();
+    }
+
+    function handleFunction(func) {
+        vibrateDevice();
+
+        switch (func) {
+            case '±':
+                if (currentValue !== '0') {
+                    const num = parseFloat(currentValue);
+                    currentValue = (-num).toString();
+                    const lastNumMatch = fullExpression.match(/[\d.]+$/);
+                    if (lastNumMatch) {
+                        fullExpression = fullExpression.slice(0, -lastNumMatch[0].length) + currentValue;
                     } else {
-                        currentValue = '0';
+                        fullExpression = currentValue;
                     }
+                    updateDisplay(fullExpression || currentValue);
                 }
-
-                if (fullExpression === '' && currentValue === '0') {
-                    expressionDisplay.classList.remove('visible');
-                    updateExpression('');
+                break;
+            case '%':
+                if (currentValue !== '0') {
+                    const num = parseFloat(currentValue) / 100;
+                    currentValue = num.toString();
+                    const lastNumMatch = fullExpression.match(/[\d.]+$/);
+                    if (lastNumMatch) {
+                        fullExpression = fullExpression.slice(0, -lastNumMatch[0].length) + currentValue;
+                    } else {
+                        fullExpression = currentValue;
+                    }
+                    updateDisplay(fullExpression || currentValue);
                 }
-
-                updateDisplay(fullExpression || currentValue);
-            }
-
-            updateClearButtonState();
+                break;
         }
 
-        function handleEquals() {
-            vibrateDevice();
+        updateClearButtonState();
+    }
 
-            // = 버튼 3번 탭 감지 → 666 모드
-            equalsTapCount++;
-            if (equalsTapTimer) {
-                clearTimeout(equalsTapTimer);
-            }
-            equalsTapTimer = setTimeout(() => {
-                equalsTapCount = 0;
-            }, TAP_TIMEOUT);
+    function handleClear() {
+        vibrateDevice();
 
-            if (equalsTapCount === 3) {
-                equalsTapCount = 0;
-                clearTimeout(equalsTapTimer);
-                currentMode = '666';
-                updateModeIndicator();
-                return;
-            }
-            
-            if (!fullExpression || fullExpression === '0') return;
-            
-            const displayExpr = formatDisplayExpression(fullExpression);
-            updateExpression(displayExpr + '=');
-            expressionDisplay.classList.add('visible');
-            
-            let result;
-
-            // FORCE 모드
-            if (currentMode === 'force' && forceNumber !== null && !isNaN(forceNumber)) {
-                result = forceNumber;
-                currentMode = 'normal';
-                updateModeIndicator();
-            }
-            // 666 모드
-            else if (currentMode === '666') {
-                const cleanExpr = fullExpression.replace(/,/g, '');
-
-                // Stage 1: 처음 666+666 = 일 때
-                if (!specialSequenceActive && cleanExpr === '666+666') {
-                    specialSequenceActive = true;
-
-                    // 파란점 예고
-                    scheduleCalcIconIndicator();
-
-                    // 5초 후: 999+999 로 수식 변경
-                    setTimeout(() => {
-                        fullExpression = '999+999';
-                        currentValue = '999';
-                        updateDisplay(fullExpression);
-                        updateClearButtonState();
-                    }, 5000);
-
-                    result = 1332;
-                }
-                // Stage 2: 999+999 상태에서 = 일 때
-                else if (specialSequenceActive && cleanExpr === '999+999') {
-                    result = evaluateExpression(cleanExpr); // 1998
-
-                    setTimeout(() => {
-                        updateExpression('666+666=');
-
-                        setTimeout(() => {
-                            currentValue = '1332';
-                            updateDisplay(formatNumber(1332));
-                            specialSequenceActive = false;
-                            currentMode = 'normal';
-                            updateModeIndicator();
-                        }, 5000);
-                    }, 10000);
-                }
-                // 그 외는 일반 계산
-                else {
-                    result = evaluateExpression(cleanExpr);
-                }
-            }
-            // 일반 모드 계산
-            else {
-                try {
-                    const cleanExpr = fullExpression.replace(/,/g, '');
-                    result = evaluateExpression(cleanExpr);
-                } catch (e) {
-                    result = 'Error';
-                }
-            }
-            
-            if (result === 'Error' || isNaN(result) || !isFinite(result)) {
-                currentValue = 'Error';
-                updateDisplay('Error');
-            } else {
-                currentValue = result.toString();
-                updateDisplay(formatNumber(result));
-            }
-            
+        if (clearMode === 'all') {
+            currentValue = '0';
             fullExpression = '';
-            shouldResetDisplay = true;
-            updateClearButtonState();
-        }
-
-        function evaluateExpression(expr) {
-            expr = expr.replace(/\s/g, '');
-            expr = expr.replace(/×/g, '*').replace(/÷/g, '/').replace(/−/g, '-');
-            
-            try {
-                return Function('"use strict"; return (' + expr + ')')();
-            } catch (e) {
-                return 'Error';
-            }
-        }
-
-        function formatNumber(num) {
-            if (typeof num === 'string') {
-                num = parseFloat(num);
-            }
-            if (isNaN(num)) return '0';
-            
-            if (Math.abs(num) >= 1e10 || (Math.abs(num) < 1e-6 && num !== 0)) {
-                return num.toExponential(6).replace(/e\+?/, 'e');
-            }
-            let numStr = num.toString();
-            if (numStr.includes('e')) return numStr;
-            
-            let parts = numStr.split('.');
-            let integerPart = parts[0];
-            let decimalPart = parts[1] || '';
-            
-            integerPart = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-            
-            if (decimalPart) {
-                decimalPart = decimalPart.substring(0, 8);
-                decimalPart = decimalPart.replace(/0+$/, '');
-                if (decimalPart) {
-                    return integerPart + '.' + decimalPart;
-                }
-            }
-            return integerPart;
-        }
-
-        function formatDisplayExpression(expr) {
-            return expr.replace(/\d+\.?\d*/g, (match) => {
-                let num = parseFloat(match);
-                if (isNaN(num)) return match;
-                let parts = match.split('.');
-                parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-                return parts.join('.');
-            });
-        }
-
-        // 파란 점 스케줄링 (Stage1에서 사용)
-        function scheduleCalcIconIndicator() {
-            if (!calcIndicator) return;
-
-            if (indicatorTimer1) clearTimeout(indicatorTimer1);
-            if (indicatorTimer2) clearTimeout(indicatorTimer2);
-
-            // 예: = 후 2초 뒤 점 켜고, 2초 유지 → 5초째 숫자 변경
-            indicatorTimer1 = setTimeout(() => {
-                calcIndicator.classList.add('active');
-
-                indicatorTimer2 = setTimeout(() => {
-                    calcIndicator.classList.remove('active');
-                }, 2000);
-            }, 2000);
-        }
-
-        // 계산기 아이콘 3번 탭 → 포스 숫자 입력 모달
-        calcIconButton.addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-
-            calcIconTapCount++;
-            if (calcIconTapTimer) {
-                clearTimeout(calcIconTapTimer);
-            }
-            calcIconTapTimer = setTimeout(() => {
-                calcIconTapCount = 0;
-            }, TAP_TIMEOUT);
-
-            if (calcIconTapCount === 3) {
-                calcIconTapCount = 0;
-                clearTimeout(calcIconTapTimer);
-                vibrateDevice();
-                openForceSettings();
-            }
-        });
-
-        function openForceSettings() {
+            shouldResetDisplay = false;
+            specialSequenceActive = false;
+            expressionDisplay.classList.remove('visible');
+            updateExpression('');
+            updateDisplay('0');
+            clearAllTimers();
             currentMode = 'normal';
             updateModeIndicator();
-
-            settingsModal.classList.add('active');
-
-            // 기존 값 있으면 보여주기
-            if (forceNumber !== null && !isNaN(forceNumber)) {
-                forceNumberInput.value = forceNumber;
+        } else {
+            if (fullExpression) {
+                fullExpression = fullExpression.slice(0, -1);
+                const lastNumMatch = fullExpression.match(/([\d.]+)$/);
+                currentValue = lastNumMatch ? lastNumMatch[1] : '0';
             } else {
-                forceNumberInput.value = '';
+                if (currentValue.length > 1) {
+                    currentValue = currentValue.slice(0, -1);
+                } else {
+                    currentValue = '0';
+                }
             }
 
-            setTimeout(() => {
-                forceNumberInput.focus();
-                forceNumberInput.select();
-            }, 50);
+            if (fullExpression === '' && currentValue === '0') {
+                expressionDisplay.classList.remove('visible');
+                updateExpression('');
+            }
+
+            updateDisplay(fullExpression || currentValue);
         }
 
-        forceNumberInput.addEventListener('input', (e) => {
-            const value = e.target.value;
-            forceNumber = value === '' ? null : parseFloat(value);
-        });
+        updateClearButtonState();
+    }
 
-        function closeSettings() {
-            settingsModal.classList.remove('active');
+    function handleEquals() {
+        vibrateDevice();
 
-            if (forceNumber !== null && !isNaN(forceNumber)) {
-                // 숫자 입력이 있으면 포스 모드 ON
-                currentMode = 'force';
-            } else {
-                currentMode = 'normal';
-            }
+        // = 버튼 3번 탭 → 666 모드 진입
+        equalsTapCount++;
+        if (equalsTapTimer) {
+            clearTimeout(equalsTapTimer);
+        }
+        equalsTapTimer = setTimeout(() => {
+            equalsTapCount = 0;
+        }, TAP_TIMEOUT);
+
+        if (equalsTapCount === 3) {
+            equalsTapCount = 0;
+            clearTimeout(equalsTapTimer);
+            currentMode = '666';
+            updateModeIndicator();
+            return;
+        }
+
+        if (!fullExpression || fullExpression === '0') return;
+
+        const displayExpr = formatDisplayExpression(fullExpression);
+        updateExpression(displayExpr + '=');
+        expressionDisplay.classList.add('visible');
+
+        let result;
+
+        // FORCE 모드
+        if (currentMode === 'force' && forceNumber !== null && !isNaN(forceNumber)) {
+            result = forceNumber;
+            currentMode = 'normal';
             updateModeIndicator();
         }
+        // 666 모드
+        else if (currentMode === '666') {
+            const cleanExpr = fullExpression.replace(/,/g, '');
+            // 2단계: 이미 시퀀스 시작된 상태에서 999+999 계산
+            if (specialSequenceActive && cleanExpr === '999+999') {
+                result = evaluateExpression(cleanExpr); // 1998
 
-        settingsModal.addEventListener('click', (e) => {
-            if (e.target === settingsModal) {
-                closeSettings();
+                // 10초 후: 위 계산식만 666+666= 로 변경
+                sequenceTimer2 = setTimeout(() => {
+                    updateExpression('666+666=');
+                    expressionDisplay.classList.add('visible');
+
+                    // 5초 후: 결과값 1332로 변경 후 일반 모드 복귀
+                    sequenceTimer3 = setTimeout(() => {
+                        currentValue = '1332';
+                        updateDisplay(formatNumber(1332));
+                        fullExpression = '';
+                        shouldResetDisplay = true;
+                        specialSequenceActive = false;
+                        currentMode = 'normal';
+                        updateModeIndicator();
+                        updateClearButtonState();
+                    }, 5000);
+                }, 10000);
+            } else {
+                // 그 외는 일반 계산
+                result = evaluateExpression(cleanExpr);
             }
-        });
-
-        // 숫자 연타 시 전체 화면이 위로 올라가는 현상 방지
-        document.addEventListener('touchmove', (e) => {
-            const displayTextEl = document.querySelector('.display-text');
-            if (displayTextEl && displayTextEl.contains(e.target)) {
-                // 숫자 영역에서의 가로 스크롤은 허용
-                return;
+        }
+        // 일반 모드
+        else {
+            try {
+                const cleanExpr = fullExpression.replace(/,/g, '');
+                result = evaluateExpression(cleanExpr);
+            } catch (e) {
+                result = 'Error';
             }
-            e.preventDefault();
-        }, { passive: false });
+        }
 
-        updateDisplay(currentValue);
+        if (result === 'Error' || isNaN(result) || !isFinite(result)) {
+            currentValue = 'Error';
+            updateDisplay('Error');
+        } else {
+            currentValue = result.toString();
+            updateDisplay(formatNumber(result));
+        }
+
+        fullExpression = '';
+        shouldResetDisplay = true;
         updateClearButtonState();
+    }
+
+    function evaluateExpression(expr) {
+        expr = expr.replace(/\s/g, '');
+        expr = expr.replace(/×/g, '*').replace(/÷/g, '/').replace(/−/g, '-');
+        try {
+            return Function('"use strict"; return (' + expr + ')')();
+        } catch (e) {
+            return 'Error';
+        }
+    }
+
+    function formatNumber(num) {
+        if (typeof num === 'string') {
+            num = parseFloat(num);
+        }
+        if (isNaN(num)) return '0';
+
+        if (Math.abs(num) >= 1e10 || (Math.abs(num) < 1e-6 && num !== 0)) {
+            return num.toExponential(6).replace(/e\+?/, 'e');
+        }
+        let numStr = num.toString();
+        if (numStr.includes('e')) return numStr;
+
+        let parts = numStr.split('.');
+        let integerPart = parts[0];
+        let decimalPart = parts[1] || '';
+
+        integerPart = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+
+        if (decimalPart) {
+            decimalPart = decimalPart.substring(0, 8);
+            decimalPart = decimalPart.replace(/0+$/, '');
+            if (decimalPart) {
+                return integerPart + '.' + decimalPart;
+            }
+        }
+        return integerPart;
+    }
+
+    function formatDisplayExpression(expr) {
+        return expr.replace(/\d+\.?\d*/g, (match) => {
+            let num = parseFloat(match);
+            if (isNaN(num)) return match;
+            let parts = match.split('.');
+            parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+            return parts.join('.');
+        });
+    }
+
+    // 파란 점: 자동 변경 3초 전 예고 (2~4초 구간에 표시)
+    function scheduleCalcIconIndicator() {
+        if (!calcIndicator) return;
+        clearTimeout(indicatorTimer1);
+        clearTimeout(indicatorTimer2);
+        indicatorTimer1 = setTimeout(() => {
+            calcIndicator.classList.add('active');
+            indicatorTimer2 = setTimeout(() => {
+                calcIndicator.classList.remove('active');
+            }, 2000);
+        }, 2000);
+    }
+
+    // 계산기 아이콘 3번 탭 → 포스 숫자 입력
+    calcIconButton.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        calcIconTapCount++;
+        if (calcIconTapTimer) {
+            clearTimeout(calcIconTapTimer);
+        }
+        calcIconTapTimer = setTimeout(() => {
+            calcIconTapCount = 0;
+        }, TAP_TIMEOUT);
+
+        if (calcIconTapCount === 3) {
+            calcIconTapCount = 0;
+            clearTimeout(calcIconTapTimer);
+            vibrateDevice();
+            openForceSettings();
+        }
+    });
+
+    function openForceSettings() {
+        currentMode = 'normal';
         updateModeIndicator();
-    </script>
+
+        settingsModal.classList.add('active');
+
+        if (forceNumber !== null && !isNaN(forceNumber)) {
+            forceNumberInput.value = forceNumber;
+        } else {
+            forceNumberInput.value = '';
+        }
+
+        setTimeout(() => {
+            forceNumberInput.focus();
+            forceNumberInput.select();
+        }, 50);
+    }
+
+    forceNumberInput.addEventListener('input', (e) => {
+        const value = e.target.value;
+        forceNumber = value === '' ? null : parseFloat(value);
+    });
+
+    function closeSettings() {
+        settingsModal.classList.remove('active');
+
+        if (forceNumber !== null && !isNaN(forceNumber)) {
+            currentMode = 'force';
+        } else {
+            currentMode = 'normal';
+        }
+        updateModeIndicator();
+    }
+
+    settingsModal.addEventListener('click', (e) => {
+        if (e.target === settingsModal) {
+            closeSettings();
+        }
+    });
+
+    // 숫자 연타 시 화면 스크롤 방지
+    document.addEventListener('touchmove', (e) => {
+        const displayTextEl = document.querySelector('.display-text');
+        if (displayTextEl && displayTextEl.contains(e.target)) {
+            // 숫자 표시 영역의 가로 스크롤만 허용
+            return;
+        }
+        e.preventDefault();
+    }, { passive: false });
+
+    updateDisplay(currentValue);
+    updateClearButtonState();
+    updateModeIndicator();
+</script>
 </body>
 </html>
