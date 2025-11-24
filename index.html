@@ -35,15 +35,16 @@
             width: 100%;
             background: #000;
             padding-top: env(safe-area-inset-top);
+            justify-content: flex-end;
         }
 
         .header {
-            padding: 8px 16px;
+            padding: 12px 20px;
             display: flex;
             justify-content: space-between;
             align-items: center;
             background: #000;
-            min-height: 40px;
+            min-height: 50px;
         }
 
         .menu-icon {
@@ -81,23 +82,23 @@
         }
 
         .display {
-            flex: 1;
+            flex: 0;
             display: flex;
             flex-direction: column;
             justify-content: flex-end;
-            padding: 16px 24px 8px 24px;
+            padding: 20px 24px;
             overflow: hidden;
             background: #000;
-            min-height: 140px;
+            min-height: 180px;
         }
 
         .expression-text {
-            font-size: 28px;
-            font-weight: 300;
+            font-size: 30px;
+            font-weight: 400;
             text-align: right;
             color: #888;
-            margin-bottom: 4px;
-            min-height: 32px;
+            margin-bottom: 8px;
+            min-height: 36px;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
@@ -111,7 +112,7 @@
 
         .display-text {
             font-size: 80px;
-            font-weight: 200;
+            font-weight: 300;
             text-align: right;
             line-height: 1;
             overflow: hidden;
@@ -153,7 +154,7 @@
             align-items: center;
             justify-content: center;
             font-size: 32px;
-            font-weight: 400;
+            font-weight: 500;
         }
 
         .button:active {
@@ -587,14 +588,19 @@
 
         function updateDisplay(value) {
             const displayElement = document.getElementById('display');
-            if (value.length > 9) {
+            
+            // 숫자에 쉼표 추가
+            const formattedValue = formatDisplayExpression(value);
+            
+            // 길이에 따라 폰트 크기 조정
+            if (formattedValue.length > 12) {
                 displayElement.style.fontSize = '48px';
-            } else if (value.length > 7) {
+            } else if (formattedValue.length > 9) {
                 displayElement.style.fontSize = '60px';
             } else {
                 displayElement.style.fontSize = '80px';
             }
-            display.textContent = value;
+            display.textContent = formattedValue;
         }
 
         function updateExpression(text) {
@@ -694,18 +700,20 @@
             
             if (!fullExpression || fullExpression === '0') return;
             
-            // 계산식을 위로 올리기
-            updateExpression(fullExpression + ' =');
+            // 계산식을 위로 올리기 (쉼표 포함)
+            updateExpression(formatDisplayExpression(fullExpression) + ' =');
             expressionDisplay.classList.add('visible');
             
-            // 수식 계산
+            // 수식 계산 (쉼표 제거 후 계산)
             let result;
             
             if (forceMode && forceNumber !== null) {
                 result = forceNumber;
             } else {
                 try {
-                    result = evaluateExpression(fullExpression);
+                    // 쉼표 제거하고 계산
+                    const cleanExpr = fullExpression.replace(/,/g, '');
+                    result = evaluateExpression(cleanExpr);
                 } catch (e) {
                     result = 'Error';
                 }
@@ -713,12 +721,11 @@
             
             if (result === 'Error' || isNaN(result) || !isFinite(result)) {
                 currentValue = 'Error';
+                updateDisplay('Error');
             } else {
-                currentValue = formatNumber(result);
+                currentValue = result.toString();
+                updateDisplay(formatNumber(result));
             }
-            
-            // 아래에는 결과만 표시
-            updateDisplay(currentValue);
             
             fullExpression = '';
             shouldResetDisplay = true;
@@ -746,10 +753,52 @@
         }
 
         function formatNumber(num) {
-            if (num.toString().includes('.')) {
-                return parseFloat(num.toFixed(8)).toString();
+            if (typeof num === 'string') {
+                num = parseFloat(num);
             }
-            return num.toString();
+            
+            if (isNaN(num)) return '0';
+            
+            // 소수점 처리
+            let numStr = num.toString();
+            
+            // 지수 표기법 처리
+            if (numStr.includes('e')) {
+                return num.toExponential(6);
+            }
+            
+            // 정수와 소수 분리
+            let parts = numStr.split('.');
+            let integerPart = parts[0];
+            let decimalPart = parts[1] || '';
+            
+            // 천 단위 쉼표 추가
+            integerPart = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+            
+            // 소수점이 있으면 합치기
+            if (decimalPart) {
+                // 소수점 자리수 제한 (최대 8자리)
+                decimalPart = decimalPart.substring(0, 8);
+                // 끝의 0 제거
+                decimalPart = decimalPart.replace(/0+$/, '');
+                if (decimalPart) {
+                    return integerPart + '.' + decimalPart;
+                }
+            }
+            
+            return integerPart;
+        }
+
+        function formatDisplayExpression(expr) {
+            // 계산식의 숫자들에 쉼표 추가
+            return expr.replace(/\d+\.?\d*/g, (match) => {
+                let num = parseFloat(match);
+                if (isNaN(num)) return match;
+                
+                let parts = match.split('.');
+                parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+                return parts.join('.');
+            });
         }
 
         settingsModal.addEventListener('click', (e) => {
