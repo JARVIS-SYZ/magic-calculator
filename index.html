@@ -179,15 +179,13 @@
         }
 
         .button.zero {
-            grid-column: span 2;
-            border-radius: 50px;
-            padding-bottom: 0;
-            height: 100%;
+            border-radius: 50%;
+            padding-bottom: 100%;
         }
 
         .button.zero .button-content {
-            justify-content: flex-start;
-            padding-left: 30px;
+            justify-content: center;
+            padding-left: 0;
         }
 
         .button.calc-icon {
@@ -613,6 +611,13 @@
                     currentValue += num;
                 }
             }
+            
+            // 연산 중일 때 계산식 업데이트
+            if (operation !== null && previousValue !== null) {
+                expressionText = `${formatNumber(previousValue)} ${operation} ${currentValue}`;
+                updateExpression(expressionText);
+            }
+            
             updateDisplay(currentValue);
         }
 
@@ -620,7 +625,7 @@
             vibrateDevice();
             
             if (previousValue !== null && operation !== null && !shouldResetDisplay) {
-                calculate();
+                calculate(false); // = 없이 계산
             }
             
             previousValue = parseFloat(currentValue);
@@ -644,9 +649,19 @@
                     break;
                 case '±':
                     currentValue = (parseFloat(currentValue) * -1).toString();
+                    // 연산 중일 때 계산식 업데이트
+                    if (operation !== null && previousValue !== null) {
+                        expressionText = `${formatNumber(previousValue)} ${operation} ${currentValue}`;
+                        updateExpression(expressionText);
+                    }
                     break;
                 case '%':
                     currentValue = (parseFloat(currentValue) / 100).toString();
+                    // 연산 중일 때 계산식 업데이트
+                    if (operation !== null && previousValue !== null) {
+                        expressionText = `${formatNumber(previousValue)} ${operation} ${currentValue}`;
+                        updateExpression(expressionText);
+                    }
                     break;
             }
             updateDisplay(currentValue);
@@ -661,7 +676,7 @@
             expressionText = `${formatNumber(previousValue)} ${operation} ${formatNumber(current)} =`;
             updateExpression(expressionText);
             
-            calculate();
+            calculate(true); // = 눌렀을 때 계산
             operation = null;
             previousValue = null;
             shouldResetDisplay = true;
@@ -680,7 +695,7 @@
             return num.toString();
         }
 
-        function calculate() {
+        function calculate(isEquals) {
             const prev = previousValue;
             const current = parseFloat(currentValue);
             let result;
@@ -717,6 +732,11 @@
             }
             
             updateDisplay(currentValue);
+            
+            // = 없이 계산할 때는 계산식 업데이트
+            if (!isEquals && operation !== null) {
+                previousValue = parseFloat(currentValue);
+            }
         }
 
         settingsModal.addEventListener('click', (e) => {
