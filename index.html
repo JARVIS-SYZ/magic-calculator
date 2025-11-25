@@ -29,7 +29,6 @@
             font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif;
         }
 
-        /* 예전 구조로 복원 */
         .calculator {
             display: flex;
             flex-direction: column;
@@ -70,6 +69,7 @@
 
         .menu-dot {
             fill: #ff9f0a;
+            transition: opacity 0.2s;
         }
 
         .menu-line {
@@ -79,16 +79,9 @@
             stroke-linecap: round;
         }
 
+        /* 텍스트 모드 인디케이터는 완전히 숨김 */
         .mode-indicator {
-            font-size: 12px;
-            color: #ff9f0a;
-            font-weight: 600;
-            opacity: 0;
-            transition: opacity 0.3s;
-        }
-
-        .mode-indicator.active {
-            opacity: 1;
+            display: none;
         }
 
         .display {
@@ -99,8 +92,8 @@
             padding: 8px 24px 24px 24px;
             overflow: hidden;
             background: #000;
-            min-height: 230px;  /* 예전 값 */
-            margin-top: 12px;   /* 예전 값 */
+            min-height: 230px;
+            margin-top: 12px;
         }
 
         .expression-text {
@@ -150,7 +143,7 @@
             grid-template-columns: repeat(4, 1fr);
             gap: 6px;
             width: 100%;
-            padding: 4px 20px 12px;  /* 예전 값 */
+            padding: 4px 20px 12px;
         }
 
         .button {
@@ -233,7 +226,6 @@
             height: 45px;
         }
 
-        /* 파란 점 인디케이터 */
         .calc-indicator {
             position: absolute;
             bottom: -5px;
@@ -378,12 +370,13 @@
     <div class="header">
         <div class="menu-icon" id="menuIcon">
             <svg viewBox="0 0 24 24">
-                <circle class="menu-dot" cx="3" cy="5" r="1.5"/>
-                <line class="menu-line" x1="7" y1="5" x2="21" y2="5"></line>
-                <circle class="menu-dot" cx="3" cy="12" r="1.5"/>
-                <line class="menu-line" x1="7" y1="12" x2="21" y2="12"></line>
-                <circle class="menu-dot" cx="3" cy="19" r="1.5"/>
-                <line class="menu-line" x1="7" y1="19" x2="21" y2="19"></line>
+                <!-- 점에 id 부여 -->
+                <circle class="menu-dot" id="menuDotTop"    cx="3" cy="5"  r="1.5"/>
+                <line   class="menu-line" x1="7" y1="5"  x2="21" y2="5"></line>
+                <circle class="menu-dot" id="menuDotMiddle" cx="3" cy="12" r="1.5"/>
+                <line   class="menu-line" x1="7" y1="12" x2="21" y2="12"></line>
+                <circle class="menu-dot" id="menuDotBottom" cx="3" cy="19" r="1.5"/>
+                <line   class="menu-line" x1="7" y1="19" x2="21" y2="19"></line>
             </svg>
         </div>
         <div class="mode-indicator" id="modeIndicator"></div>
@@ -512,12 +505,11 @@
 
 <script>
     // ---- 666 시퀀스 기본 딜레이 (초 단위) ----
-    let SEQ1_DELAY = 5;  // 666 → 999+999
-    let SEQ2_DELAY = 10; // 999+999 결과 후 위 식 바뀌기까지
-    let SEQ3_DELAY = 5;  // 위 식 바뀐 후 결과 바뀌기까지
-    const INDICATOR_MARGIN = 2; // 딜레이 끝나기 2초 전에 점 OFF
+    let SEQ1_DELAY = 5;
+    let SEQ2_DELAY = 10;
+    let SEQ3_DELAY = 5;
+    const INDICATOR_MARGIN = 2;
 
-    // URL 파라미터로 딜레이 덮어쓰기 (예: ?d1=3&d2=8&d3=4.5)
     (function applyDelayParamsFromURL() {
         const params = new URLSearchParams(window.location.search);
         const d1 = parseFloat(params.get('d1'));
@@ -550,12 +542,16 @@
     const expressionDisplay = document.getElementById('expression');
     const settingsModal = document.getElementById('settingsModal');
     const forceNumberInput = document.getElementById('forceNumberInput');
-    const modeIndicator = document.getElementById('modeIndicator');
     const clearButtonContent = document.getElementById('clearButtonContent');
     const calcIconButton = document.getElementById('calcIconButton');
     const equalsButton = document.getElementById('equalsButton');
     const calcIndicator = document.getElementById('calcIndicator');
     const menuIcon = document.getElementById('menuIcon');
+
+    // 왼쪽 상단 점들
+    const dotTop = document.getElementById('menuDotTop');
+    const dotMiddle = document.getElementById('menuDotMiddle');
+    const dotBottom = document.getElementById('menuDotBottom');
 
     let indicatorOnTimer = null;
     let indicatorOffTimer = null;
@@ -580,16 +576,21 @@
         }
     }
 
+    // 모드에 따라 왼쪽 점 변화
     function updateModeIndicator() {
+        if (!dotTop || !dotMiddle || !dotBottom) return;
+
+        // 기본값: 점 3개 다 보이게
+        dotTop.style.opacity = '1';
+        dotMiddle.style.opacity = '1';
+        dotBottom.style.opacity = '1';
+
         if (currentMode === 'force') {
-            modeIndicator.textContent = 'FORCE';
-            modeIndicator.classList.add('active');
+            // 포스 모드: 위 점 숨김
+            dotTop.style.opacity = '0';
         } else if (currentMode === '666') {
-            modeIndicator.textContent = '666';
-            modeIndicator.classList.add('active');
-        } else {
-            modeIndicator.textContent = '';
-            modeIndicator.classList.remove('active');
+            // 666 모드: 가운데 점 숨김
+            dotMiddle.style.opacity = '0';
         }
     }
 
@@ -607,8 +608,6 @@
         if (calcIndicator) calcIndicator.classList.remove('active');
     }
 
-    // 공통: 딜레이 동안 점 켜고, 끝나기 2초 전에 끄기
-    // offsetStartSec: 몇 초 뒤에 점을 켤지 (기본 0초 = 바로 켜기)
     function startIndicator(durationSec, offsetStartSec = 0) {
         if (!calcIndicator) return;
 
@@ -692,7 +691,6 @@
         expressionDisplay.textContent = text;
     }
 
-    // 666 모드: 마지막 숫자가 666이면 1단계 시퀀스 시작
     function maybeStart666SequenceFromNumber() {
         if (currentMode !== '666' || specialSequenceActive) return;
 
@@ -704,10 +702,8 @@
             specialSequenceActive = true;
             clearAllTimers();
 
-            // 1단계 딜레이 동안 점 표시
             startIndicator(SEQ1_DELAY);
 
-            // SEQ1_DELAY 후 999+999로 변경
             sequenceTimer1 = setTimeout(() => {
                 fullExpression = '999+999';
                 currentValue = '999';
@@ -747,7 +743,6 @@
         updateDisplay(fullExpression || currentValue);
         updateClearButtonState();
 
-        // 666 모드일 때 666 입력 감지
         maybeStart666SequenceFromNumber();
     }
 
@@ -852,7 +847,7 @@
     function handleEquals() {
         vibrateDevice();
 
-        // = 버튼 3번 탭 → 666 모드 켜기
+        // = 3번 탭 → 666 모드
         equalsTapCount++;
         if (equalsTapTimer) {
             clearTimeout(equalsTapTimer);
@@ -877,32 +872,24 @@
 
         let result;
 
-        // FORCE 모드
         if (currentMode === 'force' && forceNumber !== null && !isNaN(forceNumber)) {
             result = forceNumber;
             currentMode = 'normal';
             updateModeIndicator();
-        }
-        // 666 모드
-        else if (currentMode === '666') {
+        } else if (currentMode === '666') {
             const cleanExpr = fullExpression.replace(/,/g, '');
 
-            // 2단계: 이미 999+999 상태에서 = 를 눌렀을 때
             if (specialSequenceActive && cleanExpr === '999+999') {
                 result = evaluateExpression(cleanExpr); // 1998
 
-                // 2단계 딜레이 동안 점 표시
                 startIndicator(SEQ2_DELAY);
 
-                // SEQ2_DELAY 후: 위 계산식만 666+666= 으로 변경
                 sequenceTimer2 = setTimeout(() => {
                     updateExpression('666+666=');
                     expressionDisplay.classList.add('visible');
 
-                    // 3단계 딜레이 동안 점 표시 (3초 후 켜졌다가, 끝나기 2초 전에 OFF)
                     startIndicator(SEQ3_DELAY, 3);
 
-                    // SEQ3_DELAY 후: 결과값 1332로 변경 후 일반 모드 복귀
                     sequenceTimer3 = setTimeout(() => {
                         currentValue = '1332';
                         updateDisplay(formatNumber(1332));
@@ -917,9 +904,7 @@
             } else {
                 result = evaluateExpression(cleanExpr);
             }
-        }
-        // 일반 모드
-        else {
+        } else {
             try {
                 const cleanExpr = fullExpression.replace(/,/g, '');
                 result = evaluateExpression(cleanExpr);
@@ -989,7 +974,7 @@
         });
     }
 
-    // 계산기 아이콘 3번 탭 → 포스 숫자 입력
+    // 계산기 아이콘 3번 탭 → 포스 숫자 설정 모달
     calcIconButton.addEventListener('click', (e) => {
         e.preventDefault();
         e.stopPropagation();
