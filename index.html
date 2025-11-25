@@ -30,7 +30,7 @@
         }
 
         .calculator {
-            position: relative; /* 파란 점 기준 */
+            position: relative;
             display: flex;
             flex-direction: column;
             min-height: 100vh;
@@ -85,7 +85,7 @@
             font-size: 12px;
             color: #ff9f0a;
             font-weight: 600;
-            opacity: 0; /* 텍스트는 숨김 */
+            opacity: 0;
         }
 
         .display {
@@ -517,28 +517,85 @@
     let currentMode = 'normal';
     let specialSequenceActive = false;
 
-    // 3번 탭 감지
+    // 탭 카운트
     let calcIconTapCount = 0;
     let calcIconTapTimer = null;
     let equalsTapCount = 0;
     let equalsTapTimer = null;
     const TAP_TIMEOUT = 500;
 
-    // 길게 누르기 (백업용)
+    // 길게 눌러 설정 (백업)
     let longPressTimer = null;
     const LONG_PRESS_DURATION = 3000;
 
-    // clear 버튼 모드: 'all' = AC, 'backspace' = 지우개
+    // clear 버튼 모드
     let clearMode = 'all';
 
-    // 딜레이 관리
-    const delayDot = document.getElementById('delayDot');
-    let delayTimers = [];
+    // ====== 딜레이 기본값 (3단계) ======
+    // 1단계: 666 입력 후 → 999+999 로 바뀔 때까지
+    const DEFAULT_DELAY_666_STAGE1 = 5000;
+    // 2단계: 999+999= 한 뒤 → 위 식이 666+666= 으로 바뀔 때까지
+    const DEFAULT_DELAY_666_STAGE2 = 10000;
+    // 3단계: 위 식이 666+666= 으로 바뀐 뒤 → 결과가 1332 로 바뀔 때까지
+    const DEFAULT_DELAY_666_STAGE3 = 5000;
 
-    // 666 시퀀스 딜레이 시간 (ms)
-    const DELAY_666_STAGE1 = 5000;   // 1단계: 666+666= 후 999+999로 변환까지
-    const DELAY_666_STAGE2 = 15000;  // 2단계: 999+999= 후 666+666= / 1332 로 변환까지
+    // 파란 점 타이밍
+    const DEFAULT_DOT_STAGE1_APPEAR = 0;
+    const DEFAULT_DOT_STAGE1_DISAPPEAR_BEFORE = 2000;
 
+    const DEFAULT_DOT_STAGE2_APPEAR = 3000;
+    const DEFAULT_DOT_STAGE2_DISAPPEAR_BEFORE = 2000;
+
+    const DEFAULT_DOT_STAGE3_APPEAR = 3000;
+    const DEFAULT_DOT_STAGE3_DISAPPEAR_BEFORE = 2000;
+
+    // 실제 적용값
+    let DELAY_666_STAGE1 = DEFAULT_DELAY_666_STAGE1;
+    let DELAY_666_STAGE2 = DEFAULT_DELAY_666_STAGE2;
+    let DELAY_666_STAGE3 = DEFAULT_DELAY_666_STAGE3;
+
+    let DOT_STAGE1_APPEAR = DEFAULT_DOT_STAGE1_APPEAR;
+    let DOT_STAGE1_DISAPPEAR_BEFORE = DEFAULT_DOT_STAGE1_DISAPPEAR_BEFORE;
+
+    let DOT_STAGE2_APPEAR = DEFAULT_DOT_STAGE2_APPEAR;
+    let DOT_STAGE2_DISAPPEAR_BEFORE = DEFAULT_DOT_STAGE2_DISAPPEAR_BEFORE;
+
+    let DOT_STAGE3_APPEAR = DEFAULT_DOT_STAGE3_APPEAR;
+    let DOT_STAGE3_DISAPPEAR_BEFORE = DEFAULT_DOT_STAGE3_DISAPPEAR_BEFORE;
+
+    // URL 파라미터로 딜레이 커스터마이즈
+    function loadDelayConfigFromURL() {
+        try {
+            const params = new URLSearchParams(window.location.search);
+            const getMs = (key, def) => {
+                const v = params.get(key);
+                if (v === null) return def;
+                const n = parseInt(v, 10);
+                return isNaN(n) ? def : n;
+            };
+
+            // 예) ?d1=4000&d2=12000&d3=6000&dot1On=0&dot1Off=2000&dot2On=3000&dot2Off=2000&dot3On=3000&dot3Off=2000
+            DELAY_666_STAGE1 = getMs('d1', DEFAULT_DELAY_666_STAGE1);
+            DELAY_666_STAGE2 = getMs('d2', DEFAULT_DELAY_666_STAGE2);
+
+            // d3 없을 때 옛날 gap 파라미터가 있다면 그걸 사용
+            const gapOrDefault = getMs('gap', DEFAULT_DELAY_666_STAGE3);
+            DELAY_666_STAGE3 = getMs('d3', gapOrDefault);
+
+            DOT_STAGE1_APPEAR = getMs('dot1On', DEFAULT_DOT_STAGE1_APPEAR);
+            DOT_STAGE1_DISAPPEAR_BEFORE = getMs('dot1Off', DEFAULT_DOT_STAGE1_DISAPPEAR_BEFORE);
+
+            DOT_STAGE2_APPEAR = getMs('dot2On', DEFAULT_DOT_STAGE2_APPEAR);
+            DOT_STAGE2_DISAPPEAR_BEFORE = getMs('dot2Off', DEFAULT_DOT_STAGE2_DISAPPEAR_BEFORE);
+
+            DOT_STAGE3_APPEAR = getMs('dot3On', DEFAULT_DOT_STAGE3_APPEAR);
+            DOT_STAGE3_DISAPPEAR_BEFORE = getMs('dot3Off', DEFAULT_DOT_STAGE3_DISAPPEAR_BEFORE);
+        } catch (e) {
+            // 에러 나도 기본값 사용
+        }
+    }
+
+    // ====== DOM 참조 ======
     const display = document.getElementById('display');
     const expressionDisplay = document.getElementById('expression');
     const settingsModal = document.getElementById('settingsModal');
@@ -547,8 +604,8 @@
     const clearButtonContent = document.getElementById('clearButtonContent');
     const calcIconButton = document.getElementById('calcIconButton');
     const equalsButton = document.getElementById('equalsButton');
+    const delayDot = document.getElementById('delayDot');
 
-    // 메뉴 아이콘 점들
     const dotTop = document.getElementById('dotTop');
     const dotMid = document.getElementById('dotMid');
     const dotBot = document.getElementById('dotBot');
@@ -565,7 +622,9 @@
         </svg>
     `;
 
-    /* ---------- 파란 점 / 딜레이 관리 ---------- */
+    // ====== 파란 점 / 딜레이 타이머 관리 ======
+    let delayTimers = [];
+
     function clearAllDelayTimers() {
         delayTimers.forEach(id => clearTimeout(id));
         delayTimers = [];
@@ -580,31 +639,19 @@
         delayDot.style.opacity = '0';
     }
 
-    /**
-     * totalMs: 전체 딜레이 시간
-     * dotAppearOffsetMs: 딜레이 시작 후 점이 나타나는 시점 (0이면 바로)
-     * dotDisappearBeforeEndMs: 딜레이 끝나기 몇 ms 전에 점을 끌지
-     * onComplete: 딜레이 끝날 때 실행
-     */
     function runDelayWithDot(totalMs, dotAppearOffsetMs, dotDisappearBeforeEndMs, onComplete) {
         clearAllDelayTimers();
 
         if (totalMs <= 0) {
-            if (onComplete) onComplete();
+            onComplete && onComplete();
             return;
         }
 
         const appearTime = Math.max(0, dotAppearOffsetMs);
         const disappearTime = Math.max(0, totalMs - dotDisappearBeforeEndMs);
 
-        const appearId = setTimeout(() => {
-            showDelayDot();
-        }, appearTime);
-
-        const disappearId = setTimeout(() => {
-            hideDelayDot();
-        }, disappearTime);
-
+        const appearId = setTimeout(showDelayDot, appearTime);
+        const disappearId = setTimeout(hideDelayDot, disappearTime);
         const completeId = setTimeout(() => {
             hideDelayDot();
             delayTimers = delayTimers.filter(
@@ -616,7 +663,7 @@
         delayTimers.push(appearId, disappearId, completeId);
     }
 
-    /* ---------- Clear 버튼 상태 ---------- */
+    // ====== Clear 버튼 상태 ======
     function updateClearButtonState() {
         const hasInput = (fullExpression !== '' || currentValue !== '0');
         if (hasInput) {
@@ -628,22 +675,24 @@
         }
     }
 
+    // ====== 모드 표시 (왼쪽 위 점) ======
     function updateModeIndicator() {
-        dotTop.style.opacity  = '1';
-        dotMid.style.opacity  = '1';
-        dotBot.style.opacity  = '1';
+        dotTop.style.opacity = '1';
+        dotMid.style.opacity = '1';
+        dotBot.style.opacity = '1';
 
         if (currentMode === 'force') {
-            dotTop.style.opacity = '0'; // FORCE → 윗 점 숨김
+            dotTop.style.opacity = '0';   // 포스 모드 → 위 점 숨김
         } else if (currentMode === '666') {
-            dotMid.style.opacity = '0'; // 666 → 가운데 점 숨김
+            dotMid.style.opacity = '0';   // 666 모드 → 가운데 점 숨김
         }
-        modeIndicator.textContent = ''; // 텍스트는 사용 안 함
+
+        modeIndicator.textContent = '';   // 글자는 숨김
     }
 
-    /* ---------- 숨겨진 모드 진입 ---------- */
+    // ====== 숨겨진 모드 진입 ======
 
-    // 계산기 아이콘 3번 탭 → 설정창
+    // 계산기 아이콘 3번 탭 → 포스 숫자 설정창
     calcIconButton.addEventListener('click', (e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -676,37 +725,30 @@
             equalsTapCount = 0;
             clearTimeout(equalsTapTimer);
             vibrateDevice();
-            currentMode = (currentMode === '666') ? 'normal' : '666';
-            specialSequenceActive = false;
             clearAllDelayTimers();
+            specialSequenceActive = false;
+            currentMode = (currentMode === '666') ? 'normal' : '666';
             updateModeIndicator();
         }
     });
 
-    // 계산기 아이콘 길게 눌러도 설정 (백업용)
+    // 계산기 아이콘 길게 눌러도 설정 (백업)
     calcIconButton.addEventListener('touchstart', () => {
         longPressTimer = setTimeout(() => {
             vibrateDevice();
             openSettings();
         }, LONG_PRESS_DURATION);
     });
-    calcIconButton.addEventListener('touchend', () => {
-        clearTimeout(longPressTimer);
-    });
-    calcIconButton.addEventListener('touchmove', () => {
-        clearTimeout(longPressTimer);
-    });
+    calcIconButton.addEventListener('touchend', () => clearTimeout(longPressTimer));
+    calcIconButton.addEventListener('touchmove', () => clearTimeout(longPressTimer));
     calcIconButton.addEventListener('mousedown', () => {
         longPressTimer = setTimeout(() => {
+            vibrateDevice();
             openSettings();
         }, LONG_PRESS_DURATION);
     });
-    calcIconButton.addEventListener('mouseup', () => {
-        clearTimeout(longPressTimer);
-    });
-    calcIconButton.addEventListener('mouseleave', () => {
-        clearTimeout(longPressTimer);
-    });
+    calcIconButton.addEventListener('mouseup', () => clearTimeout(longPressTimer));
+    calcIconButton.addEventListener('mouseleave', () => clearTimeout(longPressTimer));
 
     forceNumberInput.addEventListener('input', (e) => {
         const value = e.target.value;
@@ -732,7 +774,7 @@
         }
     }
 
-    /* ---------- 표시 ---------- */
+    // ====== 표시 업데이트 ======
     function updateDisplay(value) {
         const displayElement = display;
         const containerWidth = displayElement.parentElement.offsetWidth - 48;
@@ -751,7 +793,7 @@
 
         let optimalFontSize = 80;
         measureElement.style.fontSize = optimalFontSize + 'px';
-        let textWidth = measureElement.offsetWidth;
+        const textWidth = measureElement.offsetWidth;
 
         if (textWidth > containerWidth) {
             optimalFontSize = Math.floor((containerWidth / textWidth) * optimalFontSize);
@@ -772,7 +814,7 @@
         expressionDisplay.textContent = text;
     }
 
-    /* ---------- 숫자 / 연산 처리 ---------- */
+    // ====== 입력 처리 ======
     function handleNumber(num) {
         vibrateDevice();
 
@@ -802,17 +844,39 @@
             }
         }
 
-        clearAllDelayTimers(); // 새 입력 들어오면 딜레이/점 취소
-        specialSequenceActive = false;
-
         updateDisplay(fullExpression || currentValue);
+
+        // 1단계 트리거: 666 모드에서 "666"이 된 순간
+        if (currentMode === '666') {
+            const clean = fullExpression.replace(/,/g, '');
+            if (clean === '666') {
+                expressionDisplay.classList.remove('visible');
+                updateExpression('');
+                specialSequenceActive = true;
+
+                // 1단계 딜레이: 666 → 999+999
+                runDelayWithDot(
+                    DELAY_666_STAGE1,
+                    DOT_STAGE1_APPEAR,
+                    DOT_STAGE1_DISAPPEAR_BEFORE,
+                    () => {
+                        if (!specialSequenceActive || currentMode !== '666') return;
+                        fullExpression = '999+999';
+                        currentValue = '999';
+                        updateDisplay(fullExpression);
+                        updateClearButtonState();
+                    }
+                );
+            }
+        }
+
         updateClearButtonState();
     }
 
     function handleOperator(op) {
         vibrateDevice();
 
-        // = 이후 첫 연산자 → 위 계산식 제거
+        // 결과 직후 연산자 → 위 계산식 지우기
         if (shouldResetDisplay) {
             expressionDisplay.classList.remove('visible');
             updateExpression('');
@@ -830,10 +894,6 @@
         }
 
         currentValue = '0';
-
-        clearAllDelayTimers();
-        specialSequenceActive = false;
-
         updateDisplay(fullExpression);
         updateClearButtonState();
     }
@@ -870,18 +930,16 @@
                 break;
         }
 
-        clearAllDelayTimers();
-        specialSequenceActive = false;
         updateClearButtonState();
     }
 
     function handleClear() {
         vibrateDevice();
 
+        // AC / 백스페이스 둘 다 딜레이는 취소
         clearAllDelayTimers();
         specialSequenceActive = false;
-        currentMode = (currentMode === 'force' || currentMode === '666') ? currentMode : 'normal';
-        updateModeIndicator();
+        updateModeIndicator(); // 모드 자체는 유지
 
         if (clearMode === 'all') {
             currentValue = '0';
@@ -936,64 +994,49 @@
         }
         // 666 모드
         else if (currentMode === '666') {
-            clearAllDelayTimers();
-
-            // 1단계: 666+666=
-            if (cleanExpr === '666+666') {
-                // 위 계산식 숨기고 바로 시퀀스 시작
-                expressionDisplay.classList.remove('visible');
-                updateExpression('');
-                specialSequenceActive = true;
-
-                // 5초 딜레이: 시작과 함께 점 ON, 끝나기 2초 전 점 OFF
-                runDelayWithDot(
-                    DELAY_666_STAGE1,
-                    0,              // 바로 점 켜기
-                    2000,           // 끝 2초 전에 점 끄기
-                    () => {
-                        if (!specialSequenceActive) return;
-                        fullExpression = '999+999';
-                        currentValue   = '999';
-                        updateDisplay(fullExpression);
-                        updateClearButtonState();
-                    }
-                );
-
-                result = 1332; // 첫 결과는 1332
-            }
-            // 2단계: 999+999= (시퀀스 진행 중일 때)
-            else if (specialSequenceActive && cleanExpr === '999+999') {
+            // 2단계 트리거: 999+999 에서 = 누를 때
+            if (specialSequenceActive && cleanExpr === '999+999') {
                 const displayExpr = formatDisplayExpression(fullExpression);
                 updateExpression(displayExpr + '=');
                 expressionDisplay.classList.add('visible');
 
                 result = evaluateExpression(cleanExpr); // 1998 예상
 
-                // 2단계 딜레이: 3초 후 점 켜지고, 끝 2초 전 점 꺼짐
+                // 2단계 딜레이: 999+999= → 위 식 666+666=
                 runDelayWithDot(
                     DELAY_666_STAGE2,
-                    3000,           // 시작 후 3초 뒤 점 켜기
-                    2000,           // 끝 2초 전에 점 끄기
+                    DOT_STAGE2_APPEAR,
+                    DOT_STAGE2_DISAPPEAR_BEFORE,
                     () => {
-                        // 최종 변화
+                        if (!specialSequenceActive || currentMode !== '666') return;
+
+                        // 위 식만 666+666= 으로 변경 (3단계 시작점)
                         updateExpression('666+666=');
                         expressionDisplay.classList.add('visible');
-                        currentValue = '1332';
-                        updateDisplay(formatNumber(1332));
-                        specialSequenceActive = false;
-                        currentMode = 'normal';
-                        updateModeIndicator();
+
+                        // 3단계 딜레이: 위 식 666+666= → 결과 1332
+                        runDelayWithDot(
+                            DELAY_666_STAGE3,
+                            DOT_STAGE3_APPEAR,
+                            DOT_STAGE3_DISAPPEAR_BEFORE,
+                            () => {
+                                if (!specialSequenceActive || currentMode !== '666') return;
+
+                                currentValue = '1332';
+                                updateDisplay(formatNumber(1332));
+                                specialSequenceActive = false;
+                                currentMode = 'normal';
+                                updateModeIndicator();
+                            }
+                        );
                     }
                 );
-            }
-            // 그 외에는 일반 계산처럼
-            else {
+            } else {
+                // 666 모드지만 시퀀스와 무관한 일반 계산
                 const displayExpr = formatDisplayExpression(fullExpression);
                 updateExpression(displayExpr + '=');
                 expressionDisplay.classList.add('visible');
                 result = evaluateExpression(cleanExpr);
-                clearAllDelayTimers();
-                specialSequenceActive = false;
             }
         }
         // 일반 모드
@@ -1007,9 +1050,6 @@
             } catch (e) {
                 result = 'Error';
             }
-
-            clearAllDelayTimers();
-            specialSequenceActive = false;
         }
 
         if (result === 'Error' || isNaN(result) || !isFinite(result)) {
@@ -1082,7 +1122,8 @@
         }
     });
 
-    // 초기 상태
+    // ====== 초기 설정 ======
+    loadDelayConfigFromURL();
     updateDisplay(currentValue);
     updateClearButtonState();
     updateModeIndicator();
