@@ -216,10 +216,12 @@
             padding-left: 0;
         }
 
-        .button.calc-icon {
-            background: #333;
-            color: #fff;
-        }
+        /* 계산기 버튼에 기준점 잡기 */
+.button.calc-icon {
+    background: #333;
+    color: #fff;
+    position: relative;          /* ✅ 추가 */
+}
 
         .button.calc-icon .button-content {
             font-size: 24px;
@@ -243,8 +245,7 @@
         /* 파란 점 (딜레이 표시) */
         .delay-dot {
     position: absolute;
-    /* 🔼 예전: bottom: 8px;  → 조금 위로 올려서 확실히 보이게 */
-    bottom: 24px;
+    bottom: -6px;                /* 버튼 원 바깥으로 조금 내려오기 */
     left: 50%;
     transform: translateX(-50%);
     width: 6px;
@@ -254,8 +255,7 @@
     opacity: 0;
     transition: opacity 0.15s;
     pointer-events: none;
-    /* 🔼 버튼 / 내용 위로 올라오도록 */
-    z-index: 10;
+    z-index: 5;
 }
         .settings-modal {
             position: fixed;
@@ -461,23 +461,26 @@
 
             <!-- 계산기 아이콘 -->
             <button class="button calc-icon" id="calcIconButton">
-                <div class="button-content">
-                    <svg class="calc-icon-svg" viewBox="0 0 24 24">
-                        <rect x="5.5" y="3.5" width="13" height="17" rx="1.4"
-                              fill="currentColor" stroke="currentColor" stroke-width="1.4"/>
-                        <rect x="7.2" y="5.2" width="9.6" height="4.2" rx="0.9" fill="#333"/>
-                        <circle cx="8.5" cy="11.8" r="1.2" fill="#333"/>
-                        <circle cx="12"  cy="11.8" r="1.2" fill="#333"/>
-                        <circle cx="15.5" cy="11.8" r="1.2" fill="#333"/>
-                        <circle cx="8.5" cy="15.3" r="1.2" fill="#333"/>
-                        <circle cx="12"  cy="15.3" r="1.2" fill="#333"/>
-                        <circle cx="15.5" cy="15.3" r="1.2" fill="#333"/>
-                        <circle cx="8.5" cy="18.8" r="1.2" fill="#333"/>
-                        <circle cx="12"  cy="18.8" r="1.2" fill="#333"/>
-                        <circle cx="15.5" cy="18.8" r="1.2" fill="#333"/>
-                    </svg>
-                </div>
-            </button>
+    <div class="button-content">
+        <svg class="calc-icon-svg" viewBox="0 0 24 24">
+            <rect x="5.5" y="3.5" width="13" height="17" rx="1.4"
+                  fill="currentColor" stroke="currentColor" stroke-width="1.4"/>
+            <rect x="7.2" y="5.2" width="9.6" height="4.2" rx="0.9" fill="#333"/>
+            <circle cx="8.5" cy="11.8" r="1.2" fill="#333"/>
+            <circle cx="12"  cy="11.8" r="1.2" fill="#333"/>
+            <circle cx="15.5" cy="11.8" r="1.2" fill="#333"/>
+            <circle cx="8.5" cy="15.3" r="1.2" fill="#333"/>
+            <circle cx="12"  cy="15.3" r="1.2" fill="#333"/>
+            <circle cx="15.5" cy="15.3" r="1.2" fill="#333"/>
+            <circle cx="8.5" cy="18.8" r="1.2" fill="#333"/>
+            <circle cx="12"  cy="18.8" r="1.2" fill="#333"/>
+            <circle cx="15.5" cy="18.8" r="1.2" fill="#333"/>
+        </svg>
+    </div>
+
+    <!-- ✅ 계산기 아이콘 바로 아래에 붙는 파란 점 -->
+    <div class="delay-dot" id="delayDot"></div>
+</button>
 
             <button class="button number zero" onclick="handleNumber('0')">
                 <div class="button-content">0</div>
@@ -491,9 +494,6 @@
         </div>
     </div>
 
-    <!-- 파란 딜레이 점 -->
-    <div class="delay-dot" id="delayDot"></div>
-</div>
 
 <!-- 설정 모달 -->
 <div class="settings-modal" id="settingsModal">
