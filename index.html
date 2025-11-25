@@ -42,12 +42,12 @@
     width: 100%;
     background: #000;
     justify-content: flex-end;
-    overflow: hidden; /* visible → hidden 으로 바꾸는 것도 안전 */
+    overflow: hidden;
 
-    padding-top: calc(env(safe-area-inset-top) * 0.85 + 3px);
+    /* 🔽 여기만 수정 */
+    padding-top: calc(env(safe-area-inset-top) * 0.85 + 18px); /* 원래 +3px → +18px 로 15px 더 내려줌 */
     padding-bottom: env(safe-area-inset-bottom);
 }
-
         .header {
             padding: 4px 20px 4px 20px;
             display: flex;
