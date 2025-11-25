@@ -29,22 +29,17 @@
             font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif;
         }
 
-        /* 화면 전체에 고정되는 계산기 래퍼 */
+        /* 예전 구조로 복원 */
         .calculator {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-
             display: flex;
             flex-direction: column;
+            min-height: 100vh;
+            min-height: 100dvh;
             width: 100%;
             background: #000;
             justify-content: flex-end;
-            overflow: hidden;
-
-            padding-top: calc(env(safe-area-inset-top) * 0.85 + 10px);
+            overflow: visible;
+            padding-top: calc(env(safe-area-inset-top) * 0.85 + 3px);
             padding-bottom: env(safe-area-inset-bottom);
         }
 
@@ -97,23 +92,16 @@
         }
 
         .display {
-    /* 🔽 여기부터 전부 교체 */
-
-    flex: 0;
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-end;
-    padding: 8px 24px 24px 24px;
-    overflow: hidden;
-    background: #000;
-
-    /* 숫자 영역 자체 높이를 조금 키우고 */
-    min-height: 260px;
-
-    /* 헤더 아래로 더 많이 내리기 (기존 24px 근처였을 거예요) */
-    margin-top: 70px;
-}
-
+            flex: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            padding: 8px 24px 24px 24px;
+            overflow: hidden;
+            background: #000;
+            min-height: 230px;  /* 예전 값 */
+            margin-top: 12px;   /* 예전 값 */
+        }
 
         .expression-text {
             font-size: 24px;
@@ -158,14 +146,11 @@
         }
 
         .button-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 6px;
-    width: 100%;
-
-    /* 버튼 영역은 위쪽 여백을 조금 줄여서
-       전체적으로는 아래로 내려가지만 너무 밑으로 쏠리지 않게 */
-    padding: 4px 20px 12px;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 6px;
+            width: 100%;
+            padding: 4px 20px 12px;  /* 예전 값 */
         }
 
         .button {
@@ -248,7 +233,7 @@
             height: 45px;
         }
 
-        /* 파란 점: 작고 더 아래 */
+        /* 파란 점 인디케이터 */
         .calc-indicator {
             position: absolute;
             bottom: -5px;
