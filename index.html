@@ -80,12 +80,11 @@
             stroke-linecap: round;
         }
 
-        /* 오른쪽 텍스트 모드표시는 쓰지 않음 */
         .mode-indicator {
             font-size: 12px;
             color: #ff9f0a;
             font-weight: 600;
-            opacity: 0;
+            opacity: 0; /* 텍스트는 숨김 */
         }
 
         .display {
@@ -550,18 +549,17 @@
         }
     }
 
-    // 모드는 왼쪽 점으로만 표시 (텍스트는 숨김)
     function updateModeIndicator() {
-        dotTop.style.opacity = '1';
-        dotMid.style.opacity = '1';
-        dotBot.style.opacity = '1';
+        dotTop.style.opacity  = '1';
+        dotMid.style.opacity  = '1';
+        dotBot.style.opacity  = '1';
 
         if (currentMode === 'force') {
-            dotTop.style.opacity = '0';   // FORCE → 윗 점 숨김
+            dotTop.style.opacity = '0'; // FORCE → 윗 점 숨김
         } else if (currentMode === '666') {
-            dotMid.style.opacity = '0';   // 666 → 가운데 점 숨김
+            dotMid.style.opacity = '0'; // 666 → 가운데 점 숨김
         }
-        modeIndicator.textContent = '';
+        modeIndicator.textContent = ''; // 텍스트는 사용 안 함
     }
 
     // 계산기 아이콘 3번 탭 → 설정창
@@ -602,7 +600,7 @@
         }
     });
 
-    // 계산기 아이콘 길게 눌러도 설정 (백업)
+    // 계산기 아이콘 길게 눌러도 설정 (백업용)
     calcIconButton.addEventListener('touchstart', () => {
         longPressTimer = setTimeout(() => {
             vibrateDevice();
@@ -693,9 +691,20 @@
     function handleNumber(num) {
         vibrateDevice();
 
+        const lastChar = fullExpression.slice(-1);
+
+        // = 이후 첫 숫자 입력인데, fullExpression이 "결과+"
+        // 처럼 연산자로 끝나면 기존 식 유지 + 숫자만 붙이기
         if (shouldResetDisplay) {
-            currentValue = num;
-            fullExpression = num;
+            if (fullExpression && '÷×−+'.includes(lastChar)) {
+                // 예: "666+" 상태에서 새 숫자 시작
+                currentValue = (num === '.' ? '0.' : num);
+                fullExpression += (num === '.' ? '0.' : num);
+            } else {
+                // 완전히 새로운 식 시작
+                currentValue = (num === '.' ? '0.' : num);
+                fullExpression = (num === '.' ? '0.' : num);
+            }
             shouldResetDisplay = false;
         } else {
             if (currentValue === '0' && num !== '.') {
@@ -718,6 +727,14 @@
 
     function handleOperator(op) {
         vibrateDevice();
+
+        // ✅ 방금 = 을 누른 상태에서 연산자 누르면
+        // 위에 있던 계산식(예: 333+333=)은 사라지게
+        if (shouldResetDisplay) {
+            expressionDisplay.classList.remove('visible');
+            updateExpression('');
+            shouldResetDisplay = false;
+        }
 
         if (fullExpression && '÷×−+'.includes(fullExpression.slice(-1))) {
             fullExpression = fullExpression.slice(0, -1) + op;
@@ -753,8 +770,8 @@
                 break;
             case '%':
                 if (currentValue !== '0') {
-                    const num = parseFloat(currentValue) / 100;
-                    currentValue = num.toString();
+                    const numP = parseFloat(currentValue) / 100;
+                    currentValue = numP.toString();
                     const lastNumMatchP = fullExpression.match(/[\d.]+$/);
                     if (lastNumMatchP) {
                         fullExpression = fullExpression.slice(0, -lastNumMatchP[0].length) + currentValue;
@@ -809,42 +826,50 @@
 
         if (!fullExpression || fullExpression === '0') return;
 
-        const displayExpr = formatDisplayExpression(fullExpression);
-        updateExpression(displayExpr + '=');
-        expressionDisplay.classList.add('visible');
-
         let result;
+        const cleanExpr = fullExpression.replace(/,/g, '');
 
         // 포스 모드
         if (currentMode === 'force' && forceNumber !== null) {
+            const displayExpr = formatDisplayExpression(fullExpression);
+            updateExpression(displayExpr + '=');
+            expressionDisplay.classList.add('visible');
+
             result = forceNumber;
             currentMode = 'normal';
             updateModeIndicator();
         }
-        // 666 모드 (간단 버전: 666+666일 때 시퀀스 시작)
+        // 666 모드
         else if (currentMode === '666') {
-            const cleanExpr = fullExpression.replace(/,/g, '');
             if (cleanExpr === '666+666') {
+                expressionDisplay.classList.remove('visible');
+                updateExpression('');
+
                 specialSequenceActive = true;
 
-                // 5초 뒤 999+999로 바꾸기
                 setTimeout(() => {
                     if (!specialSequenceActive) return;
                     fullExpression = '999+999';
-                    currentValue = '999';
+                    currentValue   = '999';
                     updateDisplay(fullExpression);
                     updateClearButtonState();
                 }, 5000);
 
                 result = 1332;
             } else {
+                const displayExpr = formatDisplayExpression(fullExpression);
+                updateExpression(displayExpr + '=');
+                expressionDisplay.classList.add('visible');
                 result = evaluateExpression(cleanExpr);
             }
         }
         // 일반 모드
         else {
+            const displayExpr = formatDisplayExpression(fullExpression);
+            updateExpression(displayExpr + '=');
+            expressionDisplay.classList.add('visible');
+
             try {
-                const cleanExpr = fullExpression.replace(/,/g, '');
                 result = evaluateExpression(cleanExpr);
             } catch (e) {
                 result = 'Error';
@@ -862,7 +887,7 @@
         fullExpression = '';
         shouldResetDisplay = true;
 
-        // =을 누른 직후에는 무조건 AC 모드로 보이게
+        // = 이후에는 무조건 AC 모드
         clearMode = 'all';
         clearButtonContent.textContent = 'AC';
     }
