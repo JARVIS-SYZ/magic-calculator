@@ -568,11 +568,12 @@
         try {
             const params = new URLSearchParams(window.location.search);
             const getMs = (key, def) => {
-                const v = params.get(key);
-                if (v === null) return def;
-                const n = parseInt(v, 10);
-                return isNaN(n) ? def : n;
-            };
+    const v = params.get(key);
+    if (v === null) return def;
+    const n = parseFloat(v);      // 정수 말고 소수도 허용
+    if (isNaN(n)) return def;
+    return n * 1000;              // ★ 초 → 밀리초 변환
+};
 
             // 예) ?d1=4000&d2=12000&d3=6000&dot1On=0&dot1Off=2000&dot2On=3000&dot2Off=2000&dot3On=3000&dot3Off=2000
             DELAY_666_STAGE1 = getMs('d1', DEFAULT_DELAY_666_STAGE1);
