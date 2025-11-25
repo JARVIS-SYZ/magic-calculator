@@ -517,6 +517,10 @@
     let currentMode = 'normal';
     let specialSequenceActive = false;
 
+    // 666 트리거 상태
+    let lastResultWas666 = false;   // 직전에 = 으로 666을 만든 상태인지
+    let sequenceStarted = false;    // 666 시퀀스(1단계)가 이미 시작됐는지
+
     // 탭 카운트
     let calcIconTapCount = 0;
     let calcIconTapTimer = null;
@@ -532,7 +536,7 @@
     let clearMode = 'all';
 
     // ====== 딜레이 기본값 (3단계) ======
-    // 1단계: 666 입력 후 → 999+999 로 바뀔 때까지
+    // 1단계: 666+666 완성 후 → 999+999 로 바뀔 때까지
     const DEFAULT_DELAY_666_STAGE1 = 5000;
     // 2단계: 999+999= 한 뒤 → 위 식이 666+666= 으로 바뀔 때까지
     const DEFAULT_DELAY_666_STAGE2 = 10000;
@@ -563,19 +567,19 @@
     let DOT_STAGE3_APPEAR = DEFAULT_DOT_STAGE3_APPEAR;
     let DOT_STAGE3_DISAPPEAR_BEFORE = DEFAULT_DOT_STAGE3_DISAPPEAR_BEFORE;
 
-    // URL 파라미터로 딜레이 커스터마이즈
+    // URL 파라미터로 딜레이 커스터마이즈 (초 단위 입력 → ms 로 변환)
     function loadDelayConfigFromURL() {
         try {
             const params = new URLSearchParams(window.location.search);
             const getMs = (key, def) => {
-    const v = params.get(key);
-    if (v === null) return def;
-    const n = parseFloat(v);      // 정수 말고 소수도 허용
-    if (isNaN(n)) return def;
-    return n * 1000;              // ★ 초 → 밀리초 변환
-};
+                const v = params.get(key);
+                if (v === null) return def;
+                const n = parseFloat(v);
+                if (isNaN(n)) return def;
+                return n * 1000; // 초 → 밀리초
+            };
 
-            // 예) ?d1=4000&d2=12000&d3=6000&dot1On=0&dot1Off=2000&dot2On=3000&dot2Off=2000&dot3On=3000&dot3Off=2000
+            // 예) ?d1=5&d2=10&d3=5&dot1On=0&dot1Off=2&dot2On=3&dot2Off=2&dot3On=3&dot3Off=2
             DELAY_666_STAGE1 = getMs('d1', DEFAULT_DELAY_666_STAGE1);
             DELAY_666_STAGE2 = getMs('d2', DEFAULT_DELAY_666_STAGE2);
 
@@ -728,6 +732,8 @@
             vibrateDevice();
             clearAllDelayTimers();
             specialSequenceActive = false;
+            lastResultWas666 = false;
+            sequenceStarted = false;
             currentMode = (currentMode === '666') ? 'normal' : '666';
             updateModeIndicator();
         }
@@ -847,15 +853,22 @@
 
         updateDisplay(fullExpression || currentValue);
 
-        // 1단계 트리거: 666 모드에서 "666"이 된 순간
-        if (currentMode === '666') {
+        // 1단계 트리거:
+        //  - 666 모드
+        //  - 직전에 = 으로 666을 만든 상태(lastResultWas666)
+        //  - 아직 시퀀스 시작 전(sequenceStarted=false)
+        //  - 지금 수식이 정확히 "666+666"
+        if (currentMode === '666' && lastResultWas666 && !sequenceStarted) {
             const clean = fullExpression.replace(/,/g, '');
-            if (clean === '666') {
-                expressionDisplay.classList.remove('visible');
-                updateExpression('');
+            if (clean === '666+666') {
+                lastResultWas666 = false;
+                sequenceStarted = true;
                 specialSequenceActive = true;
 
-                // 1단계 딜레이: 666 → 999+999
+                expressionDisplay.classList.remove('visible');
+                updateExpression('');
+
+                // 1단계 딜레이: 666+666 → 999+999
                 runDelayWithDot(
                     DELAY_666_STAGE1,
                     DOT_STAGE1_APPEAR,
@@ -940,6 +953,8 @@
         // AC / 백스페이스 둘 다 딜레이는 취소
         clearAllDelayTimers();
         specialSequenceActive = false;
+        lastResultWas666 = false;
+        sequenceStarted = false;
         updateModeIndicator(); // 모드 자체는 유지
 
         if (clearMode === 'all') {
@@ -991,6 +1006,8 @@
             currentMode = 'normal';
             clearAllDelayTimers();
             specialSequenceActive = false;
+            lastResultWas666 = false;
+            sequenceStarted = false;
             updateModeIndicator();
         }
         // 666 모드
@@ -1026,6 +1043,8 @@
                                 currentValue = '1332';
                                 updateDisplay(formatNumber(1332));
                                 specialSequenceActive = false;
+                                lastResultWas666 = false;
+                                sequenceStarted = false;
                                 currentMode = 'normal';
                                 updateModeIndicator();
                             }
@@ -1059,6 +1078,15 @@
         } else {
             currentValue = result.toString();
             updateDisplay(formatNumber(result));
+        }
+
+        // = 결과가 666인지 체크 (666 모드일 때만 의미)
+        if (currentMode === '666' && Number(result) === 666) {
+            lastResultWas666 = true;
+            sequenceStarted = false;
+        } else {
+            lastResultWas666 = false;
+            sequenceStarted = false;
         }
 
         fullExpression = '';
