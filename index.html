@@ -19,34 +19,35 @@
         }
 
         html, body {
-    background: #000;
-    color: #fff;
-    height: 100%;
-    width: 100%;
-    margin: 0;
-    padding: 0;
-    overflow: hidden;
-    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif;
-    /* position: fixed;  ❌ 제거 */
-}
+            background: #000;
+            color: #fff;
+            height: 100%;
+            width: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif;
+        }
 
-       .calculator {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
+        /* 화면 전체에 고정되는 계산기 래퍼 */
+        .calculator {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
 
-    display: flex;
-    flex-direction: column;
-    width: 100%;
-    background: #000;
-    justify-content: flex-end;
-    overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            background: #000;
+            justify-content: flex-end;
+            overflow: hidden;
 
-    padding-top: calc(env(safe-area-inset-top) * 0.85 + 10px);
-    padding-bottom: env(safe-area-inset-bottom);
-}
+            padding-top: calc(env(safe-area-inset-top) * 0.85 + 10px);
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+
         .header {
             padding: 4px 20px 4px 20px;
             display: flex;
@@ -95,19 +96,17 @@
             opacity: 1;
         }
 
-      .display {
-    flex: 0;
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-end;
-    padding: 8px 24px 24px 24px;
-    overflow: hidden;
-    background: #000;
-    min-height: 230px;
-
-    /* 🔽 원래 12px 정도였을 텐데, 확실히 내리기 위해 40px로 */
-    margin-top: 40px;
-}
+        .display {
+            flex: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            padding: 8px 24px 24px 24px;
+            overflow: hidden;
+            background: #000;
+            min-height: 230px;
+            margin-top: 24px; /* 숫자 영역을 아래로 조금 내림 */
+        }
 
         .expression-text {
             font-size: 24px;
@@ -151,15 +150,14 @@
             padding: 0;
         }
 
-      .button-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 6px;
-    width: 100%;
+        .button-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 6px;
+            width: 100%;
+            padding: 10px 20px 12px; /* 위쪽 여백 살짝 줌 */
+        }
 
-    /* 🔽 위쪽에 10px 정도 여유 줘서 버튼 블록도 더 내려오게 */
-    padding: 10px 20px 12px;
-}
         .button {
             width: 100%;
             padding-bottom: 100%;
@@ -240,7 +238,7 @@
             height: 45px;
         }
 
-        /* 파란 점: 조금 더 작고 아래 */
+        /* 파란 점: 작고 더 아래 */
         .calc-indicator {
             position: absolute;
             bottom: -5px;
@@ -332,7 +330,7 @@
 
         .force-input {
             width: 100%;
-            background: #2c2ce;
+            background: #2c2c2e;
             border: none;
             border-radius: 12px;
             padding: 15px 20px;
@@ -519,9 +517,9 @@
 
 <script>
     // ---- 666 시퀀스 기본 딜레이 (초 단위) ----
-    let SEQ1_DELAY = 13;  // 666 → 999+999
+    let SEQ1_DELAY = 5;  // 666 → 999+999
     let SEQ2_DELAY = 10; // 999+999 결과 후 위 식 바뀌기까지
-    let SEQ3_DELAY = 15;  // 위 식 바뀐 후 결과 바뀌기까지
+    let SEQ3_DELAY = 5;  // 위 식 바뀐 후 결과 바뀌기까지
     const INDICATOR_MARGIN = 2; // 딜레이 끝나기 2초 전에 점 OFF
 
     // URL 파라미터로 딜레이 덮어쓰기 (예: ?d1=3&d2=8&d3=4.5)
@@ -562,6 +560,7 @@
     const calcIconButton = document.getElementById('calcIconButton');
     const equalsButton = document.getElementById('equalsButton');
     const calcIndicator = document.getElementById('calcIndicator');
+    const menuIcon = document.getElementById('menuIcon');
 
     let indicatorOnTimer = null;
     let indicatorOffTimer = null;
@@ -1055,15 +1054,6 @@
             closeSettings();
         }
     });
-
-    // 숫자 연타 시 화면 전체 스크롤 방지
-    document.addEventListener('touchmove', (e) => {
-        const displayTextEl = document.querySelector('.display-text');
-        if (displayTextEl && displayTextEl.contains(e.target)) {
-            return;
-        }
-        e.preventDefault();
-    }, { passive: false });
 
     updateDisplay(currentValue);
     updateClearButtonState();
