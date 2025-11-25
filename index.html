@@ -30,7 +30,7 @@
     /* position: fixed;  ❌ 제거 */
 }
 
-        .calculator {
+       .calculator {
     position: fixed;
     top: 0;
     left: 0;
@@ -44,8 +44,7 @@
     justify-content: flex-end;
     overflow: hidden;
 
-    /* 🔽 여기만 수정 */
-    padding-top: calc(env(safe-area-inset-top) * 0.85 + 18px); /* 원래 +3px → +18px 로 15px 더 내려줌 */
+    padding-top: calc(env(safe-area-inset-top) * 0.85 + 10px);
     padding-bottom: env(safe-area-inset-bottom);
 }
         .header {
@@ -96,17 +95,19 @@
             opacity: 1;
         }
 
-        .display {
-            flex: 0;
-            display: flex;
-            flex-direction: column;
-            justify-content: flex-end;
-            padding: 8px 24px 24px 24px;
-            overflow: hidden;
-            background: #000;
-            min-height: 230px;
-            margin-top: 12px;
-        }
+      .display {
+    flex: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 8px 24px 24px 24px;
+    overflow: hidden;
+    background: #000;
+    min-height: 230px;
+
+    /* 🔽 원래 12px 정도였을 텐데, 확실히 내리기 위해 40px로 */
+    margin-top: 40px;
+}
 
         .expression-text {
             font-size: 24px;
@@ -150,14 +151,15 @@
             padding: 0;
         }
 
-        .button-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 6px;
-            width: 100%;
-            padding: 4px 20px 12px;
-        }
+      .button-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+    width: 100%;
 
+    /* 🔽 위쪽에 10px 정도 여유 줘서 버튼 블록도 더 내려오게 */
+    padding: 10px 20px 12px;
+}
         .button {
             width: 100%;
             padding-bottom: 100%;
