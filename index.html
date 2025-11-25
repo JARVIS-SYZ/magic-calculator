@@ -97,16 +97,23 @@
         }
 
         .display {
-            flex: 0;
-            display: flex;
-            flex-direction: column;
-            justify-content: flex-end;
-            padding: 8px 24px 24px 24px;
-            overflow: hidden;
-            background: #000;
-            min-height: 230px;
-            margin-top: 24px; /* 숫자 영역을 아래로 조금 내림 */
-        }
+    /* 🔽 여기부터 전부 교체 */
+
+    flex: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 8px 24px 24px 24px;
+    overflow: hidden;
+    background: #000;
+
+    /* 숫자 영역 자체 높이를 조금 키우고 */
+    min-height: 260px;
+
+    /* 헤더 아래로 더 많이 내리기 (기존 24px 근처였을 거예요) */
+    margin-top: 70px;
+}
+
 
         .expression-text {
             font-size: 24px;
@@ -151,11 +158,14 @@
         }
 
         .button-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 6px;
-            width: 100%;
-            padding: 10px 20px 12px; /* 위쪽 여백 살짝 줌 */
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+    width: 100%;
+
+    /* 버튼 영역은 위쪽 여백을 조금 줄여서
+       전체적으로는 아래로 내려가지만 너무 밑으로 쏠리지 않게 */
+    padding: 4px 20px 12px;
         }
 
         .button {
