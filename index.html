@@ -242,19 +242,21 @@
 
         /* 파란 점 (딜레이 표시) */
         .delay-dot {
-            position: absolute;
-            bottom: 8px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 6px;
-            height: 6px;
-            border-radius: 50%;
-            background: #0a84ff;
-            opacity: 0;
-            transition: opacity 0.15s;
-            pointer-events: none;
-        }
-
+    position: absolute;
+    /* 🔼 예전: bottom: 8px;  → 조금 위로 올려서 확실히 보이게 */
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #0a84ff;
+    opacity: 0;
+    transition: opacity 0.15s;
+    pointer-events: none;
+    /* 🔼 버튼 / 내용 위로 올라오도록 */
+    z-index: 10;
+}
         .settings-modal {
             position: fixed;
             top: 0;
