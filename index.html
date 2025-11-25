@@ -26,15 +26,19 @@
             margin: 0;
             padding: 0;
             overflow: hidden;             /* 기본 스크롤 차단 */
-            overscroll-behavior: none;    /* iOS/현대 브라우저 바운스 최소화 */
+            overscroll-behavior: none;    /* 바운스 최소화 */
             font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif;
         }
 
         .calculator {
+            position: fixed;              /* 화면에 완전히 고정 */
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+
             display: flex;
             flex-direction: column;
-            min-height: 100vh;
-            min-height: 100dvh;
             width: 100%;
             background: #000;
             justify-content: flex-end;
@@ -371,7 +375,6 @@
     <div class="header">
         <div class="menu-icon" id="menuIcon">
             <svg viewBox="0 0 24 24">
-                <!-- 점 3개에 id -->
                 <circle class="menu-dot" id="menuDotTop"    cx="3" cy="5"  r="1.5"/>
                 <line   class="menu-line" x1="7" y1="5"  x2="21" y2="5"></line>
                 <circle class="menu-dot" id="menuDotMiddle" cx="3" cy="12" r="1.5"/>
@@ -547,9 +550,7 @@
     const calcIconButton = document.getElementById('calcIconButton');
     const equalsButton = document.getElementById('equalsButton');
     const calcIndicator = document.getElementById('calcIndicator');
-    const menuIcon = document.getElementById('menuIcon');
 
-    // 왼쪽 점들
     const dotTop = document.getElementById('menuDotTop');
     const dotMiddle = document.getElementById('menuDotMiddle');
     const dotBottom = document.getElementById('menuDotBottom');
@@ -577,7 +578,6 @@
         }
     }
 
-    // 모드에 따라 왼쪽 점 상태 변경
     function updateModeIndicator() {
         if (!dotTop || !dotMiddle || !dotBottom) return;
 
@@ -586,9 +586,9 @@
         dotBottom.style.opacity = '1';
 
         if (currentMode === 'force') {
-            dotTop.style.opacity = '0';      // FORCE: 위 점 숨김
+            dotTop.style.opacity = '0';
         } else if (currentMode === '666') {
-            dotMiddle.style.opacity = '0';   // 666: 가운데 점 숨김
+            dotMiddle.style.opacity = '0';
         }
     }
 
@@ -1035,23 +1035,8 @@
     updateClearButtonState();
     updateModeIndicator();
 
-    /* ============================================
-       여기부터 스크롤/터치 어긋남 방지용 코드
-       ============================================ */
-
-    // 항상 맨 위에 고정
-    window.scrollTo(0, 0);
-
-    // 혹시라도 스크롤이 생기면 즉시 0으로 되돌림
-    window.addEventListener('scroll', () => {
-        if (window.scrollY !== 0 || window.scrollX !== 0) {
-            window.scrollTo(0, 0);
-        }
-    });
-
-    // 화면 안에서 드래그로 스크롤 되는 것 자체를 막기
+    /* ==== 스크롤/터치 이동 자체를 막기 위한 touchmove 방지 ==== */
     document.addEventListener('touchmove', (e) => {
-        // 계산기 전체 영역 안에서의 touchmove는 기본 동작 막기
         if (e.target.closest('.calculator')) {
             e.preventDefault();
         }
