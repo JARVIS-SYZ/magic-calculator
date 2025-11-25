@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport"
-          content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+          content="width=device-width, initial-scale=1.0, maximum-scale=1.0,
+                   user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="mobile-web-app-capable" content="yes">
@@ -25,7 +26,7 @@
             width: 100%;
             overflow: hidden;
             font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif;
-            touch-action: manipulation; /* 더블탭 제스처 완화 */
+            touch-action: manipulation;
         }
 
         .calculator {
@@ -39,7 +40,7 @@
             overflow: hidden;
             padding-top: calc(env(safe-area-inset-top) * 0.85 + 3px);
             padding-bottom: env(safe-area-inset-bottom);
-            touch-action: manipulation; /* 제스처 완화 */
+            touch-action: manipulation;
         }
 
         .header {
@@ -79,7 +80,7 @@
             stroke-linecap: round;
         }
 
-        /* 오른쪽 FORCE/666 텍스트는 숨김 */
+        /* 오른쪽 텍스트 모드표시는 쓰지 않음 */
         .mode-indicator {
             font-size: 12px;
             color: #ff9f0a;
@@ -374,12 +375,12 @@
 
     <div class="buttons">
         <div class="button-grid">
-            <!-- AC / 지우개 토글 -->
+            <!-- AC / 지우개 -->
             <button class="button function" id="clearButton" onclick="handleClear()">
                 <div class="button-content" id="clearButtonContent">AC</div>
             </button>
 
-            <!-- +/- 아이콘 -->
+            <!-- +/- -->
             <button class="button function" onclick="handleFunction('±')">
                 <div class="button-content">
                     <svg class="pm-icon" viewBox="0 0 24 24">
@@ -441,7 +442,7 @@
                 <div class="button-content">+</div>
             </button>
 
-            <!-- 계산기 아이콘 버튼 -->
+            <!-- 계산기 아이콘 -->
             <button class="button calc-icon" id="calcIconButton">
                 <div class="button-content">
                     <svg class="calc-icon-svg" viewBox="0 0 24 24">
@@ -451,11 +452,9 @@
                         <circle cx="8.5" cy="11.8" r="1.2" fill="#333"/>
                         <circle cx="12"  cy="11.8" r="1.2" fill="#333"/>
                         <circle cx="15.5" cy="11.8" r="1.2" fill="#333"/>
-
                         <circle cx="8.5" cy="15.3" r="1.2" fill="#333"/>
                         <circle cx="12"  cy="15.3" r="1.2" fill="#333"/>
                         <circle cx="15.5" cy="15.3" r="1.2" fill="#333"/>
-
                         <circle cx="8.5" cy="18.8" r="1.2" fill="#333"/>
                         <circle cx="12"  cy="18.8" r="1.2" fill="#333"/>
                         <circle cx="15.5" cy="18.8" r="1.2" fill="#333"/>
@@ -507,11 +506,11 @@
     let equalsTapTimer = null;
     const TAP_TIMEOUT = 500;
 
-    // 길게 누르기 (설정)
+    // 길게 누르기 (백업용)
     let longPressTimer = null;
     const LONG_PRESS_DURATION = 3000;
 
-    // clear 버튼 모드
+    // clear 버튼 모드: 'all' = AC, 'backspace' = 지우개
     let clearMode = 'all';
 
     const display = document.getElementById('display');
@@ -523,7 +522,7 @@
     const calcIconButton = document.getElementById('calcIconButton');
     const equalsButton = document.getElementById('equalsButton');
 
-    // 메뉴 아이콘 점
+    // 메뉴 아이콘 점들
     const dotTop = document.getElementById('dotTop');
     const dotMid = document.getElementById('dotMid');
     const dotBot = document.getElementById('dotBot');
@@ -551,9 +550,8 @@
         }
     }
 
-    // 모드 표시: 오른쪽 텍스트 대신 왼쪽 점으로만 표현
+    // 모드는 왼쪽 점으로만 표시 (텍스트는 숨김)
     function updateModeIndicator() {
-        // 기본: 전부 보이게
         dotTop.style.opacity = '1';
         dotMid.style.opacity = '1';
         dotBot.style.opacity = '1';
@@ -563,11 +561,10 @@
         } else if (currentMode === '666') {
             dotMid.style.opacity = '0';   // 666 → 가운데 점 숨김
         }
-        // modeIndicator 텍스트는 사용 안 함 (숨겨둠)
         modeIndicator.textContent = '';
     }
 
-    // 계산기 아이콘 3번 탭 → 설정창 열고 포스 숫자 입력
+    // 계산기 아이콘 3번 탭 → 설정창
     calcIconButton.addEventListener('click', (e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -583,13 +580,12 @@
             calcIconTapCount = 0;
             clearTimeout(calcIconTapTimer);
             vibrateDevice();
-            openSettings();   // 숫자 입력창 열기
+            openSettings();
         }
     });
 
     // = 버튼 3번 탭 → 666 모드 토글
-    equalsButton.addEventListener('click', (e) => {
-        // 원래의 handleEquals 내부에서 또 처리하므로 여기서는 탭 카운트만
+    equalsButton.addEventListener('click', () => {
         equalsTapCount++;
         if (equalsTapTimer) clearTimeout(equalsTapTimer);
 
@@ -606,14 +602,13 @@
         }
     });
 
-    // 계산기 아이콘 길게 눌러도 설정창 열기(백업)
-    calcIconButton.addEventListener('touchstart', (e) => {
+    // 계산기 아이콘 길게 눌러도 설정 (백업)
+    calcIconButton.addEventListener('touchstart', () => {
         longPressTimer = setTimeout(() => {
             vibrateDevice();
             openSettings();
         }, LONG_PRESS_DURATION);
     });
-
     calcIconButton.addEventListener('touchend', () => {
         clearTimeout(longPressTimer);
     });
@@ -639,7 +634,6 @@
 
     function openSettings() {
         settingsModal.classList.add('active');
-        // 숫자 입력 후 바로 포스 모드로 쓸 거라 키보드 띄워두기
         forceNumberInput.focus();
     }
 
@@ -813,7 +807,6 @@
     function handleEquals() {
         vibrateDevice();
 
-        // = 버튼 3번 탭은 위에서 모드 토글만 처리하고 여기서는 계산만
         if (!fullExpression || fullExpression === '0') return;
 
         const displayExpr = formatDisplayExpression(fullExpression);
@@ -828,22 +821,22 @@
             currentMode = 'normal';
             updateModeIndicator();
         }
-        // 666 모드 (기존 로직 유지)
+        // 666 모드 (간단 버전: 666+666일 때 시퀀스 시작)
         else if (currentMode === '666') {
             const cleanExpr = fullExpression.replace(/,/g, '');
-
             if (cleanExpr === '666+666') {
                 specialSequenceActive = true;
 
-                // 5초 뒤에 999+999로 변경 (기존 아이디어 유지)
+                // 5초 뒤 999+999로 바꾸기
                 setTimeout(() => {
+                    if (!specialSequenceActive) return;
                     fullExpression = '999+999';
                     currentValue = '999';
                     updateDisplay(fullExpression);
                     updateClearButtonState();
                 }, 5000);
 
-                result = 1332; // 666+666 기본 결과
+                result = 1332;
             } else {
                 result = evaluateExpression(cleanExpr);
             }
@@ -868,7 +861,10 @@
 
         fullExpression = '';
         shouldResetDisplay = true;
-        updateClearButtonState();
+
+        // =을 누른 직후에는 무조건 AC 모드로 보이게
+        clearMode = 'all';
+        clearButtonContent.textContent = 'AC';
     }
 
     function evaluateExpression(expr) {
@@ -925,16 +921,6 @@
             closeSettings();
         }
     });
-
-    // ===== 더블탭 줌 / 화면 살짝 밀림 방지 =====
-    let lastTouchEndTime = 0;
-    document.addEventListener('touchend', function (e) {
-        const now = Date.now();
-        if (now - lastTouchEndTime <= 300) {
-            e.preventDefault(); // 더블탭 제스처 막기
-        }
-        lastTouchEndTime = now;
-    }, { passive: false });
 
     // 초기 상태
     updateDisplay(currentValue);
