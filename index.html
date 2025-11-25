@@ -101,18 +101,18 @@
         }
 
         .expression-text {
-            font-size: 24px;
-            font-weight: 400;
-            text-align: right;
-            color: #888;
-            margin-bottom: 2px;
-            min-height: 28px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            opacity: 0;
-            transition: opacity 0.2s;
-        }
+    font-size: 30px;           /* ✅ 24px → 30px (1.25배) */
+    font-weight: 400;
+    text-align: right;
+    color: #888;
+    margin-bottom: 2px;
+    min-height: 34px;          /* ✅ 높이도 살짝 키워주면 줄 안 잘림 */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
 
         .expression-text.visible {
             opacity: 1;
@@ -245,11 +245,11 @@
         /* 파란 점 (딜레이 표시) */
         .delay-dot {
     position: absolute;
-    bottom: -6px;                /* 버튼 원 바깥으로 조금 내려오기 */
+    bottom: -9px;              /* ✅ 조금 더 아래 */
     left: 50%;
     transform: translateX(-50%);
-    width: 6px;
-    height: 6px;
+    width: 4px;                /* ✅ 더 작게 */
+    height: 4px;               /* ✅ 더 작게 */
     border-radius: 50%;
     background: #0a84ff;
     opacity: 0;
