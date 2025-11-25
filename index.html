@@ -19,31 +19,34 @@
         }
 
         html, body {
-            background: #000;
-            color: #fff;
-            height: 100%;
-            width: 100%;
-            overflow: hidden;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif;
-        }
+    background: #000;
+    color: #fff;
+    height: 100%;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif;
+    /* position: fixed;  ❌ 제거 */
+}
 
         .calculator {
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
-            min-height: 100dvh;
-            width: 100%;
-            background: #000;
-            justify-content: flex-end;
-            overflow: visible;
-            padding-top: calc(env(safe-area-inset-top) * 0.85 + 3px);
-            padding-bottom: env(safe-area-inset-bottom);
-        }
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    background: #000;
+    justify-content: flex-end;
+    overflow: hidden; /* visible → hidden 으로 바꾸는 것도 안전 */
+
+    padding-top: calc(env(safe-area-inset-top) * 0.85 + 3px);
+    padding-bottom: env(safe-area-inset-bottom);
+}
 
         .header {
             padding: 4px 20px 4px 20px;
