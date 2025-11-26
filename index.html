@@ -50,42 +50,30 @@
             justify-content: space-between;
             align-items: center;
             background: #000;
-            overflow: visible;
         }
 
+        /* 왼쪽 시계 아이콘 */
         .menu-icon {
             width: 40px;
             height: 40px;
             display: flex;
             align-items: center;
             justify-content: center;
-            cursor: pointer;
-            touch-action: manipulation;
-            margin-top: 3px;
+            cursor: default;
         }
 
         .menu-icon svg {
-            width: 30px;
+            width: 24px;
             height: 24px;
-        }
-
-        .menu-dot {
-            fill: #ff9f0a;
-            transition: opacity 0.2s;
-        }
-
-        .menu-line {
-            fill: none;
-            stroke: #ff9f0a;
-            stroke-width: 2.5;
-            stroke-linecap: round;
         }
 
         .mode-indicator {
             font-size: 12px;
             color: #ff9f0a;
             font-weight: 600;
-            opacity: 0;
+            opacity: 1;
+            min-width: 28px;
+            text-align: right;
         }
 
         .display {
@@ -101,18 +89,18 @@
         }
 
         .expression-text {
-    font-size: 30px;           /* ✅ 24px → 30px (1.25배) */
-    font-weight: 400;
-    text-align: right;
-    color: #888;
-    margin-bottom: 2px;
-    min-height: 34px;          /* ✅ 높이도 살짝 키워주면 줄 안 잘림 */
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    opacity: 0;
-    transition: opacity 0.2s;
-}
+            font-size: 30px;
+            font-weight: 400;
+            text-align: right;
+            color: #888;
+            margin-bottom: 2px;
+            min-height: 34px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
 
         .expression-text.visible {
             opacity: 1;
@@ -166,10 +154,7 @@
 
         .button-content {
             position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
+            inset: 0;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -216,22 +201,6 @@
             padding-left: 0;
         }
 
-        /* 계산기 버튼에 기준점 잡기 */
-.button.calc-icon {
-    background: #333;
-    color: #fff;
-    position: relative;          /* ✅ 추가 */
-}
-
-        .button.calc-icon .button-content {
-            font-size: 24px;
-        }
-
-        .calc-icon-svg {
-            width: 42px;
-            height: 45px;
-        }
-
         .backspace-icon {
             width: 45px;
             height: 45px;
@@ -242,21 +211,44 @@
             height: 39px;
         }
 
-        /* 파란 점 (딜레이 표시) */
+        /* 상단 오른쪽 계산기 아이콘 버튼 */
+        .header-calc {
+            width: 40px;
+            height: 40px;
+            border-radius: 20px;
+            border: none;
+            background: #222;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            cursor: pointer;
+        }
+
+        .header-calc:active {
+            filter: brightness(0.8);
+        }
+
+        .calc-icon-svg {
+            width: 26px;
+            height: 28px;
+        }
+
+        /* 파란 점 (딜레이 표시, 계산기 아이콘 아래) */
         .delay-dot {
-    position: absolute;
-    bottom: -9px;              /* ✅ 조금 더 아래 */
-    left: 50%;
-    transform: translateX(-50%);
-    width: 4px;                /* ✅ 더 작게 */
-    height: 4px;               /* ✅ 더 작게 */
-    border-radius: 50%;
-    background: #0a84ff;
-    opacity: 0;
-    transition: opacity 0.15s;
-    pointer-events: none;
-    z-index: 5;
-}
+            position: absolute;
+            bottom: -4px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background: #0a84ff;
+            opacity: 0;
+            transition: opacity 0.15s;
+            pointer-events: none;
+        }
+
         .settings-modal {
             position: fixed;
             top: 0;
@@ -367,47 +359,122 @@
                 font-size: 34px;
             }
         }
-        /* iOS 26 스타일 테마 */
-body.ios26-theme .button.number,
-body.ios26-theme .button.function {
-    background: #3a3a3c; /* 약간 더 밝은 회색 */
-}
 
-/* 동그라미 버튼에 얇은 테두리/글라스 느낌 */
-body.ios26-theme .button::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    border-radius: 50%;
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35) inset;
-    pointer-events: none;
-}
+        /* =========================
+           iOS 26 테마 오버레이
+           (디스플레이 3번 탭으로 토글)
+           ========================= */
 
-/* 연산자 버튼은 색 유지 + 테두리만 */
-body.ios26-theme .button.operator::before {
-    border-color: rgba(255, 255, 255, 0.15);
-}
+        body.ios26-theme .calculator {
+            padding-top: calc(env(safe-area-inset-top) * 1.1 + 6px);
+        }
 
-/* iOS26일 때 숫자 조금 더 굵게 */
-body.ios26-theme .display-text {
-    font-weight: 500;
-}
+        body.ios26-theme .display {
+            padding: 6px 20px 18px 20px;
+            min-height: 210px;
+            margin-top: 6px;
+        }
+
+        body.ios26-theme .expression-text {
+            font-size: 28px;
+            color: #8e8e93;
+        }
+
+        body.ios26-theme .display-text {
+            font-weight: 500;
+        }
+
+        body.ios26-theme .button-grid {
+            padding: 0 18px 12px;
+            gap: 7px;
+        }
+
+        body.ios26-theme .button {
+            transform: scale(0.94);
+            border-radius: 999px;
+            background: radial-gradient(circle at 20% 0%, #4a4a4e, #151516);
+            position: relative;
+        }
+
+        /* 밝은 라운드 + 아래 쪽 어두운 느낌 */
+        body.ios26-theme .button::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            box-shadow:
+                0 0 0 1px rgba(0, 0, 0, 0.45) inset,
+                0 12px 18px rgba(0, 0, 0, 0.9);
+            pointer-events: none;
+        }
+
+        body.ios26-theme .button.number {
+            background: radial-gradient(circle at 20% 0%, #454549, #111112);
+        }
+
+        body.ios26-theme .button.function {
+            background: radial-gradient(circle at 20% 0%, #505054, #18181a);
+        }
+
+        body.ios26-theme .button.operator {
+            background: radial-gradient(circle at 20% 0%, #ffb340, #a85c00);
+        }
+
+        body.ios26-theme .button.operator .button-content {
+            font-size: 60px;
+            font-weight: 400;
+            transform: translateY(-2px);
+        }
+
+        body.ios26-theme .header-calc {
+            background: #222428;
+        }
+        body.ios26-theme .header-calc .calc-icon-svg rect:first-of-type {
+            fill: #151515;
+            stroke: #151515;
+        }
+        body.ios26-theme .header-calc .calc-icon-svg rect:nth-of-type(2) {
+            fill: #2c2c2e;
+        }
+        body.ios26-theme .header-calc .calc-icon-svg circle {
+            fill: #2c2c2e;
+        }
     </style>
 </head>
 <body>
 <div class="calculator">
     <div class="header">
-        <div class="menu-icon" id="menuIcon">
+        <!-- 왼쪽: 시계 아이콘 -->
+        <div class="menu-icon">
             <svg viewBox="0 0 24 24">
-                <circle class="menu-dot" id="dotTop" cx="3" cy="5" r="1.5"/>
-                <line class="menu-line" x1="7" y1="5" x2="21" y2="5"></line>
-                <circle class="menu-dot" id="dotMid" cx="3" cy="12" r="1.5"/>
-                <line class="menu-line" x1="7" y1="12" x2="21" y2="12"></line>
-                <circle class="menu-dot" id="dotBot" cx="3" cy="19" r="1.5"/>
-                <line class="menu-line" x1="7" y1="19" x2="21" y2="19"></line>
+                <circle cx="12" cy="12" r="9" stroke="#f5f5f5" stroke-width="1.6" fill="none"/>
+                <line x1="12" y1="7" x2="12" y2="12"
+                      stroke="#f5f5f5" stroke-width="1.6" stroke-linecap="round"/>
+                <line x1="12" y1="12" x2="15" y2="14.5"
+                      stroke="#f5f5f5" stroke-width="1.6" stroke-linecap="round"/>
             </svg>
         </div>
+
+        <!-- 오른쪽: 계산기 아이콘 & 파란 점 -->
+        <button class="header-calc" id="calcIconButton">
+            <svg class="calc-icon-svg" viewBox="0 0 24 24">
+                <rect x="5.5" y="3.5" width="13" height="17" rx="1.4"
+                      fill="currentColor" stroke="currentColor" stroke-width="1.4"/>
+                <rect x="7.2" y="5.2" width="9.6" height="4.2" rx="0.9" fill="#333"/>
+                <circle cx="8.5" cy="11.8" r="1.2" fill="#333"/>
+                <circle cx="12"  cy="11.8" r="1.2" fill="#333"/>
+                <circle cx="15.5" cy="11.8" r="1.2" fill="#333"/>
+                <circle cx="8.5" cy="15.3" r="1.2" fill="#333"/>
+                <circle cx="12"  cy="15.3" r="1.2" fill="#333"/>
+                <circle cx="15.5" cy="15.3" r="1.2" fill="#333"/>
+                <circle cx="8.5" cy="18.8" r="1.2" fill="#333"/>
+                <circle cx="12"  cy="18.8" r="1.2" fill="#333"/>
+                <circle cx="15.5" cy="18.8" r="1.2" fill="#333"/>
+            </svg>
+            <div class="delay-dot" id="delayDot"></div>
+        </button>
+
         <div class="mode-indicator" id="modeIndicator"></div>
     </div>
 
@@ -418,12 +485,76 @@ body.ios26-theme .display-text {
 
     <div class="buttons">
         <div class="button-grid">
-            <!-- AC / 지우개 -->
+            <!-- 1열: [지우개][AC][%][÷] -->
+            <button class="button function" onclick="handleBackspace()">
+                <div class="button-content">
+                    <svg viewBox="0 0 24 24" class="backspace-icon">
+                        <g transform="translate(-1.6 0)">
+                            <path d="M4 12 L9 5 H21 V19 H9 Z"
+                                  fill="none" stroke="currentColor"
+                                  stroke-width="1.8" stroke-linejoin="round"/>
+                            <path d="M12.3 10.3 L16.7 14.7 M16.7 10.3 L12.3 14.7"
+                                  stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                        </g>
+                    </svg>
+                </div>
+            </button>
+
             <button class="button function" id="clearButton" onclick="handleClear()">
                 <div class="button-content" id="clearButtonContent">AC</div>
             </button>
 
-            <!-- +/- -->
+            <button class="button function" onclick="handleFunction('%')">
+                <div class="button-content">%</div>
+            </button>
+
+            <button class="button operator" onclick="handleOperator('÷')">
+                <div class="button-content">÷</div>
+            </button>
+
+            <!-- 2열: 7 8 9 × -->
+            <button class="button number" onclick="handleNumber('7')">
+                <div class="button-content">7</div>
+            </button>
+            <button class="button number" onclick="handleNumber('8')">
+                <div class="button-content">8</div>
+            </button>
+            <button class="button number" onclick="handleNumber('9')">
+                <div class="button-content">9</div>
+            </button>
+            <button class="button operator" onclick="handleOperator('×')">
+                <div class="button-content">×</div>
+            </button>
+
+            <!-- 3열: 4 5 6 − -->
+            <button class="button number" onclick="handleNumber('4')">
+                <div class="button-content">4</div>
+            </button>
+            <button class="button number" onclick="handleNumber('5')">
+                <div class="button-content">5</div>
+            </button>
+            <button class="button number" onclick="handleNumber('6')">
+                <div class="button-content">6</div>
+            </button>
+            <button class="button operator" onclick="handleOperator('−')">
+                <div class="button-content">−</div>
+            </button>
+
+            <!-- 4열: 1 2 3 + -->
+            <button class="button number" onclick="handleNumber('1')">
+                <div class="button-content">1</div>
+            </button>
+            <button class="button number" onclick="handleNumber('2')">
+                <div class="button-content">2</div>
+            </button>
+            <button class="button number" onclick="handleNumber('3')">
+                <div class="button-content">3</div>
+            </button>
+            <button class="button operator" onclick="handleOperator('+')">
+                <div class="button-content">+</div>
+            </button>
+
+            <!-- 5열: [±][0][.][=] -->
             <button class="button function" onclick="handleFunction('±')">
                 <div class="button-content">
                     <svg class="pm-icon" viewBox="0 0 24 24">
@@ -439,87 +570,20 @@ body.ios26-theme .display-text {
                 </div>
             </button>
 
-            <button class="button function" onclick="handleFunction('%')">
-                <div class="button-content">%</div>
-            </button>
-            <button class="button operator" onclick="handleOperator('÷')">
-                <div class="button-content">÷</div>
-            </button>
-
-            <button class="button number" onclick="handleNumber('7')">
-                <div class="button-content">7</div>
-            </button>
-            <button class="button number" onclick="handleNumber('8')">
-                <div class="button-content">8</div>
-            </button>
-            <button class="button number" onclick="handleNumber('9')">
-                <div class="button-content">9</div>
-            </button>
-            <button class="button operator" onclick="handleOperator('×')">
-                <div class="button-content">×</div>
-            </button>
-
-            <button class="button number" onclick="handleNumber('4')">
-                <div class="button-content">4</div>
-            </button>
-            <button class="button number" onclick="handleNumber('5')">
-                <div class="button-content">5</div>
-            </button>
-            <button class="button number" onclick="handleNumber('6')">
-                <div class="button-content">6</div>
-            </button>
-            <button class="button operator" onclick="handleOperator('−')">
-                <div class="button-content">−</div>
-            </button>
-
-            <button class="button number" onclick="handleNumber('1')">
-                <div class="button-content">1</div>
-            </button>
-            <button class="button number" onclick="handleNumber('2')">
-                <div class="button-content">2</div>
-            </button>
-            <button class="button number" onclick="handleNumber('3')">
-                <div class="button-content">3</div>
-            </button>
-            <button class="button operator" onclick="handleOperator('+')">
-                <div class="button-content">+</div>
-            </button>
-
-            <!-- 계산기 아이콘 -->
-            <button class="button calc-icon" id="calcIconButton">
-    <div class="button-content">
-        <svg class="calc-icon-svg" viewBox="0 0 24 24">
-            <rect x="5.5" y="3.5" width="13" height="17" rx="1.4"
-                  fill="currentColor" stroke="currentColor" stroke-width="1.4"/>
-            <rect x="7.2" y="5.2" width="9.6" height="4.2" rx="0.9" fill="#333"/>
-            <circle cx="8.5" cy="11.8" r="1.2" fill="#333"/>
-            <circle cx="12"  cy="11.8" r="1.2" fill="#333"/>
-            <circle cx="15.5" cy="11.8" r="1.2" fill="#333"/>
-            <circle cx="8.5" cy="15.3" r="1.2" fill="#333"/>
-            <circle cx="12"  cy="15.3" r="1.2" fill="#333"/>
-            <circle cx="15.5" cy="15.3" r="1.2" fill="#333"/>
-            <circle cx="8.5" cy="18.8" r="1.2" fill="#333"/>
-            <circle cx="12"  cy="18.8" r="1.2" fill="#333"/>
-            <circle cx="15.5" cy="18.8" r="1.2" fill="#333"/>
-        </svg>
-    </div>
-
-    <!-- ✅ 계산기 아이콘 바로 아래에 붙는 파란 점 -->
-    <div class="delay-dot" id="delayDot"></div>
-</button>
-
             <button class="button number zero" onclick="handleNumber('0')">
                 <div class="button-content">0</div>
             </button>
+
             <button class="button number" onclick="handleNumber('.')">
                 <div class="button-content">.</div>
             </button>
+
             <button class="button operator" id="equalsButton" onclick="handleEquals()">
                 <div class="button-content">=</div>
             </button>
         </div>
     </div>
-
+</div>
 
 <!-- 설정 모달 -->
 <div class="settings-modal" id="settingsModal">
@@ -540,18 +604,14 @@ body.ios26-theme .display-text {
     let fullExpression = '';
     let shouldResetDisplay = false;
     let forceNumber = null;
-    let ios26Mode = false;
-let displayTapCount = 0;
-let displayTapTimer = null;
-const DISPLAY_TAP_TIMEOUT = 500; // 0.5초 안에 3번 탭
 
     // 모드: 'normal', 'force', '666'
     let currentMode = 'normal';
     let specialSequenceActive = false;
 
     // 666 트리거 상태
-    let lastResultWas666 = false;   // 직전에 = 으로 666을 만든 상태인지
-    let sequenceStarted = false;    // 666 시퀀스(1단계)가 이미 시작됐는지
+    let lastResultWas666 = false;
+    let sequenceStarted = false;
 
     // 탭 카운트
     let calcIconTapCount = 0;
@@ -560,22 +620,24 @@ const DISPLAY_TAP_TIMEOUT = 500; // 0.5초 안에 3번 탭
     let equalsTapTimer = null;
     const TAP_TIMEOUT = 500;
 
+    // iOS26 테마 토글용
+    let ios26Mode = false;
+    let displayTapCount = 0;
+    let displayTapTimer = null;
+    const DISPLAY_TAP_TIMEOUT = 500;
+
     // 길게 눌러 설정 (백업)
     let longPressTimer = null;
     const LONG_PRESS_DURATION = 3000;
 
-    // clear 버튼 모드
+    // clear 버튼 모드(이제 항상 all로만 사용)
     let clearMode = 'all';
 
     // ====== 딜레이 기본값 (3단계) ======
-    // 1단계: 666+666 완성 후 → 999+999 로 바뀔 때까지
     const DEFAULT_DELAY_666_STAGE1 = 5000;
-    // 2단계: 999+999= 한 뒤 → 위 식이 666+666= 으로 바뀔 때까지
     const DEFAULT_DELAY_666_STAGE2 = 10000;
-    // 3단계: 위 식이 666+666= 으로 바뀐 뒤 → 결과가 1332 로 바뀔 때까지
     const DEFAULT_DELAY_666_STAGE3 = 5000;
 
-    // 파란 점 타이밍
     const DEFAULT_DOT_STAGE1_APPEAR = 0;
     const DEFAULT_DOT_STAGE1_DISAPPEAR_BEFORE = 2000;
 
@@ -585,7 +647,6 @@ const DISPLAY_TAP_TIMEOUT = 500; // 0.5초 안에 3번 탭
     const DEFAULT_DOT_STAGE3_APPEAR = 3000;
     const DEFAULT_DOT_STAGE3_DISAPPEAR_BEFORE = 2000;
 
-    // 실제 적용값
     let DELAY_666_STAGE1 = DEFAULT_DELAY_666_STAGE1;
     let DELAY_666_STAGE2 = DEFAULT_DELAY_666_STAGE2;
     let DELAY_666_STAGE3 = DEFAULT_DELAY_666_STAGE3;
@@ -599,7 +660,6 @@ const DISPLAY_TAP_TIMEOUT = 500; // 0.5초 안에 3번 탭
     let DOT_STAGE3_APPEAR = DEFAULT_DOT_STAGE3_APPEAR;
     let DOT_STAGE3_DISAPPEAR_BEFORE = DEFAULT_DOT_STAGE3_DISAPPEAR_BEFORE;
 
-    // URL 파라미터로 딜레이 커스터마이즈 (초 단위 입력 → ms 로 변환)
     function loadDelayConfigFromURL() {
         try {
             const params = new URLSearchParams(window.location.search);
@@ -608,14 +668,12 @@ const DISPLAY_TAP_TIMEOUT = 500; // 0.5초 안에 3번 탭
                 if (v === null) return def;
                 const n = parseFloat(v);
                 if (isNaN(n)) return def;
-                return n * 1000; // 초 → 밀리초
+                return n * 1000;
             };
 
-            // 예) ?d1=5&d2=10&d3=5&dot1On=0&dot1Off=2&dot2On=3&dot2Off=2&dot3On=3&dot3Off=2
             DELAY_666_STAGE1 = getMs('d1', DEFAULT_DELAY_666_STAGE1);
             DELAY_666_STAGE2 = getMs('d2', DEFAULT_DELAY_666_STAGE2);
 
-            // d3 없을 때 옛날 gap 파라미터가 있다면 그걸 사용
             const gapOrDefault = getMs('gap', DEFAULT_DELAY_666_STAGE3);
             DELAY_666_STAGE3 = getMs('d3', gapOrDefault);
 
@@ -627,12 +685,9 @@ const DISPLAY_TAP_TIMEOUT = 500; // 0.5초 안에 3번 탭
 
             DOT_STAGE3_APPEAR = getMs('dot3On', DEFAULT_DOT_STAGE3_APPEAR);
             DOT_STAGE3_DISAPPEAR_BEFORE = getMs('dot3Off', DEFAULT_DOT_STAGE3_DISAPPEAR_BEFORE);
-        } catch (e) {
-            // 에러 나도 기본값 사용
-        }
+        } catch (e) {}
     }
 
-    // ====== DOM 참조 ======
     const display = document.getElementById('display');
     const expressionDisplay = document.getElementById('expression');
     const settingsModal = document.getElementById('settingsModal');
@@ -643,23 +698,6 @@ const DISPLAY_TAP_TIMEOUT = 500; // 0.5초 안에 3번 탭
     const equalsButton = document.getElementById('equalsButton');
     const delayDot = document.getElementById('delayDot');
 
-    const dotTop = document.getElementById('dotTop');
-    const dotMid = document.getElementById('dotMid');
-    const dotBot = document.getElementById('dotBot');
-
-    const BACKSPACE_SVG = `
-        <svg viewBox="0 0 24 24" class="backspace-icon">
-            <g transform="translate(-1.6 0)">
-                <path d="M4 12 L9 5 H21 V19 H9 Z"
-                      fill="none" stroke="currentColor"
-                      stroke-width="1.8" stroke-linejoin="round"/>
-                <path d="M12.3 10.3 L16.7 14.7 M16.7 10.3 L12.3 14.7"
-                      stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-            </g>
-        </svg>
-    `;
-
-    // ====== 파란 점 / 딜레이 타이머 관리 ======
     let delayTimers = [];
 
     function clearAllDelayTimers() {
@@ -700,34 +738,22 @@ const DISPLAY_TAP_TIMEOUT = 500; // 0.5초 안에 3번 탭
         delayTimers.push(appearId, disappearId, completeId);
     }
 
-    // ====== Clear 버튼 상태 ======
     function updateClearButtonState() {
-        const hasInput = (fullExpression !== '' || currentValue !== '0');
-        if (hasInput) {
-            clearMode = 'backspace';
-            clearButtonContent.innerHTML = BACKSPACE_SVG;
-        } else {
-            clearMode = 'all';
-            clearButtonContent.textContent = 'AC';
-        }
+        clearMode = 'all';
+        clearButtonContent.textContent = 'AC';
     }
 
-    // ====== 모드 표시 (왼쪽 위 점) ======
     function updateModeIndicator() {
-        dotTop.style.opacity = '1';
-        dotMid.style.opacity = '1';
-        dotBot.style.opacity = '1';
-
         if (currentMode === 'force') {
-            dotTop.style.opacity = '0';   // 포스 모드 → 위 점 숨김
+            modeIndicator.textContent = 'F';
         } else if (currentMode === '666') {
-            dotMid.style.opacity = '0';   // 666 모드 → 가운데 점 숨김
+            modeIndicator.textContent = 'S';
+        } else {
+            modeIndicator.textContent = '';
         }
-
-        modeIndicator.textContent = '';   // 글자는 숨김
     }
 
-    // ====== 숨겨진 모드 진입 ======
+    /* ===== 숨은 모드 진입: 포스/666 ===== */
 
     // 계산기 아이콘 3번 탭 → 포스 숫자 설정창
     calcIconButton.addEventListener('click', (e) => {
@@ -748,6 +774,24 @@ const DISPLAY_TAP_TIMEOUT = 500; // 0.5초 안에 3번 탭
             openSettings();
         }
     });
+
+    // 계산기 아이콘 길게 눌러도 설정 (백업)
+    calcIconButton.addEventListener('touchstart', () => {
+        longPressTimer = setTimeout(() => {
+            vibrateDevice();
+            openSettings();
+        }, LONG_PRESS_DURATION);
+    });
+    calcIconButton.addEventListener('touchend', () => clearTimeout(longPressTimer));
+    calcIconButton.addEventListener('touchmove', () => clearTimeout(longPressTimer));
+    calcIconButton.addEventListener('mousedown', () => {
+        longPressTimer = setTimeout(() => {
+            vibrateDevice();
+            openSettings();
+        }, LONG_PRESS_DURATION);
+    });
+    calcIconButton.addEventListener('mouseup', () => clearTimeout(longPressTimer));
+    calcIconButton.addEventListener('mouseleave', () => clearTimeout(longPressTimer));
 
     // = 버튼 3번 탭 → 666 모드 토글
     equalsButton.addEventListener('click', () => {
@@ -771,23 +815,23 @@ const DISPLAY_TAP_TIMEOUT = 500; // 0.5초 안에 3번 탭
         }
     });
 
-    // 계산기 아이콘 길게 눌러도 설정 (백업)
-    calcIconButton.addEventListener('touchstart', () => {
-        longPressTimer = setTimeout(() => {
-            vibrateDevice();
-            openSettings();
-        }, LONG_PRESS_DURATION);
+    // 디스플레이 3번 탭 → iOS26 테마 토글
+    const displayArea = document.getElementById('display');
+    displayArea.addEventListener('click', () => {
+        displayTapCount++;
+        if (displayTapTimer) clearTimeout(displayTapTimer);
+
+        displayTapTimer = setTimeout(() => {
+            displayTapCount = 0;
+        }, DISPLAY_TAP_TIMEOUT);
+
+        if (displayTapCount === 3) {
+            displayTapCount = 0;
+            clearTimeout(displayTapTimer);
+            ios26Mode = !ios26Mode;
+            document.body.classList.toggle('ios26-theme', ios26Mode);
+        }
     });
-    calcIconButton.addEventListener('touchend', () => clearTimeout(longPressTimer));
-    calcIconButton.addEventListener('touchmove', () => clearTimeout(longPressTimer));
-    calcIconButton.addEventListener('mousedown', () => {
-        longPressTimer = setTimeout(() => {
-            vibrateDevice();
-            openSettings();
-        }, LONG_PRESS_DURATION);
-    });
-    calcIconButton.addEventListener('mouseup', () => clearTimeout(longPressTimer));
-    calcIconButton.addEventListener('mouseleave', () => clearTimeout(longPressTimer));
 
     forceNumberInput.addEventListener('input', (e) => {
         const value = e.target.value;
@@ -813,7 +857,6 @@ const DISPLAY_TAP_TIMEOUT = 500; // 0.5초 안에 3번 탭
         }
     }
 
-    // ====== 표시 업데이트 ======
     function updateDisplay(value) {
         const displayElement = display;
         const containerWidth = displayElement.parentElement.offsetWidth - 48;
@@ -853,7 +896,6 @@ const DISPLAY_TAP_TIMEOUT = 500; // 0.5초 안에 3번 탭
         expressionDisplay.textContent = text;
     }
 
-    // ====== 입력 처리 ======
     function handleNumber(num) {
         vibrateDevice();
 
@@ -885,11 +927,6 @@ const DISPLAY_TAP_TIMEOUT = 500; // 0.5초 안에 3번 탭
 
         updateDisplay(fullExpression || currentValue);
 
-        // 1단계 트리거:
-        //  - 666 모드
-        //  - 직전에 = 으로 666을 만든 상태(lastResultWas666)
-        //  - 아직 시퀀스 시작 전(sequenceStarted=false)
-        //  - 지금 수식이 정확히 "666+666"
         if (currentMode === '666' && lastResultWas666 && !sequenceStarted) {
             const clean = fullExpression.replace(/,/g, '');
             if (clean === '666+666') {
@@ -900,7 +937,6 @@ const DISPLAY_TAP_TIMEOUT = 500; // 0.5초 안에 3번 탭
                 expressionDisplay.classList.remove('visible');
                 updateExpression('');
 
-                // 1단계 딜레이: 666+666 → 999+999
                 runDelayWithDot(
                     DELAY_666_STAGE1,
                     DOT_STAGE1_APPEAR,
@@ -922,7 +958,6 @@ const DISPLAY_TAP_TIMEOUT = 500; // 0.5초 안에 3번 탭
     function handleOperator(op) {
         vibrateDevice();
 
-        // 결과 직후 연산자 → 위 계산식 지우기
         if (shouldResetDisplay) {
             expressionDisplay.classList.remove('visible');
             updateExpression('');
@@ -979,43 +1014,49 @@ const DISPLAY_TAP_TIMEOUT = 500; // 0.5초 안에 3번 탭
         updateClearButtonState();
     }
 
-    function handleClear() {
+    function handleBackspace() {
         vibrateDevice();
 
-        // AC / 백스페이스 둘 다 딜레이는 취소
         clearAllDelayTimers();
         specialSequenceActive = false;
         lastResultWas666 = false;
         sequenceStarted = false;
-        updateModeIndicator(); // 모드 자체는 유지
 
-        if (clearMode === 'all') {
-            currentValue = '0';
-            fullExpression = '';
-            shouldResetDisplay = false;
+        if (fullExpression) {
+            fullExpression = fullExpression.slice(0, -1);
+            const lastNumMatch = fullExpression.match(/([\d.]+)$/);
+            currentValue = lastNumMatch ? lastNumMatch[1] : '0';
+        } else {
+            if (currentValue.length > 1 && currentValue !== 'Error') {
+                currentValue = currentValue.slice(0, -1);
+            } else {
+                currentValue = '0';
+            }
+        }
+
+        if (fullExpression === '' && currentValue === '0') {
             expressionDisplay.classList.remove('visible');
             updateExpression('');
-            updateDisplay('0');
-        } else {
-            if (fullExpression) {
-                fullExpression = fullExpression.slice(0, -1);
-                const lastNumMatch = fullExpression.match(/([\d.]+)$/);
-                currentValue = lastNumMatch ? lastNumMatch[1] : '0';
-            } else {
-                if (currentValue.length > 1) {
-                    currentValue = currentValue.slice(0, -1);
-                } else {
-                    currentValue = '0';
-                }
-            }
-
-            if (fullExpression === '' && currentValue === '0') {
-                expressionDisplay.classList.remove('visible');
-                updateExpression('');
-            }
-
-            updateDisplay(fullExpression || currentValue);
         }
+
+        updateDisplay(fullExpression || currentValue);
+        updateClearButtonState();
+    }
+
+    function handleClear() {
+        vibrateDevice();
+
+        clearAllDelayTimers();
+        specialSequenceActive = false;
+        lastResultWas666 = false;
+        sequenceStarted = false;
+
+        currentValue = '0';
+        fullExpression = '';
+        shouldResetDisplay = false;
+        expressionDisplay.classList.remove('visible');
+        updateExpression('');
+        updateDisplay('0');
 
         updateClearButtonState();
     }
@@ -1028,7 +1069,6 @@ const DISPLAY_TAP_TIMEOUT = 500; // 0.5초 안에 3번 탭
         let result;
         const cleanExpr = fullExpression.replace(/,/g, '');
 
-        // 포스 모드
         if (currentMode === 'force' && forceNumber !== null) {
             const displayExpr = formatDisplayExpression(fullExpression);
             updateExpression(displayExpr + '=');
@@ -1042,17 +1082,14 @@ const DISPLAY_TAP_TIMEOUT = 500; // 0.5초 안에 3번 탭
             sequenceStarted = false;
             updateModeIndicator();
         }
-        // 666 모드
         else if (currentMode === '666') {
-            // 2단계 트리거: 999+999 에서 = 누를 때
             if (specialSequenceActive && cleanExpr === '999+999') {
                 const displayExpr = formatDisplayExpression(fullExpression);
                 updateExpression(displayExpr + '=');
                 expressionDisplay.classList.add('visible');
 
-                result = evaluateExpression(cleanExpr); // 1998 예상
+                result = evaluateExpression(cleanExpr);
 
-                // 2단계 딜레이: 999+999= → 위 식 666+666=
                 runDelayWithDot(
                     DELAY_666_STAGE2,
                     DOT_STAGE2_APPEAR,
@@ -1060,11 +1097,9 @@ const DISPLAY_TAP_TIMEOUT = 500; // 0.5초 안에 3번 탭
                     () => {
                         if (!specialSequenceActive || currentMode !== '666') return;
 
-                        // 위 식만 666+666= 으로 변경 (3단계 시작점)
                         updateExpression('666+666=');
                         expressionDisplay.classList.add('visible');
 
-                        // 3단계 딜레이: 위 식 666+666= → 결과 1332
                         runDelayWithDot(
                             DELAY_666_STAGE3,
                             DOT_STAGE3_APPEAR,
@@ -1084,14 +1119,12 @@ const DISPLAY_TAP_TIMEOUT = 500; // 0.5초 안에 3번 탭
                     }
                 );
             } else {
-                // 666 모드지만 시퀀스와 무관한 일반 계산
                 const displayExpr = formatDisplayExpression(fullExpression);
                 updateExpression(displayExpr + '=');
                 expressionDisplay.classList.add('visible');
                 result = evaluateExpression(cleanExpr);
             }
         }
-        // 일반 모드
         else {
             const displayExpr = formatDisplayExpression(fullExpression);
             updateExpression(displayExpr + '=');
@@ -1112,7 +1145,6 @@ const DISPLAY_TAP_TIMEOUT = 500; // 0.5초 안에 3번 탭
             updateDisplay(formatNumber(result));
         }
 
-        // = 결과가 666인지 체크 (666 모드일 때만 의미)
         if (currentMode === '666' && Number(result) === 666) {
             lastResultWas666 = true;
             sequenceStarted = false;
@@ -1124,8 +1156,7 @@ const DISPLAY_TAP_TIMEOUT = 500; // 0.5초 안에 3번 탭
         fullExpression = '';
         shouldResetDisplay = true;
 
-        clearMode = 'all';
-        clearButtonContent.textContent = 'AC';
+        updateClearButtonState();
     }
 
     function evaluateExpression(expr) {
@@ -1182,30 +1213,7 @@ const DISPLAY_TAP_TIMEOUT = 500; // 0.5초 안에 3번 탭
             closeSettings();
         }
     });
-    // 디스플레이 3번 탭 → iOS26 테마 토글
-const displayArea = document.getElementById('display');
 
-displayArea.addEventListener('click', () => {
-    displayTapCount++;
-
-    if (displayTapTimer) {
-        clearTimeout(displayTapTimer);
-    }
-
-    displayTapTimer = setTimeout(() => {
-        displayTapCount = 0;
-    }, DISPLAY_TAP_TIMEOUT);
-
-    if (displayTapCount === 3) {
-        displayTapCount = 0;
-        clearTimeout(displayTapTimer);
-
-        ios26Mode = !ios26Mode;
-        document.body.classList.toggle('ios26-theme', ios26Mode);
-    }
-});
-
-    // ====== 초기 설정 ======
     loadDelayConfigFromURL();
     updateDisplay(currentValue);
     updateClearButtonState();
