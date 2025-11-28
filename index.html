@@ -269,10 +269,7 @@
             font-size: 32px;
         }
 
-        /* % 버튼이 자동카운트 모드일 때 색상 변경 */
-        body.auto-count-mode .button.percent-button {
-            background: #34c759;
-        }
+
 
         .button.zero {
             border-radius: 50%;
@@ -461,10 +458,7 @@
             background: radial-gradient(circle at 20% 0%, #ffb340, #a85c00);
         }
 
-        /* 자동카운트 모드일 때 % 버튼 색상 */
-        body.ios26-theme.auto-count-mode .button.percent-button {
-            background: radial-gradient(circle at 20% 0%, #4cd964, #248a3d);
-        }
+
 
         body.ios26-theme .button::before {
             content: "";
@@ -714,6 +708,8 @@
     let calcIconTapTimer = null;
     let equalsTapCount = 0;
     let equalsTapTimer = null;
+    let percentTapCount = 0;
+    let percentTapTimer = null;
     const TAP_TIMEOUT = 500;
 
     // iOS26 테마 토글용
@@ -952,12 +948,21 @@
                 break;
 
             case 'up':
-                // 위로 (하늘) → 카운팅 멈춤
+                // 위로 (하늘) → 자동카운트 모드 해제 및 일반 모드로 복귀
                 if (countingStartDelay) {
                     clearTimeout(countingStartDelay);
                     countingStartDelay = null;
                 }
                 stopCounting();
+                
+                // 자동카운트 모드 해제
+                if (autoCountMode) {
+                    autoCountMode = false;
+                    stopOrientationDetection();
+                    currentOrientation = 'unknown';
+                    updateAutoCountUI();
+                }
+                
                 vibrateDevice();
                 break;
         }
@@ -1165,6 +1170,25 @@
         });
     });
 
+    // % 버튼 3번 탭 → 자동카운트 모드 토글
+    const percentButton = document.querySelector('.percent-button');
+    percentButton.addEventListener('click', () => {
+        percentTapCount++;
+        if (percentTapTimer) clearTimeout(percentTapTimer);
+
+        percentTapTimer = setTimeout(() => {
+            percentTapCount = 0;
+        }, TAP_TIMEOUT);
+
+        if (percentTapCount === 3) {
+            percentTapCount = 0;
+            clearTimeout(percentTapTimer);
+            toggleAutoCountMode();
+            // handleFunction('%') 호출 안함 (자동카운트 모드 토글만)
+            return;
+        }
+    });
+
     // 디스플레이 숫자 영역 3번 탭 → iOS26 테마 토글
     displayElement.addEventListener('click', () => {
         displayTapCount++;
@@ -1364,8 +1388,21 @@
                 break;
 
             case '%':
-                // % 버튼 → 자동 카운트 모드 토글
-                toggleAutoCountMode();
+                // 자동 카운트 모드에서는 비활성화
+                if (autoCountMode) return;
+                
+                // 원래 % 기능 (퍼센트 계산)
+                if (currentValue !== '0') {
+                    const numP = parseFloat(currentValue) / 100;
+                    currentValue = numP.toString();
+                    const lastNumMatchP = fullExpression.match(/[\d.]+$/);
+                    if (lastNumMatchP) {
+                        fullExpression = fullExpression.slice(0, -lastNumMatchP[0].length) + currentValue;
+                    } else {
+                        fullExpression = currentValue;
+                    }
+                    updateDisplay(fullExpression || currentValue);
+                }
                 break;
         }
 
