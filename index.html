@@ -1602,9 +1602,11 @@
         fullExpression = '';
         shouldResetDisplay = true;
 
-        // = 이후에는 항상 AC 모드로
-        clearMode = 'all';
-        updateClearButtonState();
+        // = 이후에는 일반 모드에서만 AC로 변경 (iOS26은 항상 지우개)
+        if (!ios26Mode) {
+            clearMode = 'all';
+            clearButtonContent.textContent = 'AC';
+        }
     }
 
     function evaluateExpression(expr) {
