@@ -53,6 +53,7 @@
             background: #000;
         }
 
+        /* === 왼쪽 아이콘: 기본은 3점 메뉴, iOS26에선 시계 === */
         .menu-icon {
             width: 40px;
             height: 40px;
@@ -66,6 +67,7 @@
             height: 24px;
         }
 
+        /* 기본 3점 메뉴 */
         #menuDots .menu-dot {
             fill: #ff9f0a;
             transition: opacity 0.2s;
@@ -77,8 +79,14 @@
             stroke-linecap: round;
         }
 
+        /* 자동카운트 모드일 때 하단 점 숨김 */
+        body.auto-count-mode #menuDots #dotBot {
+            opacity: 0;
+        }
+
+        /* 9시 시계 아이콘 (iOS26 용) */
         #menuClock {
-            display: none;
+            display: none; /* 기본은 숨김, iOS26 모드에서만 표시 */
         }
         #menuClock circle {
             stroke: #f5f5f5;
@@ -91,18 +99,24 @@
             stroke-linecap: round;
         }
 
+        /* 자동카운트 모드일 때 시계가 9시 10분으로 */
+        body.ios26-theme.auto-count-mode #clockHour {
+            /* JS에서 동적 변경 */
+        }
+
         .mode-indicator {
             font-size: 12px;
             color: #ff9f0a;
             font-weight: 600;
-            opacity: 0;
+            opacity: 0;   /* 글자 표시 안함 (도트/시계로만 표시) */
         }
 
+        /* 오른쪽 상단 계산기 아이콘 (iOS26에서만 보이게) */
         .header-calc {
             border-radius: 17px;
             border: none;
             background: transparent;
-            display: none;
+            display: none;        /* 기본 모드에서는 숨김 */
             align-items: center;
             justify-content: center;
             position: relative;
@@ -114,6 +128,7 @@
             height: 26px;
         }
 
+        /* 상단 공통 라운드 아이콘 (시계 + 헤더 계산기) */
         .top-icon {
             width: 40px;
             height: 40px;
@@ -122,11 +137,13 @@
             justify-content: center;
         }
 
+        /* iOS26 모드에서 상단 아이콘 라운드 + 아주 약한 테두리 */
         body.ios26-theme .top-icon {
             background: #1c1c1e;
             border: 1px solid #2c2c2e;
         }
 
+        /* 딜레이 파란 점 (상단/하단 계산기 아이콘 둘 다 안에 들어감) */
         .delay-dot {
             position: absolute;
             bottom: -4px;
@@ -250,6 +267,11 @@
         }
         .button.function .button-content {
             font-size: 32px;
+        }
+
+        /* % 버튼이 자동카운트 모드일 때 색상 변경 */
+        body.auto-count-mode .button.percent-button {
+            background: #34c759;
         }
 
         .button.zero {
@@ -392,9 +414,12 @@
         }
 
         /* =========================
-           iOS 26 테마
+           iOS 26 테마 (토글 전용)
+           기본 모드 레이아웃은 그대로 두고,
+           iOS26 모드일 때만 스타일/배열 느낌 변경
            ========================= */
 
+        /* iOS26 모드에서: 상단 시계 아이콘 + 헤더 계산기 표시 */
         body.ios26-theme #menuDots {
             display: none;
         }
@@ -405,17 +430,20 @@
             display: flex;
         }
 
+        /* 헤더 오른쪽 계산기 아이콘 색상:
+           흰 본체 + 더 진한 회색 창/그리드 */
         body.ios26-theme .header-calc .calc-icon-svg rect:first-of-type {
             fill: #ffffff;
             stroke: #ffffff;
         }
         body.ios26-theme .header-calc .calc-icon-svg rect:nth-of-type(2) {
-            fill: #3a3a3c;
+            fill: #3a3a3c;   /* 창을 더 진한 회색으로 */
         }
         body.ios26-theme .header-calc .calc-icon-svg circle {
-            fill: #2c2c2e;
+            fill: #2c2c2e;   /* 그리드 점도 더 진한 회색 */
         }
 
+        /* iOS26 버튼 스타일 (밝은 윤곽선, 안쪽 검정줄 제거) */
         body.ios26-theme .button {
             transform: scale(0.94);
             border-radius: 999px;
@@ -431,6 +459,11 @@
         }
         body.ios26-theme .button.operator {
             background: radial-gradient(circle at 20% 0%, #ffb340, #a85c00);
+        }
+
+        /* 자동카운트 모드일 때 % 버튼 색상 */
+        body.ios26-theme.auto-count-mode .button.percent-button {
+            background: radial-gradient(circle at 20% 0%, #4cd964, #248a3d);
         }
 
         body.ios26-theme .button::before {
@@ -449,14 +482,16 @@
             transform: translateY(-2px);
         }
 
+        /* iOS26: 디스플레이 위치/여백 조정 (위로 붙는 느낌 완화) */
         body.ios26-theme .display {
             padding: 6px 20px 18px 20px;
             min-height: 210px;
-            margin-top: 20px;
+            margin-top: 20px;   /* 기본 12px보다 조금 더 아래로 */
         }
 
+        /* iOS26: 버튼 영역도 약간 아래로 */
         body.ios26-theme .button-grid {
-            padding: 10px 20px 12px;
+            padding: 10px 20px 12px; /* 위 여백 살짝 증가 */
         }
 
         body.ios26-theme .expression-text {
@@ -467,6 +502,7 @@
             font-weight: 500;
         }
 
+        /* iOS26: 하단 계산기 버튼 안의 ± 텍스트 표시용 */
         #calcIconPlusMinus {
             display: none;
             font-size: 32px;
@@ -483,7 +519,9 @@
 <body>
 <div class="calculator">
     <div class="header">
+        <!-- 왼쪽: 기본은 메뉴 3점 / iOS26에서는 시계 -->
         <div class="menu-icon top-icon" id="menuIcon">
+            <!-- 기본 모드: 주황 도트 아이콘 -->
             <svg id="menuDots" viewBox="0 0 24 24">
                 <circle class="menu-dot" id="dotTop" cx="3" cy="5" r="1.5"/>
                 <line class="menu-line" x1="7" y1="5" x2="21" y2="5"></line>
@@ -493,15 +531,20 @@
                 <line class="menu-line" x1="7" y1="19" x2="21" y2="19"></line>
             </svg>
 
+            <!-- iOS26 모드: 시계 아이콘 (기본 9시) -->
             <svg id="menuClock" viewBox="0 0 24 24">
                 <circle cx="12" cy="12" r="9"/>
+                <!-- 분침: 12시 방향 -->
                 <line id="clockMinute" x1="12" y1="12" x2="12" y2="5"/>
+                <!-- 시침: 9시 방향 (자동카운트 모드에서 JS로 이 좌표만 바꿔줄 거예요) -->
                 <line id="clockHour" x1="12" y1="12" x2="5" y2="12"/>
             </svg>
         </div>
 
+        <!-- 가운데: 모드 텍스트(실제로는 숨김 상태) -->
         <div class="mode-indicator" id="modeIndicator"></div>
 
+        <!-- 오른쪽: iOS26에서만 보이는 계산기 아이콘 -->
         <button class="header-calc calc-icon-trigger top-icon" id="headerCalcButton">
             <svg class="calc-icon-svg" viewBox="0 0 24 24">
                 <rect x="5.5" y="3.5" width="13" height="17" rx="1.4"
@@ -528,6 +571,8 @@
 
     <div class="buttons">
         <div class="button-grid">
+            <!-- 1행: AC / ± / % / ÷  (기본 모드)
+                 iOS26 모드에서는 [지우개][AC][%][÷] 로 동작하도록 JS에서 역할만 바꿈 -->
             <button class="button function" id="clearButton" onclick="handleClear()">
                 <div class="button-content" id="clearButtonContent">AC</div>
             </button>
@@ -547,7 +592,7 @@
                 </div>
             </button>
 
-            <button class="button function" onclick="handleFunction('%')">
+            <button class="button function percent-button" onclick="handleFunction('%')">
                 <div class="button-content">%</div>
             </button>
 
@@ -555,6 +600,7 @@
                 <div class="button-content">÷</div>
             </button>
 
+            <!-- 2행: 7 8 9 × -->
             <button class="button number" onclick="handleNumber('7')">
                 <div class="button-content">7</div>
             </button>
@@ -568,6 +614,7 @@
                 <div class="button-content">×</div>
             </button>
 
+            <!-- 3행: 4 5 6 − -->
             <button class="button number" onclick="handleNumber('4')">
                 <div class="button-content">4</div>
             </button>
@@ -581,6 +628,7 @@
                 <div class="button-content">−</div>
             </button>
 
+            <!-- 4행: 1 2 3 + -->
             <button class="button number" onclick="handleNumber('1')">
                 <div class="button-content">1</div>
             </button>
@@ -594,8 +642,10 @@
                 <div class="button-content">+</div>
             </button>
 
+            <!-- 5행: [계산기/± 자리][0][.][=] -->
             <button class="button calc-icon calc-icon-trigger" id="calcIconButton" onclick="handleCalcIcon()">
                 <div class="button-content">
+                    <!-- 기본: 계산기 아이콘 -->
                     <svg class="calc-icon-svg" id="calcIconSvg" viewBox="0 0 24 24">
                         <rect x="5.5" y="3.5" width="13" height="17" rx="1.4"
                               fill="currentColor" stroke="currentColor" stroke-width="1.4"/>
@@ -610,6 +660,7 @@
                         <circle cx="12"  cy="18.8" r="1.2" fill="#333"/>
                         <circle cx="15.5" cy="18.8" r="1.2" fill="#333"/>
                     </svg>
+                    <!-- iOS26 모드: 이 자리에 ± 표시 -->
                     <span id="calcIconPlusMinus">±</span>
                 </div>
                 <div class="delay-dot"></div>
@@ -630,6 +681,7 @@
     </div>
 </div>
 
+<!-- 설정 모달 -->
 <div class="settings-modal" id="settingsModal">
     <div class="settings-content">
         <div class="settings-title">설정</div>
@@ -649,7 +701,7 @@
     let shouldResetDisplay = false;
     let forceNumber = null;
 
-    // 모드: 'normal', 'force', '666'
+    // 모드: 'normal', 'force', '666', 'autoCount'
     let currentMode = 'normal';
     let specialSequenceActive = false;
 
@@ -670,14 +722,20 @@
     let displayTapTimer = null;
     const DISPLAY_TAP_TIMEOUT = 500;
 
-    // 길게 눌러 설정
+    // 길게 눌러 설정 (백업)
     let longPressTimer = null;
     const LONG_PRESS_DURATION = 3000;
 
-    // clear 버튼 모드
+    // clear 버튼 모드 (기본 모드에서만 의미 있음)
     let clearMode = 'all';
 
-    // ====== 666용 딜레이 기본값 ======
+    // ====== 자동 카운트 모드 변수 ======
+    let autoCountMode = false;
+    let countingInterval = null;
+    let countingStartDelay = null;
+    let currentOrientation = 'unknown'; // 'down', 'vertical', 'up'
+
+    // ====== 딜레이 기본값 (3단계) ======
     const DEFAULT_DELAY_666_STAGE1 = 5000;
     const DEFAULT_DELAY_666_STAGE2 = 10000;
     const DEFAULT_DELAY_666_STAGE3 = 5000;
@@ -704,11 +762,6 @@
     let DOT_STAGE3_APPEAR = DEFAULT_DOT_STAGE3_APPEAR;
     let DOT_STAGE3_DISAPPEAR_BEFORE = DEFAULT_DOT_STAGE3_DISAPPEAR_BEFORE;
 
-    // ====== 음성 인식 관련 ======
-    let voiceModeActive = false;
-    let recognition = null;
-    let speechRecognitionSupported = false;
-
     function loadDelayConfigFromURL() {
         try {
             const params = new URLSearchParams(window.location.search);
@@ -722,6 +775,7 @@
 
             DELAY_666_STAGE1 = getMs('d1', DEFAULT_DELAY_666_STAGE1);
             DELAY_666_STAGE2 = getMs('d2', DEFAULT_DELAY_666_STAGE2);
+
             const gapOrDefault = getMs('gap', DEFAULT_DELAY_666_STAGE3);
             DELAY_666_STAGE3 = getMs('d3', gapOrDefault);
 
@@ -749,7 +803,6 @@
     const dotMid = document.getElementById('dotMid');
     const dotBot = document.getElementById('dotBot');
     const clockHour = document.getElementById('clockHour');
-    const clockMinute = document.getElementById('clockMinute');
 
     const calcIconButtons = document.querySelectorAll('.calc-icon-trigger');
     const equalsButtons = document.querySelectorAll('.equals-trigger');
@@ -808,11 +861,166 @@
         delayTimers.push(appearId, disappearId, completeId);
     }
 
+    /* ====== 자동 카운트 모드 기능 ====== */
+    
+    // 자이로스코프 권한 요청 (iOS 13+)
+    async function requestMotionPermission() {
+        if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
+            try {
+                const permission = await DeviceMotionEvent.requestPermission();
+                if (permission === 'granted') {
+                    startOrientationDetection();
+                } else {
+                    alert('자동 카운트 기능을 사용하려면 모션 센서 권한이 필요합니다.');
+                    autoCountMode = false;
+                    updateAutoCountUI();
+                }
+            } catch (error) {
+                console.error('Motion permission error:', error);
+                alert('센서 권한 요청에 실패했습니다.');
+                autoCountMode = false;
+                updateAutoCountUI();
+            }
+        } else {
+            // 권한 요청이 필요없는 경우 (Android 등)
+            startOrientationDetection();
+        }
+    }
+
+    function startOrientationDetection() {
+        window.addEventListener('deviceorientation', handleOrientation);
+    }
+
+    function stopOrientationDetection() {
+        window.removeEventListener('deviceorientation', handleOrientation);
+        stopCounting();
+        if (countingStartDelay) {
+            clearTimeout(countingStartDelay);
+            countingStartDelay = null;
+        }
+    }
+
+    function handleOrientation(event) {
+        if (!autoCountMode) return;
+
+        const beta = event.beta;  // 앞뒤 기울기 (-180 ~ 180)
+        const gamma = event.gamma; // 좌우 기울기 (-90 ~ 90)
+
+        let newOrientation = 'unknown';
+
+        // 화면 아래로 (뒤집음) - beta가 180에 가까움
+        if (Math.abs(beta) > 150) {
+            newOrientation = 'down';
+        }
+        // 화면 위로 (하늘) - beta가 0에 가까움 (거의 수평)
+        else if (Math.abs(beta) < 30 && Math.abs(gamma) < 30) {
+            newOrientation = 'up';
+        }
+        // 세로로 세움 - beta가 80~100 범위
+        else if (beta > 70 && beta < 110) {
+            newOrientation = 'vertical';
+        }
+
+        if (newOrientation !== currentOrientation) {
+            currentOrientation = newOrientation;
+            handleOrientationChange(newOrientation);
+        }
+    }
+
+    function handleOrientationChange(orientation) {
+        switch(orientation) {
+            case 'down':
+                // 화면 아래로 → 리셋
+                stopCounting();
+                if (countingStartDelay) {
+                    clearTimeout(countingStartDelay);
+                    countingStartDelay = null;
+                }
+                resetAll();
+                vibrateDevice();
+                break;
+
+            case 'vertical':
+                // 세로로 세움 → 2초 후 카운팅 시작
+                if (!countingInterval && !countingStartDelay) {
+                    vibrateDevice();
+                    countingStartDelay = setTimeout(() => {
+                        startCounting();
+                        countingStartDelay = null;
+                    }, 2000);
+                }
+                break;
+
+            case 'up':
+                // 위로 (하늘) → 카운팅 멈춤
+                if (countingStartDelay) {
+                    clearTimeout(countingStartDelay);
+                    countingStartDelay = null;
+                }
+                stopCounting();
+                vibrateDevice();
+                break;
+        }
+    }
+
+    function startCounting() {
+        if (countingInterval) return;
+
+        // 현재 값이 0이거나 비어있으면 1부터 시작
+        if (currentValue === '0' || currentValue === '') {
+            currentValue = '1';
+            fullExpression = '1';
+            updateDisplay(currentValue);
+        }
+
+        countingInterval = setInterval(() => {
+            let num = parseInt(currentValue);
+            if (isNaN(num)) num = 0;
+            num++;
+            currentValue = num.toString();
+            fullExpression = num.toString();
+            updateDisplay(currentValue);
+            updateClearButtonState();
+        }, 1000);
+
+        vibrateDevice();
+    }
+
+    function stopCounting() {
+        if (countingInterval) {
+            clearInterval(countingInterval);
+            countingInterval = null;
+            vibrateDevice();
+        }
+    }
+
+    function toggleAutoCountMode() {
+        autoCountMode = !autoCountMode;
+        
+        if (autoCountMode) {
+            // 자동 카운트 모드 활성화
+            requestMotionPermission();
+        } else {
+            // 자동 카운트 모드 비활성화
+            stopOrientationDetection();
+            currentOrientation = 'unknown';
+        }
+
+        updateAutoCountUI();
+        vibrateDevice();
+    }
+
+    function updateAutoCountUI() {
+        document.body.classList.toggle('auto-count-mode', autoCountMode);
+        updateModeIndicator();
+    }
+
     /* ====== Clear 버튼 상태 ====== */
     function updateClearButtonState() {
         const hasInput = (fullExpression !== '' || currentValue !== '0');
 
         if (!ios26Mode) {
+            // 기본 모드: AC ↔ 지우개 토글
             if (hasInput) {
                 clearMode = 'backspace';
                 clearButtonContent.innerHTML = BACKSPACE_SVG;
@@ -821,44 +1029,47 @@
                 clearButtonContent.textContent = 'AC';
             }
         } else {
+            // iOS26 모드: 1열 첫 번째 버튼은 항상 지우개
             clearMode = 'all';
             clearButtonContent.innerHTML = BACKSPACE_SVG;
         }
     }
 
     function updateModeIndicator() {
-        // iOS26 모드: 시계로 표시
-        if (ios26Mode && clockHour && clockMinute) {
-            if (voiceModeActive) {
-                // 음성 모드: 9시 10분
-                clockHour.setAttribute('x2', '5');   // 9시
-                clockHour.setAttribute('y2', '12');
-                clockMinute.setAttribute('x2', '18'); // 대략 2시 방향 = 10분 느낌
-                clockMinute.setAttribute('y2', '8');
-            } else {
-                // 기본: 분침 12시 고정
-                clockMinute.setAttribute('x2', '12');
-                clockMinute.setAttribute('y2', '5');
+        // iOS26 모드일 때는 시계 시침으로 모드 표시
+        if (ios26Mode && clockHour) {
+            // 기본값: 9시 (x2=5, y2=12)
+            let x2 = 5;
+            let y2 = 12;
 
-                let x2 = 5;
-                let y2 = 12;
-
-                if (currentMode === 'force') {
-                    x2 = 7;
-                    y2 = 17;
-                } else if (currentMode === '666') {
-                    x2 = 7;
-                    y2 = 7;
-                }
-                clockHour.setAttribute('x2', String(x2));
-                clockHour.setAttribute('y2', String(y2));
+            if (autoCountMode) {
+                // 자동카운트 모드 → 9시 10분
+                x2 = 6.5;
+                y2 = 8.5;
+            } else if (currentMode === 'force') {
+                // 포스 모드 → 8시 느낌
+                x2 = 7;
+                y2 = 17;
+            } else if (currentMode === '666') {
+                // 666 모드 → 10시 느낌
+                x2 = 7;
+                y2 = 7;
             }
+
+            clockHour.setAttribute('x2', String(x2));
+            clockHour.setAttribute('y2', String(y2));
+
             modeIndicator.textContent = '';
             return;
         }
 
-        // 기본(3점) 모드
-        if (currentMode === 'force') {
+        // 기본 모드: 점 3개로 모드 표시
+        if (autoCountMode) {
+            // 자동카운트 모드: 하단 점 숨김 (상단, 중간만)
+            dotTop.style.opacity = '1';
+            dotMid.style.opacity = '1';
+            dotBot.style.opacity = '0';
+        } else if (currentMode === 'force') {
             dotTop.style.opacity = '0';
             dotMid.style.opacity = '1';
             dotBot.style.opacity = '1';
@@ -872,11 +1083,6 @@
             dotBot.style.opacity = '1';
         }
 
-        // 음성 모드면 하단 점 OFF
-        if (voiceModeActive) {
-            dotBot.style.opacity = '0';
-        }
-
         modeIndicator.textContent = '';
     }
 
@@ -885,8 +1091,10 @@
         document.body.classList.toggle('ios26-theme', ios26Mode);
 
         if (ios26Mode) {
+            // 1열 두 번째 버튼: AC 라벨
             pmContent.textContent = 'AC';
         } else {
+            // 기본 모드: 다시 ± 아이콘
             pmContent.innerHTML = pmOriginalHTML;
         }
 
@@ -896,8 +1104,9 @@
 
     /* ===== 숨은 모드 / 설정 진입 ===== */
 
+    // 계산기 아이콘 3번 탭 → 포스 숫자 설정창
     calcIconButtons.forEach(btn => {
-        btn.addEventListener('click', () => {
+        btn.addEventListener('click', (e) => {
             calcIconTapCount++;
             if (calcIconTapTimer) clearTimeout(calcIconTapTimer);
 
@@ -913,6 +1122,7 @@
             }
         });
 
+        // 길게 눌러도 설정 (백업)
         btn.addEventListener('touchstart', () => {
             longPressTimer = setTimeout(() => {
                 vibrateDevice();
@@ -931,6 +1141,7 @@
         btn.addEventListener('mouseleave', () => clearTimeout(longPressTimer));
     });
 
+    // = 버튼 3번 탭 → 666 모드 토글
     equalsButtons.forEach(btn => {
         btn.addEventListener('click', () => {
             equalsTapCount++;
@@ -954,6 +1165,7 @@
         });
     });
 
+    // 디스플레이 숫자 영역 3번 탭 → iOS26 테마 토글
     displayElement.addEventListener('click', () => {
         displayTapCount++;
         if (displayTapTimer) clearTimeout(displayTapTimer);
@@ -992,177 +1204,6 @@
         if ('vibrate' in navigator) {
             navigator.vibrate(50);
         }
-    }
-
-    /* ===== 음성 인식 초기화 / 제어 ===== */
-
-    function initSpeechRecognition() {
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (!SpeechRecognition) {
-            speechRecognitionSupported = false;
-            return;
-        }
-        recognition = new SpeechRecognition();
-        speechRecognitionSupported = true;
-        recognition.lang = 'ko-KR';
-        recognition.continuous = false;
-        recognition.interimResults = false;
-
-        recognition.onresult = (event) => {
-            const transcript = Array.from(event.results)
-                .map(r => r[0].transcript)
-                .join(' ');
-            console.log('음성 인식 결과:', transcript);
-
-            const num = extractNumberFromTranscript(transcript);
-            if (num !== null) {
-                insertSpokenNumber(num);
-            }
-            deactivateVoiceMode();
-        };
-
-        recognition.onerror = (event) => {
-            console.log('Speech error:', event.error);
-            deactivateVoiceMode();
-        };
-
-        recognition.onend = () => {
-            voiceModeActive = false;
-            updateModeIndicator();
-        };
-    }
-
-    function activateVoiceMode() {
-        if (!speechRecognitionSupported || !recognition) {
-            alert('이 브라우저에서는 음성 인식을 사용할 수 없습니다.');
-            return;
-        }
-        clearAllDelayTimers();
-        specialSequenceActive = false;
-        lastResultWas666 = false;
-        sequenceStarted = false;
-
-        voiceModeActive = true;
-        updateModeIndicator();
-
-        try {
-            recognition.start();
-        } catch (e) {
-            console.log('start error:', e);
-        }
-    }
-
-    function deactivateVoiceMode() {
-        voiceModeActive = false;
-        updateModeIndicator();
-        try {
-            recognition && recognition.stop();
-        } catch (e) {
-            console.log('stop error:', e);
-        }
-    }
-
-    function toggleVoiceMode() {
-        if (voiceModeActive) {
-            deactivateVoiceMode();
-        } else {
-            activateVoiceMode();
-        }
-    }
-
-    // 한글 숫자 → 정수
-    function koreanNumberToInt(kor) {
-        if (!kor) return NaN;
-
-        const numMap = {
-            '공': 0, '영': 0,
-            '일': 1, '이': 2, '삼': 3, '사': 4, '오': 5,
-            '육': 6, '륙': 6, '칠': 7, '팔': 8, '구': 9
-        };
-        const unitMap = {
-            '십': 10,
-            '백': 100,
-            '천': 1000
-        };
-
-        let result = 0;
-        let tmp = 0;
-        let num = 0;
-
-        for (const ch of kor) {
-            if (ch in numMap) {
-                num = numMap[ch];
-            } else if (ch in unitMap) {
-                const unit = unitMap[ch];
-                if (num === 0) num = 1;
-                tmp += num * unit;
-                num = 0;
-            } else if (ch === '만') {
-                tmp += num;
-                if (tmp === 0) tmp = 1;
-                result += tmp * 10000;
-                tmp = 0;
-                num = 0;
-            } else {
-                // ignore
-            }
-        }
-
-        tmp += num;
-        result += tmp;
-
-        return result;
-    }
-
-    // "좋네요"/"좋아" + 숫자(한글/숫자)
-    function extractNumberFromTranscript(text) {
-        if (!text) return null;
-
-        const compact = text.replace(/\s/g, '');
-        console.log('원본 텍스트:', text, ' | 공백 제거:', compact);
-
-        // 1) "좋네요" 또는 "좋아" 뒤 아라비아 숫자
-        let m = compact.match(/(좋네요|좋아)(\d+)/);
-        if (m && m[2]) {
-            return parseInt(m[2], 10);
-        }
-
-        // 2) "좋네요"/"좋아" 뒤 한글 숫자
-        m = compact.match(/(좋네요|좋아)([공영일이삼사오육륙칠팔구십백천만]+)/);
-        if (m && m[2]) {
-            const n = koreanNumberToInt(m[2]);
-            if (!isNaN(n)) return n;
-        }
-
-        // 3) 문장 안의 첫 아라비아 숫자
-        m = compact.match(/(\d+)/);
-        if (m && m[1]) {
-            return parseInt(m[1], 10);
-        }
-
-        // 4) 문장 안의 첫 한글 숫자
-        m = compact.match(/([공영일이삼사오육륙칠팔구십백천만]+)/);
-        if (m && m[1]) {
-            const n = koreanNumberToInt(m[1]);
-            if (!isNaN(n)) return n;
-        }
-
-        return null;
-    }
-
-    // 인식된 숫자만 디스플레이에
-    function insertSpokenNumber(num) {
-        if (num === null || isNaN(num)) return;
-        const str = String(num);
-
-        currentValue = str;
-        fullExpression = str;
-        shouldResetDisplay = false;
-
-        expressionDisplay.classList.remove('visible');
-        updateExpression('');
-        updateDisplay(fullExpression);
-        updateClearButtonState();
     }
 
     /* ===== 표시 업데이트 ===== */
@@ -1208,6 +1249,9 @@
     function handleNumber(num) {
         vibrateDevice();
 
+        // 자동 카운트 모드에서는 숫자 입력 비활성화
+        if (autoCountMode) return;
+
         const lastChar = fullExpression.slice(-1);
 
         if (shouldResetDisplay) {
@@ -1236,6 +1280,7 @@
 
         updateDisplay(fullExpression || currentValue);
 
+        // 1단계 트리거: 666 모드 + 직전 결과가 666 + 아직 시퀀스 전 + 현재 "666+666"
         if (currentMode === '666' && lastResultWas666 && !sequenceStarted) {
             const clean = fullExpression.replace(/,/g, '');
             if (clean === '666+666') {
@@ -1267,6 +1312,9 @@
     function handleOperator(op) {
         vibrateDevice();
 
+        // 자동 카운트 모드에서는 연산자 입력 비활성화
+        if (autoCountMode) return;
+
         if (shouldResetDisplay) {
             expressionDisplay.classList.remove('visible');
             updateExpression('');
@@ -1294,10 +1342,14 @@
         switch (func) {
             case '±':
                 if (ios26Mode) {
+                    // iOS26 모드에서는 1열 두번째 버튼 = AC 역할
                     resetAll();
                     updateClearButtonState();
                     return;
                 }
+                // 기본 모드: 부호 변경 (자동 카운트 모드에서는 비활성화)
+                if (autoCountMode) return;
+                
                 if (currentValue !== '0') {
                     const num = parseFloat(currentValue);
                     currentValue = (-num).toString();
@@ -1312,8 +1364,8 @@
                 break;
 
             case '%':
-                // 퍼센트 대신 음성인식 모드 토글
-                toggleVoiceMode();
+                // % 버튼 → 자동 카운트 모드 토글
+                toggleAutoCountMode();
                 break;
         }
 
@@ -1325,6 +1377,13 @@
         specialSequenceActive = false;
         lastResultWas666 = false;
         sequenceStarted = false;
+
+        // 자동 카운트 관련 정리
+        stopCounting();
+        if (countingStartDelay) {
+            clearTimeout(countingStartDelay);
+            countingStartDelay = null;
+        }
 
         currentValue = '0';
         fullExpression = '';
@@ -1340,6 +1399,7 @@
         vibrateDevice();
 
         if (ios26Mode) {
+            // iOS26: 1열 첫번째 버튼은 항상 지우개 역할
             handleBackspace();
             return;
         }
@@ -1347,6 +1407,7 @@
         if (clearMode === 'all') {
             resetAll();
         } else {
+            // backspace 모드
             if (fullExpression) {
                 fullExpression = fullExpression.slice(0, -1);
                 const lastNumMatch = fullExpression.match(/([\d.]+)$/);
@@ -1370,6 +1431,7 @@
         updateClearButtonState();
     }
 
+    // iOS26 모드에서 사용하는 지우개 전용 로직
     function handleBackspace() {
         clearAllDelayTimers();
         specialSequenceActive = false;
@@ -1398,6 +1460,8 @@
     }
 
     function handleCalcIcon() {
+        // 기본 모드: 아직 기능 없음(숨겨진 기능용)
+        // iOS26 모드: 이 자리가 ± 버튼이므로 ± 기능 실행
         if (ios26Mode) {
             handleFunction('±');
         }
@@ -1405,6 +1469,9 @@
 
     function handleEquals() {
         vibrateDevice();
+
+        // 자동 카운트 모드에서는 = 비활성화
+        if (autoCountMode) return;
 
         if (!fullExpression || fullExpression === '0') return;
 
@@ -1498,6 +1565,7 @@
         fullExpression = '';
         shouldResetDisplay = true;
 
+        // = 이후에는 항상 AC 모드로
         clearMode = 'all';
         updateClearButtonState();
     }
@@ -1562,8 +1630,7 @@
     updateDisplay(currentValue);
     updateClearButtonState();
     updateModeIndicator();
-    applyLayoutMode();
-    initSpeechRecognition();
+    applyLayoutMode(); // ios26Mode=false 상태로 한 번 적용
 </script>
 </body>
 </html>
