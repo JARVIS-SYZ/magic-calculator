@@ -2,505 +2,276 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport"
-          content="width=device-width, initial-scale=1.0, maximum-scale=1.0,
-                   user-scalable=no, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="mobile-web-app-capable" content="yes">
     <title>계산기</title>
-
-<link rel="apple-touch-icon" sizes="180x180" href="icon-180.png">
-<link rel="icon" type="image/png" href="icon-180.png">
-
+    <link rel="apple-touch-icon" sizes="180x180" href="icon-180.png">
+    <link rel="icon" type="image/png" href="icon-180.png">
 <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
-            user-select: none;
-            -webkit-user-select: none;
-        }
+* {
+    margin: 0; padding: 0;
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+    -webkit-user-select: none;
+}
 
-        html, body {
-            background: #000;
-            color: #fff;
-            height: 100%;
-            width: 100%;
-            overflow: hidden;
-            font-family: -apple-system, BlinkMacSystemFont,
-                         'SF Pro Display', 'Helvetica Neue', sans-serif;
-            touch-action: manipulation;
-        }
+html, body {
+    background: #000;
+    color: #fff;
+    /* 고정 높이 절대 안 씀 - 내용에 맞게 */
+    width: 100%;
+    overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif;
+    touch-action: manipulation;
+}
 
-        /* ============================================
-           CSS 변수로 모든 크기값 중앙관리
-           100dvh 기준으로 비례 계산
-           ============================================ */
-        :root {
-            /* 버튼 1개 크기: 화면 너비 기준 (4열 + gap 3개 + 좌우 패딩) */
-            --grid-pad-h: clamp(12px, 4.5vw, 22px);
-            --grid-gap: clamp(5px, 1.8vw, 10px);
-            /* 버튼 1개 너비 = (100vw - pad*2 - gap*3) / 4 */
-            --btn-size: calc((100vw - var(--grid-pad-h) * 2 - var(--grid-gap) * 3) / 4);
-            /* 5행 버튼 + 4개 gap + 위아래 패딩 */
-            --grid-total-h: calc(var(--btn-size) * 5 + var(--grid-gap) * 4 + clamp(4px, 1dvh, 12px) * 2);
+/*
+ * 핵심 레이아웃 전략:
+ * 1. .calculator = position:fixed + inset:0 → safe-area 포함 전체 영역
+ * 2. .buttons = 버튼 크기를 vw로 고정 → 절대 잘리지 않음
+ * 3. .display = 나머지 공간 flex:1 → 위 공간 채움
+ */
 
-            /* 헤더 */
-            --header-height: clamp(40px, 6dvh, 58px);
-            --header-icon-size: clamp(32px, 4.5dvh, 42px);
+.calculator {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    /* safe-area 여백을 padding으로 처리 */
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+    display: flex;
+    flex-direction: column;
+    background: #000;
+    overflow: hidden;
+    touch-action: manipulation;
+}
 
-            /* 디스플레이 = 나머지 공간 전부 */
-            --display-font-size: clamp(52px, 9dvh, 92px);
-            --expression-font-size: clamp(16px, 2.8dvh, 30px);
+/* ===== 헤더 ===== */
+.header {
+    flex-shrink: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 20px 4px 20px;
+    height: 48px;
+    background: #000;
+}
 
-            /* 버튼 폰트: 버튼 크기 비례 */
-            --btn-font-number:   calc(var(--btn-size) * 0.38);
-            --btn-font-operator: calc(var(--btn-size) * 0.58);
-            --btn-font-function: calc(var(--btn-size) * 0.30);
+.menu-icon {
+    width: 40px; height: 40px;
+    display: flex; align-items: center; justify-content: center;
+}
+.menu-icon svg { width: 28px; height: 22px; }
 
-            /* 아이콘 */
-            --icon-calc:      calc(var(--btn-size) * 0.42);
-            --icon-backspace: calc(var(--btn-size) * 0.42);
-            --icon-pm:        calc(var(--btn-size) * 0.36);
-        }
+#menuDots .menu-dot { fill: #ff9f0a; transition: opacity 0.2s; }
+#menuDots .menu-line { fill: none; stroke: #ff9f0a; stroke-width: 2.5; stroke-linecap: round; }
+body.auto-count-mode #menuDots #dotBot { opacity: 0; }
 
-        .calculator {
-            position: relative;
-            display: flex;
-            flex-direction: column;
-            height: 100dvh;
-            width: 100%;
-            background: #000;
-            overflow: hidden;
-            padding-top: calc(env(safe-area-inset-top) * 0.85 + 3px);
-            padding-bottom: env(safe-area-inset-bottom);
-            touch-action: manipulation;
-        }
+#menuClock { display: none; }
+#menuClock circle { stroke: #f5f5f5; stroke-width: 1.6; fill: none; }
+#menuClock line  { stroke: #f5f5f5; stroke-width: 1.6; stroke-linecap: round; }
 
-        /* ---- 헤더 ---- */
-        .header {
-            flex-shrink: 0;
-            height: var(--header-height);
-            padding: 0 clamp(12px, 4vw, 24px);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: #000;
-        }
+.mode-indicator { font-size: 12px; color: #ff9f0a; font-weight: 600; opacity: 0; }
 
-        .menu-icon {
-            width: var(--header-icon-size);
-            height: var(--header-icon-size);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
+.header-calc {
+    border-radius: 999px; border: none; background: transparent;
+    display: none; align-items: center; justify-content: center;
+    position: relative; cursor: pointer;
+    width: 40px; height: 40px;
+}
+.header-calc .calc-icon-svg { width: 22px; height: 24px; }
 
-        .menu-icon svg {
-            width: clamp(22px, 3.5dvh, 32px);
-            height: clamp(18px, 3dvh, 26px);
-        }
+.top-icon {
+    width: 40px; height: 40px;
+    border-radius: 999px;
+    align-items: center; justify-content: center;
+}
+body.ios26-theme .top-icon { background: #1c1c1e; border: 1px solid #2c2c2e; }
 
-        #menuDots .menu-dot {
-            fill: #ff9f0a;
-            transition: opacity 0.2s;
-        }
-        #menuDots .menu-line {
-            fill: none;
-            stroke: #ff9f0a;
-            stroke-width: 2.5;
-            stroke-linecap: round;
-        }
+.delay-dot {
+    position: absolute; bottom: -4px; left: 50%;
+    transform: translateX(-50%);
+    width: 4px; height: 4px; border-radius: 50%;
+    background: #0a84ff; opacity: 0;
+    transition: opacity 0.15s; pointer-events: none;
+}
 
-        body.auto-count-mode #menuDots #dotBot {
-            opacity: 0;
-        }
+/* ===== 디스플레이: 남은 공간 전부 ===== */
+.display {
+    flex: 1;
+    min-height: 0;  /* flex 자식 overflow 방지 */
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 0 24px 16px 24px;
+    overflow: hidden;
+    background: #000;
+}
 
-        #menuClock {
-            display: none;
-        }
-        #menuClock circle {
-            stroke: #f5f5f5;
-            stroke-width: 1.6;
-            fill: none;
-        }
-        #menuClock line {
-            stroke: #f5f5f5;
-            stroke-width: 1.6;
-            stroke-linecap: round;
-        }
+.expression-text {
+    font-size: clamp(16px, 4vw, 30px);
+    font-weight: 400;
+    text-align: right;
+    color: #888;
+    margin-bottom: 2px;
+    min-height: 1.2em;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    opacity: 0; transition: opacity 0.2s;
+}
+.expression-text.visible { opacity: 1; }
 
-        .mode-indicator {
-            font-size: 12px;
-            color: #ff9f0a;
-            font-weight: 600;
-            opacity: 0;
-        }
+.display-text {
+    /* 버튼 5행 기준 남은 공간에 맞는 크기 */
+    font-size: clamp(48px, 13vw, 90px);
+    font-weight: 400;
+    text-align: right;
+    line-height: 1;
+    white-space: nowrap;
+    overflow-x: auto; overflow-y: hidden;
+    scrollbar-width: none; -ms-overflow-style: none;
+    direction: ltr;
+}
+.display-text::-webkit-scrollbar { display: none; }
 
-        .header-calc {
-            border-radius: 17px;
-            border: none;
-            background: transparent;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-            cursor: pointer;
-        }
+/* ===== 버튼 영역: vw 기반 완전 고정 ===== */
+.buttons {
+    flex-shrink: 0;
+    background: #000;
+    /* 버튼 5행 + gap 4 + 위아래 패딩이 전부 들어갈 공간 */
+    padding-bottom: 8px;
+}
 
-        .header-calc .calc-icon-svg {
-            width: clamp(18px, 3dvh, 26px);
-            height: clamp(20px, 3.2dvh, 28px);
-        }
+/*
+ * 버튼 크기 계산:
+ *   좌우패딩 = 20px * 2 = 40px
+ *   gap 3개 = 6px * 3 = 18px
+ *   버튼 1개 너비 = (100vw - 40px - 18px) / 4 = calc((100vw - 58px) / 4)
+ */
+:root {
+    --btn-w: calc((100vw - 58px) / 4);
+}
 
-        .top-icon {
-            width: var(--header-icon-size);
-            height: var(--header-icon-size);
-            border-radius: 999px;
-            align-items: center;
-            justify-content: center;
-        }
+.button-grid {
+    display: grid;
+    grid-template-columns: repeat(4, var(--btn-w));
+    grid-auto-rows: var(--btn-w);  /* 정사각형: 높이 = 너비 */
+    gap: 6px;
+    padding: 6px 20px 0px 20px;
+    width: 100%;
+}
 
-        body.ios26-theme .top-icon {
-            background: #1c1c1e;
-            border: 1px solid #2c2c2e;
-        }
+.button {
+    width: var(--btn-w);
+    height: var(--btn-w);
+    position: relative;
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+    transition: filter 0.1s;
+    overflow: visible;
+    transform: scale(0.96);
+    transform-origin: center center;
+    touch-action: manipulation;
+}
 
-        .delay-dot {
-            position: absolute;
-            bottom: -4px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: clamp(3px, 0.6dvh, 5px);
-            height: clamp(3px, 0.6dvh, 5px);
-            border-radius: 50%;
-            background: #0a84ff;
-            opacity: 0;
-            transition: opacity 0.15s;
-            pointer-events: none;
-        }
+.button-content {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: calc(var(--btn-w) * 0.36);
+    font-weight: 600;
+}
 
-        /* ---- 디스플레이: 나머지 공간 전부 차지 ---- */
-        .display {
-            flex: 1;
-            min-height: 0;
-            display: flex;
-            flex-direction: column;
-            justify-content: flex-end;
-            padding: 4px clamp(14px, 5vw, 28px) clamp(6px, 1dvh, 16px);
-            overflow: hidden;
-            background: #000;
-        }
+.button:active { filter: brightness(0.7); }
 
-        .expression-text {
-            font-size: var(--expression-font-size);
-            font-weight: 400;
-            text-align: right;
-            color: #888;
-            margin-bottom: 2px;
-            min-height: calc(var(--expression-font-size) * 1.2);
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            opacity: 0;
-            transition: opacity 0.2s;
-        }
-        .expression-text.visible {
-            opacity: 1;
-        }
+.button.number   { background: #333; color: #fff; }
+.button.operator { background: #ff9f0a; color: #fff; }
+.button.operator .button-content {
+    font-size: calc(var(--btn-w) * 0.60);
+    font-weight: 300;
+    transform: translateY(-3px);
+}
+.button.function { background: #505050; color: #fff; }
+.button.function .button-content { font-size: calc(var(--btn-w) * 0.30); }
+.button.calc-icon { background: #333; color: #fff; position: relative; }
 
-        .display-text {
-            font-size: var(--display-font-size);
-            font-weight: 400;
-            text-align: right;
-            line-height: 1;
-            white-space: nowrap;
-            overflow-x: auto;
-            overflow-y: hidden;
-            scrollbar-width: none;
-            -ms-overflow-style: none;
-            direction: ltr;
-            transform: translateY(2px);
-        }
-        .display-text::-webkit-scrollbar {
-            display: none;
-        }
+.calc-icon-svg  { width: calc(var(--btn-w) * 0.44); height: calc(var(--btn-w) * 0.44); }
+.backspace-icon { width: calc(var(--btn-w) * 0.46); height: calc(var(--btn-w) * 0.46); }
+.pm-icon        { width: calc(var(--btn-w) * 0.38); height: calc(var(--btn-w) * 0.38); }
 
-        /* ---- 버튼 영역: 항상 고정 크기 ---- */
-        .buttons {
-            flex-shrink: 0;
-            background: #000;
-        }
+/* ===== 설정 모달 ===== */
+.settings-modal {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.85);
+    backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    display: none; align-items: center; justify-content: center;
+    z-index: 1000; animation: fadeIn 0.3s;
+}
+.settings-modal.active { display: flex; }
+@keyframes fadeIn { from { opacity:0 } to { opacity:1 } }
 
-        .button-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: var(--grid-gap);
-            width: 100%;
-            padding: clamp(4px, 1dvh, 10px) var(--grid-pad-h) clamp(6px, 1.5dvh, 14px);
-        }
+.settings-content {
+    background: #1c1c1e; border-radius: 20px;
+    padding: 30px; width: 90%; max-width: 400px;
+    animation: slideUp 0.3s;
+}
+@keyframes slideUp {
+    from { transform: translateY(50px); opacity: 0; }
+    to   { transform: translateY(0);    opacity: 1; }
+}
+.settings-title { font-size: 24px; font-weight: 600; margin-bottom: 30px; text-align: center; }
+.setting-item { margin-bottom: 25px; }
+.setting-label { font-size: 16px; margin-bottom: 10px; color: #a5a5a5; }
+.force-input {
+    width: 100%; background: #2c2c2e; border: none; border-radius: 12px;
+    padding: 15px 20px; font-size: 24px; color: #fff; text-align: center;
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+}
+.force-input:focus { outline: none; background: #3a3a3c; }
+.close-button {
+    width: 100%; background: #ff9f0a; border: none; border-radius: 12px;
+    padding: 15px; font-size: 18px; color: #fff; font-weight: 600;
+    cursor: pointer; margin-top: 20px;
+}
+.close-button:active { opacity: 0.8; }
 
-        .button {
-            width: 100%;
-            /* aspect-ratio로 정사각형 유지 → padding-bottom 트릭 대체 */
-            aspect-ratio: 1 / 1;
-            position: relative;
-            border-radius: 50%;
-            border: none;
-            cursor: pointer;
-            transition: filter 0.1s;
-            overflow: visible;
-            transform: scale(0.96);
-            transform-origin: center center;
-            touch-action: manipulation;
-        }
+/* ===== iOS 26 테마 ===== */
+body.ios26-theme #menuDots  { display: none; }
+body.ios26-theme #menuClock { display: block; }
+body.ios26-theme .header-calc { display: flex; }
 
-        .button-content {
-            position: absolute;
-            inset: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: var(--btn-font-number);
-            font-weight: 600;
-        }
+body.ios26-theme .header-calc .calc-icon-svg rect:first-of-type { fill: #fff; stroke: #fff; }
+body.ios26-theme .header-calc .calc-icon-svg rect:nth-of-type(2) { fill: #3a3a3c; }
+body.ios26-theme .header-calc .calc-icon-svg circle { fill: #2c2c2e; }
 
-        .button:active {
-            filter: brightness(0.7);
-        }
+body.ios26-theme .button {
+    transform: scale(0.94);
+    background: radial-gradient(circle at 20% 0%, #4a4a4e, #151516);
+}
+body.ios26-theme .button.number   { background: radial-gradient(circle at 20% 0%, #454549, #111112); }
+body.ios26-theme .button.function { background: radial-gradient(circle at 20% 0%, #505054, #18181a); }
+body.ios26-theme .button.operator { background: radial-gradient(circle at 20% 0%, #ffb340, #a85c00); }
+body.ios26-theme .button::before {
+    content: "";
+    position: absolute; inset: 0; border-radius: inherit;
+    border: 1px solid rgba(255,255,255,0.20);
+    box-shadow: 0 10px 18px rgba(0,0,0,0.7);
+    pointer-events: none;
+}
+body.ios26-theme .button.operator .button-content {
+    font-size: calc(var(--btn-w) * 0.55);
+    font-weight: 400; transform: translateY(-2px);
+}
+body.ios26-theme .expression-text { color: #8e8e93; }
+body.ios26-theme .display-text { font-weight: 500; }
 
-        .button.number {
-            background: #333;
-            color: #fff;
-        }
-
-        .button.operator {
-            background: #ff9f0a;
-            color: #fff;
-        }
-        .button.operator .button-content {
-            font-size: var(--btn-font-operator);
-            font-weight: 300;
-            transform: translateY(-3px);
-        }
-
-        .button.function {
-            background: #505050;
-            color: #fff;
-        }
-        .button.function .button-content {
-            font-size: var(--btn-font-function);
-        }
-
-        .button.zero {
-            border-radius: 50%;
-        }
-        .button.zero .button-content {
-            justify-content: center;
-            padding-left: 0;
-        }
-
-        .button.calc-icon {
-            background: #333;
-            color: #fff;
-            position: relative;
-        }
-
-        .calc-icon-svg {
-            width: var(--icon-calc);
-            height: var(--icon-calc);
-        }
-
-        .backspace-icon {
-            width: var(--icon-backspace);
-            height: var(--icon-backspace);
-        }
-
-        .pm-icon {
-            width: var(--icon-pm);
-            height: var(--icon-pm);
-        }
-
-        /* ---- 설정 모달 ---- */
-        .settings-modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.85);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-            animation: fadeIn 0.3s;
-        }
-
-        .settings-modal.active {
-            display: flex;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to   { opacity: 1; }
-        }
-
-        .settings-content {
-            background: #1c1c1e;
-            border-radius: 20px;
-            padding: clamp(20px, 4dvh, 34px);
-            width: 90%;
-            max-width: 400px;
-            animation: slideUp 0.3s;
-        }
-
-        @keyframes slideUp {
-            from { transform: translateY(50px); opacity: 0; }
-            to   { transform: translateY(0);    opacity: 1; }
-        }
-
-        .settings-title {
-            font-size: clamp(18px, 3dvh, 26px);
-            font-weight: 600;
-            margin-bottom: clamp(16px, 3dvh, 32px);
-            text-align: center;
-        }
-
-        .setting-item {
-            margin-bottom: clamp(14px, 2.5dvh, 28px);
-        }
-
-        .setting-label {
-            font-size: clamp(13px, 2dvh, 17px);
-            margin-bottom: 10px;
-            color: #a5a5a5;
-        }
-
-        .force-input {
-            width: 100%;
-            background: #2c2c2e;
-            border: none;
-            border-radius: 12px;
-            padding: clamp(10px, 2dvh, 18px) 20px;
-            font-size: clamp(18px, 3dvh, 26px);
-            color: #fff;
-            text-align: center;
-            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
-        }
-        .force-input:focus {
-            outline: none;
-            background: #3a3a3c;
-        }
-
-        .close-button {
-            width: 100%;
-            background: #ff9f0a;
-            border: none;
-            border-radius: 12px;
-            padding: clamp(10px, 2dvh, 18px);
-            font-size: clamp(15px, 2.4dvh, 20px);
-            color: #fff;
-            font-weight: 600;
-            cursor: pointer;
-            margin-top: clamp(12px, 2dvh, 22px);
-        }
-        .close-button:active {
-            opacity: 0.8;
-        }
-
-        /* ============================================
-           iOS 26 테마
-           ============================================ */
-        body.ios26-theme #menuDots { display: none; }
-        body.ios26-theme #menuClock { display: block; }
-        body.ios26-theme .header-calc { display: flex; }
-
-        body.ios26-theme .header-calc .calc-icon-svg rect:first-of-type {
-            fill: #ffffff;
-            stroke: #ffffff;
-        }
-        body.ios26-theme .header-calc .calc-icon-svg rect:nth-of-type(2) {
-            fill: #3a3a3c;
-        }
-        body.ios26-theme .header-calc .calc-icon-svg circle {
-            fill: #2c2c2e;
-        }
-
-        body.ios26-theme .button {
-            transform: scale(0.94);
-            border-radius: 999px;
-            background: radial-gradient(circle at 20% 0%, #4a4a4e, #151516);
-            position: relative;
-        }
-
-        body.ios26-theme .button.number {
-            background: radial-gradient(circle at 20% 0%, #454549, #111112);
-        }
-        body.ios26-theme .button.function {
-            background: radial-gradient(circle at 20% 0%, #505054, #18181a);
-        }
-        body.ios26-theme .button.operator {
-            background: radial-gradient(circle at 20% 0%, #ffb340, #a85c00);
-        }
-
-        body.ios26-theme .button::before {
-            content: "";
-            position: absolute;
-            inset: 0;
-            border-radius: inherit;
-            border: 1px solid rgba(255, 255, 255, 0.20);
-            box-shadow: 0 10px 18px rgba(0, 0, 0, 0.7);
-            pointer-events: none;
-        }
-
-        body.ios26-theme .button.operator .button-content {
-            font-size: calc(var(--btn-font-operator) * 0.92);
-            font-weight: 400;
-            transform: translateY(-2px);
-        }
-
-        body.ios26-theme .expression-text {
-            font-size: calc(var(--expression-font-size) * 0.93);
-            color: #8e8e93;
-        }
-        body.ios26-theme .display-text {
-            font-weight: 500;
-        }
-
-        #calcIconPlusMinus {
-            display: none;
-            font-size: var(--btn-font-number);
-            font-weight: 600;
-        }
-        body.ios26-theme #calcIconSvg {
-            display: none;
-        }
-        body.ios26-theme #calcIconPlusMinus {
-            display: block;
-        }
-
-        /* ============================================
-           가로모드 (landscape) 대응
-           ============================================ */
-        @media (orientation: landscape) and (max-height: 500px) {
-            :root {
-                --header-height: clamp(32px, 8dvh, 44px);
-                --display-font-size: clamp(36px, 10dvh, 64px);
-                --expression-font-size: clamp(14px, 4dvh, 22px);
-                --grid-gap: clamp(3px, 1dvh, 6px);
-                --btn-font-number: clamp(18px, 5dvh, 30px);
-                --btn-font-operator: clamp(26px, 7dvh, 44px);
-                --btn-font-function: clamp(14px, 4dvh, 24px);
-                --icon-calc: clamp(20px, 5.5dvh, 32px);
-                --icon-backspace: clamp(20px, 5.5dvh, 32px);
-                --icon-pm: clamp(18px, 4.5dvh, 28px);
-            }
-        }
-    </style>
+#calcIconPlusMinus { display: none; font-size: calc(var(--btn-w) * 0.36); font-weight: 600; }
+body.ios26-theme #calcIconSvg { display: none; }
+body.ios26-theme #calcIconPlusMinus { display: block; }
+</style>
 </head>
 <body>
 <div class="calculator">
@@ -508,16 +279,16 @@
         <div class="menu-icon top-icon" id="menuIcon">
             <svg id="menuDots" viewBox="0 0 24 24">
                 <circle class="menu-dot" id="dotTop" cx="3" cy="5" r="1.5"/>
-                <line class="menu-line" x1="7" y1="5" x2="21" y2="5"></line>
+                <line class="menu-line" x1="7" y1="5" x2="21" y2="5"/>
                 <circle class="menu-dot" id="dotMid" cx="3" cy="12" r="1.5"/>
-                <line class="menu-line" x1="7" y1="12" x2="21" y2="12"></line>
+                <line class="menu-line" x1="7" y1="12" x2="21" y2="12"/>
                 <circle class="menu-dot" id="dotBot" cx="3" cy="19" r="1.5"/>
-                <line class="menu-line" x1="7" y1="19" x2="21" y2="19"></line>
+                <line class="menu-line" x1="7" y1="19" x2="21" y2="19"/>
             </svg>
             <svg id="menuClock" viewBox="0 0 24 24">
                 <circle cx="12" cy="12" r="9"/>
                 <line id="clockMinute" x1="12" y1="12" x2="12" y2="5"/>
-                <line id="clockHour" x1="12" y1="12" x2="5" y2="12"/>
+                <line id="clockHour"   x1="12" y1="12" x2="5"  y2="12"/>
             </svg>
         </div>
 
@@ -525,17 +296,16 @@
 
         <button class="header-calc calc-icon-trigger top-icon" id="headerCalcButton">
             <svg class="calc-icon-svg" viewBox="0 0 24 24">
-                <rect x="5.5" y="3.5" width="13" height="17" rx="1.4"
-                      fill="currentColor" stroke="currentColor" stroke-width="1.4"/>
+                <rect x="5.5" y="3.5" width="13" height="17" rx="1.4" fill="currentColor" stroke="currentColor" stroke-width="1.4"/>
                 <rect x="7.2" y="5.2" width="9.6" height="4.2" rx="0.9" fill="#333"/>
-                <circle cx="8.5" cy="11.8" r="1.2" fill="#333"/>
-                <circle cx="12"  cy="11.8" r="1.2" fill="#333"/>
+                <circle cx="8.5"  cy="11.8" r="1.2" fill="#333"/>
+                <circle cx="12"   cy="11.8" r="1.2" fill="#333"/>
                 <circle cx="15.5" cy="11.8" r="1.2" fill="#333"/>
-                <circle cx="8.5" cy="15.3" r="1.2" fill="#333"/>
-                <circle cx="12"  cy="15.3" r="1.2" fill="#333"/>
+                <circle cx="8.5"  cy="15.3" r="1.2" fill="#333"/>
+                <circle cx="12"   cy="15.3" r="1.2" fill="#333"/>
                 <circle cx="15.5" cy="15.3" r="1.2" fill="#333"/>
-                <circle cx="8.5" cy="18.8" r="1.2" fill="#333"/>
-                <circle cx="12"  cy="18.8" r="1.2" fill="#333"/>
+                <circle cx="8.5"  cy="18.8" r="1.2" fill="#333"/>
+                <circle cx="12"   cy="18.8" r="1.2" fill="#333"/>
                 <circle cx="15.5" cy="18.8" r="1.2" fill="#333"/>
             </svg>
             <div class="delay-dot"></div>
@@ -552,98 +322,59 @@
             <button class="button function" id="clearButton" onclick="handleClear()">
                 <div class="button-content" id="clearButtonContent">AC</div>
             </button>
-
             <button class="button function" id="pmButton" onclick="handleFunction('±')">
                 <div class="button-content" id="pmContent">
                     <svg class="pm-icon" viewBox="0 0 24 24">
-                        <line x1="6" y1="18" x2="18" y2="6"
-                              stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
-                        <line x1="7" y1="5.2" x2="7" y2="10.2"
-                              stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
-                        <line x1="4.2" y1="7.7" x2="9.8" y2="7.7"
-                              stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
-                        <line x1="12.2" y1="17.8" x2="17.2" y2="17.8"
-                              stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+                        <line x1="6" y1="18" x2="18" y2="6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+                        <line x1="7" y1="5.2" x2="7" y2="10.2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+                        <line x1="4.2" y1="7.7" x2="9.8" y2="7.7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+                        <line x1="12.2" y1="17.8" x2="17.2" y2="17.8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
                     </svg>
                 </div>
             </button>
-
             <button class="button function percent-button" onclick="handleFunction('%')">
                 <div class="button-content">%</div>
             </button>
-
             <button class="button operator" onclick="handleOperator('÷')">
                 <div class="button-content">÷</div>
             </button>
 
-            <button class="button number" onclick="handleNumber('7')">
-                <div class="button-content">7</div>
-            </button>
-            <button class="button number" onclick="handleNumber('8')">
-                <div class="button-content">8</div>
-            </button>
-            <button class="button number" onclick="handleNumber('9')">
-                <div class="button-content">9</div>
-            </button>
-            <button class="button operator" onclick="handleOperator('×')">
-                <div class="button-content">×</div>
-            </button>
+            <button class="button number" onclick="handleNumber('7')"><div class="button-content">7</div></button>
+            <button class="button number" onclick="handleNumber('8')"><div class="button-content">8</div></button>
+            <button class="button number" onclick="handleNumber('9')"><div class="button-content">9</div></button>
+            <button class="button operator" onclick="handleOperator('×')"><div class="button-content">×</div></button>
 
-            <button class="button number" onclick="handleNumber('4')">
-                <div class="button-content">4</div>
-            </button>
-            <button class="button number" onclick="handleNumber('5')">
-                <div class="button-content">5</div>
-            </button>
-            <button class="button number" onclick="handleNumber('6')">
-                <div class="button-content">6</div>
-            </button>
-            <button class="button operator" onclick="handleOperator('−')">
-                <div class="button-content">−</div>
-            </button>
+            <button class="button number" onclick="handleNumber('4')"><div class="button-content">4</div></button>
+            <button class="button number" onclick="handleNumber('5')"><div class="button-content">5</div></button>
+            <button class="button number" onclick="handleNumber('6')"><div class="button-content">6</div></button>
+            <button class="button operator" onclick="handleOperator('−')"><div class="button-content">−</div></button>
 
-            <button class="button number" onclick="handleNumber('1')">
-                <div class="button-content">1</div>
-            </button>
-            <button class="button number" onclick="handleNumber('2')">
-                <div class="button-content">2</div>
-            </button>
-            <button class="button number" onclick="handleNumber('3')">
-                <div class="button-content">3</div>
-            </button>
-            <button class="button operator" onclick="handleOperator('+')">
-                <div class="button-content">+</div>
-            </button>
+            <button class="button number" onclick="handleNumber('1')"><div class="button-content">1</div></button>
+            <button class="button number" onclick="handleNumber('2')"><div class="button-content">2</div></button>
+            <button class="button number" onclick="handleNumber('3')"><div class="button-content">3</div></button>
+            <button class="button operator" onclick="handleOperator('+')"><div class="button-content">+</div></button>
 
             <button class="button calc-icon calc-icon-trigger" id="calcIconButton" onclick="handleCalcIcon()">
                 <div class="button-content">
                     <svg class="calc-icon-svg" id="calcIconSvg" viewBox="0 0 24 24">
-                        <rect x="5.5" y="3.5" width="13" height="17" rx="1.4"
-                              fill="currentColor" stroke="currentColor" stroke-width="1.4"/>
+                        <rect x="5.5" y="3.5" width="13" height="17" rx="1.4" fill="currentColor" stroke="currentColor" stroke-width="1.4"/>
                         <rect x="7.2" y="5.2" width="9.6" height="4.2" rx="0.9" fill="#333"/>
-                        <circle cx="8.5" cy="11.8" r="1.2" fill="#333"/>
-                        <circle cx="12"  cy="11.8" r="1.2" fill="#333"/>
+                        <circle cx="8.5"  cy="11.8" r="1.2" fill="#333"/>
+                        <circle cx="12"   cy="11.8" r="1.2" fill="#333"/>
                         <circle cx="15.5" cy="11.8" r="1.2" fill="#333"/>
-                        <circle cx="8.5" cy="15.3" r="1.2" fill="#333"/>
-                        <circle cx="12"  cy="15.3" r="1.2" fill="#333"/>
+                        <circle cx="8.5"  cy="15.3" r="1.2" fill="#333"/>
+                        <circle cx="12"   cy="15.3" r="1.2" fill="#333"/>
                         <circle cx="15.5" cy="15.3" r="1.2" fill="#333"/>
-                        <circle cx="8.5" cy="18.8" r="1.2" fill="#333"/>
-                        <circle cx="12"  cy="18.8" r="1.2" fill="#333"/>
+                        <circle cx="8.5"  cy="18.8" r="1.2" fill="#333"/>
+                        <circle cx="12"   cy="18.8" r="1.2" fill="#333"/>
                         <circle cx="15.5" cy="18.8" r="1.2" fill="#333"/>
                     </svg>
                     <span id="calcIconPlusMinus">±</span>
                 </div>
                 <div class="delay-dot"></div>
             </button>
-
-            <button class="button number zero" onclick="handleNumber('0')">
-                <div class="button-content">0</div>
-            </button>
-
-            <button class="button number" onclick="handleNumber('.')">
-                <div class="button-content">.</div>
-            </button>
-
+            <button class="button number" onclick="handleNumber('0')"><div class="button-content">0</div></button>
+            <button class="button number" onclick="handleNumber('.')"><div class="button-content">.</div></button>
             <button class="button operator equals-trigger" id="equalsButton" onclick="handleEquals()">
                 <div class="button-content">=</div>
             </button>
@@ -651,7 +382,6 @@
     </div>
 </div>
 
-<!-- 설정 모달 -->
 <div class="settings-modal" id="settingsModal">
     <div class="settings-content">
         <div class="settings-title">설정</div>
@@ -1443,5 +1173,6 @@
     updateModeIndicator();
     applyLayoutMode();
 </script>
+
 </body>
 </html>
