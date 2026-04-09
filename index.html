@@ -38,11 +38,8 @@ html, body {
 .calculator {
     position: fixed;
     top: 0; left: 0; right: 0; bottom: 0;
-    /* safe-area 여백을 padding으로 처리 */
+    /* 상단만 safe-area 처리, 하단은 button-grid에서 직접 처리 */
     padding-top: env(safe-area-inset-top);
-    padding-bottom: env(safe-area-inset-bottom);
-    padding-left: env(safe-area-inset-left);
-    padding-right: env(safe-area-inset-right);
     display: flex;
     flex-direction: column;
     background: #000;
@@ -141,8 +138,6 @@ body.ios26-theme .top-icon { background: #1c1c1e; border: 1px solid #2c2c2e; }
 .buttons {
     flex-shrink: 0;
     background: #000;
-    /* 버튼 5행 + gap 4 + 위아래 패딩이 전부 들어갈 공간 */
-    padding-bottom: 8px;
 }
 
 /*
@@ -160,7 +155,8 @@ body.ios26-theme .top-icon { background: #1c1c1e; border: 1px solid #2c2c2e; }
     grid-template-columns: repeat(4, var(--btn-w));
     grid-auto-rows: var(--btn-w);  /* 정사각형: 높이 = 너비 */
     gap: 6px;
-    padding: 6px 20px 0px 20px;
+    /* 하단 패딩에 safe-area-inset-bottom 직접 추가 → 홈 인디케이터 아래로 밀림 방지 */
+    padding: 6px 20px calc(env(safe-area-inset-bottom) + 8px) 20px;
     width: 100%;
 }
 
