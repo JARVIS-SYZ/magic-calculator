@@ -39,35 +39,31 @@
            100dvh 기준으로 비례 계산
            ============================================ */
         :root {
-            /* 전체 레이아웃 */
-            --vh: 1dvh;
+            /* 버튼 1개 크기: 화면 너비 기준 (4열 + gap 3개 + 좌우 패딩) */
+            --grid-pad-h: clamp(12px, 4.5vw, 22px);
+            --grid-gap: clamp(5px, 1.8vw, 10px);
+            /* 버튼 1개 너비 = (100vw - pad*2 - gap*3) / 4 */
+            --btn-size: calc((100vw - var(--grid-pad-h) * 2 - var(--grid-gap) * 3) / 4);
+            /* 5행 버튼 + 4개 gap + 위아래 패딩 */
+            --grid-total-h: calc(var(--btn-size) * 5 + var(--grid-gap) * 4 + clamp(4px, 1dvh, 12px) * 2);
 
             /* 헤더 */
-            --header-height: clamp(44px, 7dvh, 64px);
-            --header-icon-size: clamp(34px, 5dvh, 44px);
+            --header-height: clamp(40px, 6dvh, 58px);
+            --header-icon-size: clamp(32px, 4.5dvh, 42px);
 
-            /* 디스플레이 */
-            --display-min-height: clamp(130px, 28dvh, 260px);
-            --display-font-size: clamp(56px, 10dvh, 96px);
-            --expression-font-size: clamp(18px, 3dvh, 32px);
-            --display-padding-h: clamp(14px, 4vw, 28px);
-            --display-padding-bottom: clamp(10px, 2.5dvh, 28px);
+            /* 디스플레이 = 나머지 공간 전부 */
+            --display-font-size: clamp(52px, 9dvh, 92px);
+            --expression-font-size: clamp(16px, 2.8dvh, 30px);
 
-            /* 버튼 그리드 */
-            --grid-gap: clamp(4px, 1.2dvh, 10px);
-            --grid-padding-h: clamp(12px, 4vw, 24px);
-            --grid-padding-bottom: clamp(6px, 1.5dvh, 16px);
-            --grid-padding-top: clamp(2px, 0.8dvh, 10px);
+            /* 버튼 폰트: 버튼 크기 비례 */
+            --btn-font-number:   calc(var(--btn-size) * 0.38);
+            --btn-font-operator: calc(var(--btn-size) * 0.58);
+            --btn-font-function: calc(var(--btn-size) * 0.30);
 
-            /* 버튼 폰트 */
-            --btn-font-number: clamp(24px, 4.5dvh, 42px);
-            --btn-font-operator: clamp(38px, 7dvh, 70px);
-            --btn-font-function: clamp(20px, 3.8dvh, 36px);
-
-            /* 아이콘 크기 */
-            --icon-calc: clamp(28px, 5dvh, 48px);
-            --icon-backspace: clamp(28px, 5dvh, 48px);
-            --icon-pm: clamp(24px, 4.2dvh, 40px);
+            /* 아이콘 */
+            --icon-calc:      calc(var(--btn-size) * 0.42);
+            --icon-backspace: calc(var(--btn-size) * 0.42);
+            --icon-pm:        calc(var(--btn-size) * 0.36);
         }
 
         .calculator {
@@ -186,16 +182,16 @@
             pointer-events: none;
         }
 
-        /* ---- 디스플레이 ---- */
+        /* ---- 디스플레이: 나머지 공간 전부 차지 ---- */
         .display {
             flex: 1;
+            min-height: 0;
             display: flex;
             flex-direction: column;
             justify-content: flex-end;
-            padding: clamp(4px, 1dvh, 12px) var(--display-padding-h) var(--display-padding-bottom);
+            padding: 4px clamp(14px, 5vw, 28px) clamp(6px, 1dvh, 16px);
             overflow: hidden;
             background: #000;
-            min-height: var(--display-min-height);
         }
 
         .expression-text {
@@ -203,7 +199,7 @@
             font-weight: 400;
             text-align: right;
             color: #888;
-            margin-bottom: clamp(1px, 0.4dvh, 4px);
+            margin-bottom: 2px;
             min-height: calc(var(--expression-font-size) * 1.2);
             overflow: hidden;
             text-overflow: ellipsis;
@@ -232,7 +228,7 @@
             display: none;
         }
 
-        /* ---- 버튼 영역 ---- */
+        /* ---- 버튼 영역: 항상 고정 크기 ---- */
         .buttons {
             flex-shrink: 0;
             background: #000;
@@ -241,20 +237,9 @@
         .button-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
-            /* 버튼 높이 = (가용 높이 - gap×4 - padding) / 5행 에 자동 맞춤 */
-            grid-auto-rows: 1fr;
             gap: var(--grid-gap);
             width: 100%;
-            padding: var(--grid-padding-top) var(--grid-padding-h) var(--grid-padding-bottom);
-            /* 5행이 화면에 딱 맞도록 최대 높이 제한 */
-            max-height: calc(
-                100dvh
-                - var(--header-height)
-                - env(safe-area-inset-top)
-                - env(safe-area-inset-bottom)
-                - var(--display-min-height)
-                - 6px
-            );
+            padding: clamp(4px, 1dvh, 10px) var(--grid-pad-h) clamp(6px, 1.5dvh, 14px);
         }
 
         .button {
@@ -504,7 +489,6 @@
         @media (orientation: landscape) and (max-height: 500px) {
             :root {
                 --header-height: clamp(32px, 8dvh, 44px);
-                --display-min-height: clamp(80px, 22dvh, 140px);
                 --display-font-size: clamp(36px, 10dvh, 64px);
                 --expression-font-size: clamp(14px, 4dvh, 22px);
                 --grid-gap: clamp(3px, 1dvh, 6px);
