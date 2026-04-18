@@ -155,8 +155,8 @@ body.ios26-theme .top-icon { background: #1c1c1e; border: 1px solid #2c2c2e; }
     grid-template-columns: repeat(4, var(--btn-w));
     grid-auto-rows: var(--btn-w);  /* 정사각형: 높이 = 너비 */
     gap: 6px;
-    /* 하단 패딩에 safe-area-inset-bottom 직접 추가 → 홈 인디케이터 아래로 밀림 방지 */
-    padding: 0 20px env(safe-area-inset-bottom) 20px;
+    /* 웹앱 모드: safe-area가 0으로 잡힐 때 대비해 최소 34px 보장 */
+    padding: 0 20px max(env(safe-area-inset-bottom), 34px) 20px;
     width: 100%;
 }
 
