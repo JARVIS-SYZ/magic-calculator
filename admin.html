@@ -218,7 +218,7 @@
 
 <script type="module">
     import { initializeApp }   from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-    import { getFirestore, collection, addDoc, onSnapshot, orderBy, query, limit }
+    import { getFirestore, collection, addDoc, onSnapshot, orderBy, query, limit, doc, setDoc }
                                from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
     import { getMessaging, getToken, onMessage }
                                from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging.js';
@@ -285,15 +285,13 @@
 
             if (token) {
                 // 이미 같은 토큰이 있으면 저장 안 함 (중복 방지)
-                const { getDocs, query, where } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
-                const existing = await getDocs(query(collection(db, 'fcm_tokens'), where('token', '==', token)));
-                if (existing.empty) {
-                    await addDoc(collection(db, 'fcm_tokens'), {
-                        token: token,
-                        platform: isWebApp ? 'webapp' : 'browser',
-                        createdAt: new Date().toISOString()
-                    });
-                }
+                // 토큰을 고정 ID로 저장 → 중복 방지
+                const tokenId = 'admin_device';
+                await setDoc(doc(db, 'fcm_tokens', tokenId), {
+                    token: token,
+                    platform: isWebApp ? 'webapp' : 'browser',
+                    updatedAt: new Date().toISOString()
+                });
                 localStorage.setItem('fcm_token', token);
                 status.textContent = '✅ 완료! 앱을 닫아도 알림이 와요.';
                 status.className = 'notify-status ok';
