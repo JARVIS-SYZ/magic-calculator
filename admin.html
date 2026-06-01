@@ -2,8 +2,13 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>관리자 페이지</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>관리자</title>
+    <link rel="manifest" href="manifest-admin.json">
+    <link rel="apple-touch-icon" sizes="180x180" href="icon-180.png">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -11,38 +16,48 @@
             background: #0a0a0a;
             color: #fff;
             font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
-            min-height: 100vh;
-            padding: 24px 20px;
+            min-height: 100dvh;
+            padding: calc(env(safe-area-inset-top) + 24px) 20px calc(env(safe-area-inset-bottom) + 24px);
         }
 
-        h1 {
-            font-size: 28px;
-            font-weight: 700;
-            margin-bottom: 8px;
-            color: #fff;
-        }
+        h1 { font-size: 28px; font-weight: 700; margin-bottom: 6px; }
+        .subtitle { font-size: 14px; color: #888; margin-bottom: 28px; }
 
-        .subtitle {
-            font-size: 14px;
-            color: #888;
-            margin-bottom: 32px;
-        }
-
-        /* ===== 알림 구독 ===== */
         .section {
             background: #1c1c1e;
             border-radius: 16px;
             padding: 20px;
-            margin-bottom: 20px;
+            margin-bottom: 16px;
+        }
+        .section-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: #636366;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            margin-bottom: 14px;
         }
 
-        .section-title {
-            font-size: 13px;
-            font-weight: 600;
-            color: #888;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
+        /* 웹앱 설치 안내 배너 */
+        .install-banner {
+            background: #1c2e1c;
+            border: 1px solid #2d4a2d;
+            border-radius: 14px;
+            padding: 16px;
             margin-bottom: 16px;
+            display: none;
+        }
+        .install-banner.show { display: block; }
+        .install-banner-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #30d158;
+            margin-bottom: 6px;
+        }
+        .install-banner-desc {
+            font-size: 13px;
+            color: #888;
+            line-height: 1.5;
         }
 
         .notify-btn {
@@ -50,60 +65,27 @@
             background: #ff9f0a;
             border: none;
             border-radius: 12px;
-            padding: 14px;
+            padding: 15px;
             font-size: 16px;
             font-weight: 600;
             color: #fff;
             cursor: pointer;
-            transition: opacity 0.2s;
+            transition: opacity 0.15s;
         }
-        .notify-btn:active { opacity: 0.8; }
-        .notify-btn:disabled { background: #3a3a3c; color: #888; cursor: not-allowed; }
+        .notify-btn:active { opacity: 0.75; }
+        .notify-btn:disabled { background: #2c2c2e; color: #636366; cursor: not-allowed; }
 
         .notify-status {
             margin-top: 12px;
             font-size: 13px;
-            color: #888;
+            color: #636366;
             text-align: center;
-            min-height: 20px;
+            min-height: 18px;
+            line-height: 1.5;
         }
         .notify-status.ok  { color: #30d158; }
         .notify-status.err { color: #ff453a; }
-
-        /* ===== URL 생성 ===== */
-        .url-row {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-        }
-
-        .url-input {
-            flex: 1;
-            background: #2c2c2e;
-            border: none;
-            border-radius: 10px;
-            padding: 12px 14px;
-            font-size: 13px;
-            color: #fff;
-            font-family: monospace;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-
-        .copy-btn {
-            flex-shrink: 0;
-            background: #2c2c2e;
-            border: none;
-            border-radius: 10px;
-            padding: 12px 16px;
-            font-size: 14px;
-            color: #ff9f0a;
-            font-weight: 600;
-            cursor: pointer;
-            white-space: nowrap;
-        }
-        .copy-btn:active { opacity: 0.7; }
+        .notify-status.warn { color: #ff9f0a; }
 
         .gen-btn {
             width: 100%;
@@ -116,45 +98,56 @@
             color: #fff;
             cursor: pointer;
             margin-bottom: 12px;
-            transition: opacity 0.2s;
         }
         .gen-btn:active { opacity: 0.7; }
 
-        /* ===== 수신 내역 ===== */
+        .url-row { display: flex; gap: 8px; align-items: center; }
+        .url-input {
+            flex: 1;
+            background: #2c2c2e;
+            border: none;
+            border-radius: 10px;
+            padding: 12px 14px;
+            font-size: 12px;
+            color: #fff;
+            font-family: monospace;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .copy-btn {
+            flex-shrink: 0;
+            background: #2c2c2e;
+            border: none;
+            border-radius: 10px;
+            padding: 12px 16px;
+            font-size: 14px;
+            color: #ff9f0a;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .copy-btn:active { opacity: 0.7; }
+
         .log-list {
             display: flex;
             flex-direction: column;
-            gap: 10px;
-            max-height: 400px;
-            overflow-y: auto;
+            gap: 8px;
         }
-
         .log-item {
             background: #2c2c2e;
             border-radius: 12px;
             padding: 14px 16px;
-            animation: slideIn 0.3s ease;
+            animation: slideIn 0.25s ease;
         }
-
+        .log-item.new-item {
+            border: 1px solid #ff9f0a44;
+        }
         @keyframes slideIn {
-            from { opacity: 0; transform: translateY(-8px); }
+            from { opacity: 0; transform: translateY(-6px); }
             to   { opacity: 1; transform: translateY(0); }
         }
-
-        .log-expr {
-            font-size: 20px;
-            font-weight: 600;
-            color: #fff;
-            margin-bottom: 6px;
-        }
-
-        .log-meta {
-            display: flex;
-            justify-content: space-between;
-            font-size: 12px;
-            color: #888;
-        }
-
+        .log-expr { font-size: 20px; font-weight: 600; margin-bottom: 6px; }
+        .log-meta { display: flex; justify-content: space-between; font-size: 12px; color: #636366; }
         .log-id {
             background: #3a3a3c;
             border-radius: 6px;
@@ -163,33 +156,40 @@
             color: #ff9f0a;
             font-family: monospace;
         }
-
-        .empty-msg {
-            text-align: center;
-            color: #555;
-            font-size: 14px;
-            padding: 24px 0;
-        }
+        .empty-msg { text-align: center; color: #48484a; font-size: 14px; padding: 28px 0; }
 
         .badge {
             display: inline-block;
             background: #ff453a;
             color: #fff;
-            font-size: 11px;
+            font-size: 10px;
             font-weight: 700;
             border-radius: 999px;
             padding: 2px 7px;
-            margin-left: 8px;
+            margin-left: 6px;
             vertical-align: middle;
         }
+
+        /* 새 알림 플래시 */
+        @keyframes flashBorder {
+            0%   { box-shadow: 0 0 0 0 #ff9f0a88; }
+            50%  { box-shadow: 0 0 20px 6px #ff9f0a44; }
+            100% { box-shadow: 0 0 0 0 #ff9f0a00; }
+        }
+        .flash { animation: flashBorder 0.6s ease; }
     </style>
 </head>
 <body>
 
+<!-- 웹앱 설치 안내 -->
+<div class="install-banner" id="installBanner">
+    <div class="install-banner-title">📲 홈 화면에 추가하세요</div>
+    <div class="install-banner-desc">백그라운드 푸시 알림을 받으려면 Safari 하단 공유 버튼 → <strong>홈 화면에 추가</strong>를 해주세요.</div>
+</div>
+
 <h1>관리자</h1>
 <p class="subtitle">계산기 URL 생성 및 입력 내역 확인</p>
 
-<!-- 푸시 알림 구독 -->
 <div class="section">
     <div class="section-title">🔔 푸시 알림</div>
     <button class="notify-btn" id="notifyBtn" onclick="subscribeNotification()">
@@ -198,7 +198,6 @@
     <div class="notify-status" id="notifyStatus"></div>
 </div>
 
-<!-- URL 생성 -->
 <div class="section">
     <div class="section-title">🔗 계산기 URL 생성</div>
     <button class="gen-btn" onclick="generateUrl()">새 URL 생성</button>
@@ -208,7 +207,6 @@
     </div>
 </div>
 
-<!-- 수신 내역 -->
 <div class="section">
     <div class="section-title">
         📋 수신 내역
@@ -220,11 +218,11 @@
 </div>
 
 <script type="module">
-    import { initializeApp }    from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-    import { getFirestore, collection, onSnapshot, orderBy, query, limit }
-                                from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+    import { initializeApp }   from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+    import { getFirestore, collection, addDoc, onSnapshot, orderBy, query, limit }
+                               from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
     import { getMessaging, getToken, onMessage }
-                                from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging.js';
+                               from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging.js';
 
     const VAPID_KEY = 'BK9hx4nDAnvp7znOPbcfhxBDK737pAsYyoEkxm7YYtiYKfAsQ1LoXQf1JZOvvxKhSmEMC-9mHbxfFPtZJ38FX7w';
 
@@ -241,44 +239,64 @@
     const db        = getFirestore(app);
     const messaging = getMessaging(app);
 
+    // ===== 웹앱 모드 감지 =====
+    const isWebApp = window.navigator.standalone === true;
+    const isIOS    = /iPad|iPhone|iPod/.test(navigator.userAgent);
+
+    // 웹앱이 아닌 iOS Safari면 설치 안내 배너 표시
+    if (isIOS && !isWebApp) {
+        document.getElementById('installBanner').classList.add('show');
+    }
+
     // ===== 푸시 알림 구독 =====
     window.subscribeNotification = async function() {
         const btn    = document.getElementById('notifyBtn');
         const status = document.getElementById('notifyStatus');
+
+        // iOS Safari(웹앱 아님)에서는 안내만
+        if (isIOS && !isWebApp) {
+            status.textContent = '⚠️ 홈 화면에 추가 후 웹앱에서 실행해주세요.';
+            status.className = 'notify-status warn';
+            return;
+        }
 
         try {
             btn.disabled = true;
             status.textContent = '권한 요청 중...';
             status.className = 'notify-status';
 
+            // 알림 권한 요청
             const permission = await Notification.requestPermission();
             if (permission !== 'granted') {
-                status.textContent = '알림 권한이 거부되었어요.';
+                status.textContent = '알림 권한이 거부되었어요. 설정에서 허용해주세요.';
                 status.className = 'notify-status err';
                 btn.disabled = false;
                 return;
             }
 
             // 서비스 워커 등록
-            const sw = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+            const swReg = await navigator.serviceWorker.register('/magic-calculator/firebase-messaging-sw.js', { scope: '/magic-calculator/' });
+            await navigator.serviceWorker.ready;
 
+            // FCM 토큰 발급
             const token = await getToken(messaging, {
                 vapidKey: VAPID_KEY,
-                serviceWorkerRegistration: sw
+                serviceWorkerRegistration: swReg
             });
 
             if (token) {
-                // 토큰을 Firestore에 저장
-                const { addDoc } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+                // Firestore에 토큰 저장
                 await addDoc(collection(db, 'fcm_tokens'), {
                     token: token,
+                    platform: isWebApp ? 'webapp' : 'browser',
                     createdAt: new Date().toISOString()
                 });
-                status.textContent = '✅ 알림 등록 완료! 이제 계산 결과를 받을 수 있어요.';
-                status.className = 'notify-status ok';
-                btn.textContent = '알림 등록됨';
                 localStorage.setItem('fcm_token', token);
+                status.textContent = '✅ 완료! 앱을 닫아도 알림이 와요.';
+                status.className = 'notify-status ok';
+                btn.textContent = '✅ 알림 등록됨';
             }
+
         } catch (e) {
             console.error(e);
             status.textContent = '오류: ' + e.message;
@@ -287,18 +305,19 @@
         }
     };
 
-    // 이미 등록된 경우 버튼 상태 복원
+    // 이미 등록된 경우 복원
     if (localStorage.getItem('fcm_token')) {
-        document.getElementById('notifyBtn').textContent = '알림 등록됨';
-        document.getElementById('notifyStatus').textContent = '✅ 이미 알림이 등록되어 있어요.';
+        document.getElementById('notifyBtn').textContent = '✅ 알림 등록됨';
+        document.getElementById('notifyBtn').disabled = true;
+        document.getElementById('notifyStatus').textContent = '✅ 완료! 앱을 닫아도 알림이 와요.';
         document.getElementById('notifyStatus').className = 'notify-status ok';
     }
 
-    // 앱 포그라운드 상태에서 메시지 수신
+    // 포그라운드 메시지 수신 (앱 열려있을 때)
     onMessage(messaging, (payload) => {
-        const title = payload.notification?.title || '계산 결과';
-        const body  = payload.notification?.body  || '';
-        new Notification(title, { body, icon: '/icon-180.png' });
+        playAlert();
+        const d = payload.data || {};
+        addLogItem({ expression: d.expression || payload.notification?.body || '', calcId: d.calcId || '' }, true);
     });
 
     // ===== URL 생성 =====
@@ -318,8 +337,50 @@
         });
     };
 
+    // ===== 알림음 + 진동 =====
+    function playAlert() {
+        if ('vibrate' in navigator) navigator.vibrate([200, 80, 200]);
+        try {
+            const ctx  = new AudioContext();
+            const osc  = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.frequency.value = 880;
+            gain.gain.setValueAtTime(0.3, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
+            osc.start(ctx.currentTime);
+            osc.stop(ctx.currentTime + 0.5);
+        } catch(e) {}
+        // 화면 플래시
+        document.body.classList.add('flash');
+        setTimeout(() => document.body.classList.remove('flash'), 600);
+    }
+
+    // ===== 로그 아이템 추가 =====
+    function addLogItem(d, isNew = false) {
+        const list = document.getElementById('logList');
+        const emptyMsg = list.querySelector('.empty-msg');
+        if (emptyMsg) emptyMsg.remove();
+
+        const time = d.timestamp?.toDate
+            ? d.timestamp.toDate().toLocaleString('ko-KR')
+            : '방금';
+
+        const item = document.createElement('div');
+        item.className = 'log-item' + (isNew ? ' new-item' : '');
+        item.innerHTML = `
+            <div class="log-expr">${d.expression}</div>
+            <div class="log-meta">
+                <span class="log-id">${d.calcId || ''}</span>
+                <span>${time}</span>
+            </div>
+        `;
+        list.insertBefore(item, list.firstChild);
+    }
+
     // ===== 실시간 수신 내역 =====
-    let count = 0;
+    let isFirstLoad = true;
     const q = query(collection(db, 'calculations'), orderBy('timestamp', 'desc'), limit(50));
 
     onSnapshot(q, (snapshot) => {
@@ -327,46 +388,28 @@
 
         if (snapshot.empty) {
             list.innerHTML = '<div class="empty-msg">아직 수신된 내역이 없어요</div>';
+            isFirstLoad = false;
             return;
         }
 
-        count = snapshot.size;
-        document.getElementById('countBadge').textContent = count;
-        document.getElementById('countBadge').style.display = 'inline-block';
-
-        list.innerHTML = '';
-        snapshot.forEach(doc => {
-            const d = doc.data();
-            const time = d.timestamp?.toDate
-                ? d.timestamp.toDate().toLocaleString('ko-KR')
-                : '방금';
-
-            const item = document.createElement('div');
-            item.className = 'log-item';
-            item.innerHTML = `
-                <div class="log-expr">${d.expression}</div>
-                <div class="log-meta">
-                    <span class="log-id">${d.calcId}</span>
-                    <span>${time}</span>
-                </div>
-            `;
-            list.appendChild(item);
-        });
-
-        // 새 항목 추가시 브라우저 알림 (포그라운드)
-        if (!snapshot.metadata.hasPendingWrites) {
+        // 최초 로드: 전체 목록 렌더링
+        if (isFirstLoad) {
+            list.innerHTML = '';
+            snapshot.forEach(doc => addLogItem(doc.data(), false));
+            isFirstLoad = false;
+        } else {
+            // 이후: 새 항목만 추가
             snapshot.docChanges().forEach(change => {
-                if (change.type === 'added') {
-                    const d = change.doc.data();
-                    if (Notification.permission === 'granted') {
-                        new Notification('계산기 입력', {
-                            body: d.expression,
-                            icon: '/icon-180.png'
-                        });
-                    }
+                if (change.type === 'added' && !snapshot.metadata.hasPendingWrites) {
+                    addLogItem(change.doc.data(), true);
+                    playAlert();
                 }
             });
         }
+
+        const count = snapshot.size;
+        document.getElementById('countBadge').textContent = count;
+        document.getElementById('countBadge').style.display = 'inline-block';
     });
 </script>
 

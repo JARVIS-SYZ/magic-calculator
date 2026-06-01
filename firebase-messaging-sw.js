@@ -22,8 +22,8 @@ messaging.onBackgroundMessage((payload) => {
 
     self.registration.showNotification(title, {
         body: body,
-        icon: '/icon-180.png',
-        badge: '/icon-180.png',
+        icon: '/magic-calculator/icon-180.png',
+        badge: '/magic-calculator/icon-180.png',
         vibrate: [200, 100, 200]
     });
 });
