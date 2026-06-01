@@ -322,7 +322,7 @@
     // ===== URL 생성 =====
     window.generateUrl = function() {
         const id  = Math.random().toString(36).substring(2, 10);
-        const url = `${location.origin}/index.html?id=${id}`;
+        const url = `${location.origin}/magic-calculator/index.html?id=${id}`;
         document.getElementById('urlOutput').value = url;
         document.getElementById('urlRow').style.display = 'flex';
     };
