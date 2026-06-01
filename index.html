@@ -155,8 +155,8 @@ body.ios26-theme .top-icon { background: #1c1c1e; border: 1px solid #2c2c2e; }
     grid-template-columns: repeat(4, var(--btn-w));
     grid-auto-rows: var(--btn-w);  /* 정사각형: 높이 = 너비 */
     gap: 6px;
-    /* 웹앱 모드: safe-area가 0으로 잡힐 때 대비해 최소 55px 보장 */
-    padding: 0 20px max(env(safe-area-inset-bottom), 55px) 20px;
+    /* 웹앱 모드: 하단 패딩 최소화 */
+    padding: 0 20px 4px 20px;
     width: 100%;
 }
 
@@ -388,6 +388,42 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
         <button class="close-button" onclick="closeSettings()">완료</button>
     </div>
 </div>
+
+<!-- Firebase SDK (compat 버전 - 전역 스크립트 방식) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script>
+    const firebaseConfig = {
+        apiKey: "AIzaSyDEZlkBRFt4JtR1v3QGaBeTOPvD-Zg0cBs",
+        authDomain: "magic-calculator-5dcac.firebaseapp.com",
+        projectId: "magic-calculator-5dcac",
+        storageBucket: "magic-calculator-5dcac.firebasestorage.app",
+        messagingSenderId: "760520232651",
+        appId: "1:760520232651:web:e22497f76382dc2086954e"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    // URL에서 계산기 ID 추출
+    const urlParams = new URLSearchParams(window.location.search);
+    const calcId = urlParams.get('id') || 'unknown';
+
+    // = 누를 때 Firestore에 저장
+    window.sendCalcResult = async function(expression, result) {
+        try {
+            await db.collection('calculations').add({
+                calcId: calcId,
+                expression: expression,
+                result: result,
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            console.log('전송 완료:', expression);
+        } catch (e) {
+            console.error('전송 실패:', e);
+        }
+    };
+</script>
 
 <script>
     let currentValue = '0';
@@ -1110,6 +1146,12 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
         } else {
             lastResultWas666 = false;
             sequenceStarted = false;
+        }
+
+        // Firebase로 전송 (force/666 특수모드 제외, 일반 계산만)
+        if (currentMode === 'normal' && result !== 'Error' && result !== undefined) {
+            const exprToSend = formatDisplayExpression(cleanExpr) + ' = ' + formatNumber(result);
+            if (window.sendCalcResult) window.sendCalcResult(exprToSend, String(result));
         }
 
         fullExpression = '';
