@@ -1,6 +1,3 @@
-// firebase-messaging-sw.js
-// 반드시 루트(/)에 위치해야 함
-
 importScripts('https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging-compat.js');
 
@@ -15,15 +12,5 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
-// 백그라운드 메시지 수신
-messaging.onBackgroundMessage((payload) => {
-    const title = payload.notification?.title || '계산기 입력';
-    const body  = payload.notification?.body  || '';
-
-    self.registration.showNotification(title, {
-        body: body,
-        icon: '/magic-calculator/icon-180.png',
-        badge: '/magic-calculator/icon-180.png',
-        vibrate: [200, 100, 200]
-    });
-});
+// FCM이 자동으로 알림을 표시하도록 놔둠 (직접 showNotification 호출 안 함)
+// onBackgroundMessage를 등록하지 않으면 FCM SDK가 알아서 1번만 표시
