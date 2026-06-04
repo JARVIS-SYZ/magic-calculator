@@ -484,9 +484,8 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
 <!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging-compat.js"></script>
 <script type="module">
-    import { getMessaging, getToken, onMessage } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging.js';
-
     const VAPID_KEY = 'BK9hx4nDAnvp7znOPbcfhxBDK737pAsYyoEkxm7YYtiYKfAsQ1LoXQf1JZOvvxKhSmEMC-9mHbxfFPtZJ38FX7w';
 
     // ===== 관리자 패널 열기/닫기 =====
@@ -537,12 +536,11 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
                 return;
             }
 
-            const app = firebase.app();
-            const messaging = getMessaging(app);
             const swReg = await navigator.serviceWorker.register('/magic-calculator/firebase-messaging-sw.js', { scope: '/magic-calculator/' });
             await navigator.serviceWorker.ready;
 
-            const token = await getToken(messaging, { vapidKey: VAPID_KEY, serviceWorkerRegistration: swReg });
+            const messaging = firebase.messaging();
+            const token = await messaging.getToken({ vapidKey: VAPID_KEY, serviceWorkerRegistration: swReg });
 
             if (token) {
                 await firebase.firestore().collection('fcm_tokens').doc('admin_device').set({
