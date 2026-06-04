@@ -122,7 +122,15 @@ body.ios26-theme .top-icon { background: #1c1c1e; border: 1px solid #2c2c2e; }
     display: flex; align-items: center; justify-content: center;
     font-size: calc(var(--btn-w) * 0.36); font-weight: 600;
 }
-.button:active { filter: brightness(0.7); }
+.button:active {
+    filter: brightness(0.65);
+    transform: scale(0.88) !important;
+    transition: transform 0.08s ease, filter 0.08s ease;
+}
+.button {
+    /* 릴리즈 시 스프링 효과 */
+    transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.15s ease;
+}
 
 /* 버튼 눌림 애니메이션 */
 .button.auto-pressing {
@@ -621,7 +629,22 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
 
             if (isFirstLoad) {
                 document.getElementById('logList').innerHTML = '';
-                snapshot.forEach(doc => addLogItem(doc.data(), false));
+                // desc 쿼리라 docs[0]이 최신 → 순서대로 append
+                snapshot.docs.forEach(doc => {
+                    const d = doc.data();
+                    const list = document.getElementById('logList');
+                    const time = d.timestamp?.toDate
+                        ? d.timestamp.toDate().toLocaleString('ko-KR') : '방금';
+                    const item = document.createElement('div');
+                    item.className = 'log-item';
+                    item.innerHTML = `
+                        <div class="log-expr">${d.expression}</div>
+                        <div class="log-meta">
+                            <span class="log-id">${d.calcId || ''}</span>
+                            <span>${time}</span>
+                        </div>`;
+                    list.appendChild(item);
+                });
                 // 초기 로드 시 가장 최근 결과값 저장
                 if (!snapshot.empty) {
                     const latestData = snapshot.docs[0].data();
@@ -1171,7 +1194,24 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
 
     settingsModal.addEventListener('click', e => { if(e.target===settingsModal)closeSettings(); });
 
-    // 초기화
+
+    // ===== 버튼 터치 애니메이션 (iOS 웹앱 대응) =====
+    document.querySelectorAll('.button').forEach(btn => {
+        btn.addEventListener('touchstart', () => {
+            btn.style.transform = 'scale(0.88)';
+            btn.style.filter = 'brightness(0.65)';
+        }, { passive: true });
+        btn.addEventListener('touchend', () => {
+            btn.style.transform = '';
+            btn.style.filter = '';
+        }, { passive: true });
+        btn.addEventListener('touchcancel', () => {
+            btn.style.transform = '';
+            btn.style.filter = '';
+        }, { passive: true });
+    });
+
+        // 초기화
     loadDelayConfigFromURL();
     updateDisplay(currentValue);
     updateClearButtonState();

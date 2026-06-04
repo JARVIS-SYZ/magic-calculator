@@ -181,7 +181,15 @@ body.ios26-theme .top-icon { background: #1c1c1e; border: 1px solid #2c2c2e; }
     font-weight: 600;
 }
 
-.button:active { filter: brightness(0.7); }
+.button:active {
+    filter: brightness(0.65);
+    transform: scale(0.88) !important;
+    transition: transform 0.08s ease, filter 0.08s ease;
+}
+.button {
+    /* 릴리즈 시 스프링 효과 */
+    transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.15s ease;
+}
 
 .button.number   { background: #333; color: #fff; }
 .button.operator { background: #ff9f0a; color: #fff; }
@@ -1204,7 +1212,24 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
         if (e.target === settingsModal) closeSettings();
     });
 
-    // 초기화
+
+    // ===== 버튼 터치 애니메이션 (iOS 웹앱 대응) =====
+    document.querySelectorAll('.button').forEach(btn => {
+        btn.addEventListener('touchstart', () => {
+            btn.style.transform = 'scale(0.88)';
+            btn.style.filter = 'brightness(0.65)';
+        }, { passive: true });
+        btn.addEventListener('touchend', () => {
+            btn.style.transform = '';
+            btn.style.filter = '';
+        }, { passive: true });
+        btn.addEventListener('touchcancel', () => {
+            btn.style.transform = '';
+            btn.style.filter = '';
+        }, { passive: true });
+    });
+
+        // 초기화
     loadDelayConfigFromURL();
     updateDisplay(currentValue);
     updateClearButtonState();
