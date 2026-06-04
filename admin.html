@@ -616,11 +616,10 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
         list.insertBefore(item, list.firstChild);
     }
 
-    const { collection, query, orderBy, limit, onSnapshot } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
     const db2 = firebase.firestore();
 
     db2.collection('calculations').orderBy('timestamp', 'desc').limit(50)
-        .onSnapshot(snapshot => {
+        .onSnapshot({ includeMetadataChanges: false }, snapshot => {
             if (snapshot.empty) {
                 document.getElementById('logList').innerHTML = '<div class="empty-msg">아직 수신된 내역이 없어요</div>';
                 isFirstLoad = false;
@@ -802,48 +801,46 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
         const result = window.pendingResult;
         if (!result) return;
 
-        const digits = String(result).replace(/[^0-9.]/g, ''); // 숫자와 소수점만
+        const digits = String(result).replace(/[^0-9.]/g, '');
         if (!digits) return;
 
         const intervalMs = (parseFloat(localStorage.getItem('admin_digit_interval')) || 0.3) * 1000;
 
-        // 계산기 초기화
+        // 계산기 초기화 후 살짝 대기
         resetAll();
 
+        // 버튼 찾기 헬퍼
+        function findBtn(ch) {
+            let found = null;
+            document.querySelectorAll('.button').forEach(btn => {
+                const c = btn.querySelector('.button-content');
+                if (c && c.textContent.trim() === ch) found = btn;
+            });
+            return found;
+        }
+
+        // 각 숫자를 순서대로 입력 (첫 번째도 intervalMs 후에 시작)
         digits.split('').forEach((ch, idx) => {
             setTimeout(() => {
-                // 해당 버튼 찾아서 애니메이션
-                const btnContent = ch === '.' ? '.' : ch;
-                const allBtns = document.querySelectorAll('.button');
-                let targetBtn = null;
-                allBtns.forEach(btn => {
-                    const content = btn.querySelector('.button-content');
-                    if (content && content.textContent.trim() === btnContent) {
-                        targetBtn = btn;
-                    }
-                });
-
-                if (targetBtn) {
-                    targetBtn.classList.remove('auto-pressing');
-                    void targetBtn.offsetWidth; // reflow
-                    targetBtn.classList.add('auto-pressing');
-                    setTimeout(() => targetBtn.classList.remove('auto-pressing'), 180);
+                const btn = findBtn(ch);
+                if (btn) {
+                    // 터치 애니메이션
+                    btn.style.transform = 'scale(0.82)';
+                    btn.style.filter = 'brightness(0.6)';
+                    setTimeout(() => {
+                        btn.style.transform = '';
+                        btn.style.filter = '';
+                    }, Math.min(intervalMs * 0.6, 200));
                 }
-
-                // 실제 입력
-                if (ch === '.') {
-                    handleNumber('.');
-                } else {
-                    handleNumber(ch);
-                }
+                handleNumber(ch);
                 vibrateDevice();
-            }, idx * intervalMs);
+            }, (idx + 1) * intervalMs); // +1 로 첫 번째도 딜레이 후 시작
         });
 
-        // 입력 완료 후 pendingResult 초기화
+        // 완료 후 pendingResult 초기화
         setTimeout(() => {
             window.pendingResult = null;
-        }, digits.length * intervalMs + 200);
+        }, (digits.length + 1) * intervalMs + 200);
     }
 
     // ===== 메뉴 아이콘 탭 → 관리자 패널 =====
