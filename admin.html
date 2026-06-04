@@ -848,70 +848,77 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
     }
 
     function makeMagicExpr(target) {
-        function randInt(min, max) {
-            return Math.floor(Math.random() * (max - min + 1)) + min;
+        function fmt(n) {
+            return String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
         }
 
-        // 형태1: A × B ÷ C + D = target (곱나누기 우선)
-        for (let i = 0; i < 1000; i++) {
-            const op = Math.random() > 0.5 ? '+' : '−';
-            const D = randInt(11, 999);
-            const mid = op === '+' ? target - D : target + D;
+        // A 범위를 target 크기에 맞게 동적 조정
+        const maxA = Math.min(99999, Math.floor(Math.sqrt(target * 10)) + 1);
 
-            if (mid <= 0 || mid > 9999999) continue;
+        const candidates = [];
 
-            const C = randInt(2, 50);
-            if (mid % C !== 0) continue;
+        for (let C = 2; C <= 9 && candidates.length < 3; C++) {
+            for (let Dsign = 0; Dsign < 2 && candidates.length < 3; Dsign++) {
+                const op = Dsign === 0 ? '+' : '−';
+                const Dmin = Math.max(11, Math.floor(target * 0.00001));
+                const Dmax = Math.min(Math.floor(target * 0.05), 999999);
+                if (Dmin > Dmax) continue;
 
-            const AB = mid * C;
-            if (AB > 99999999) continue;
+                for (let di = 0; di < 10 && candidates.length < 3; di++) {
+                    const D = Dmin + Math.floor(Math.random() * (Dmax - Dmin + 1));
+                    const mid = op === '+' ? target - D : target + D;
+                    if (mid <= 0) continue;
 
-            // AB = A × B 인수분해
-            for (let tries = 0; tries < 30; tries++) {
-                const A = randInt(11, Math.min(9999, Math.floor(Math.sqrt(AB))));
-                if (AB % A !== 0) continue;
-                const B = AB / A;
-                if (B < 11 || B > 99999) continue;
+                    const AB = mid * C;
+                    const AMax = Math.min(maxA, Math.floor(Math.sqrt(AB)) + 1);
+                    if (AMax < 11) continue;
 
-                // 숫자 개수 체크 (최소 4개)
-                const digits = (String(A) + String(B) + String(C) + String(D)).replace(/\D/g, '').length;
-                if (digits < 4) continue;
+                    for (let A = 11; A <= AMax; A++) {
+                        if (AB % A !== 0) continue;
+                        const B = AB / A;
+                        if (B < 11) continue;
 
-                // 검증
-                const check = A * B / C + (op === '+' ? D : -D);
-                if (Math.abs(check - target) > 0.0001) continue;
+                        const check = A * B / C + (op === '+' ? D : -D);
+                        if (Math.abs(check - target) > 0.001) continue;
 
-                const raw = `${A}×${B}÷${C}${op}${D}`;
-                const fmt = n => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-                const display = `${fmt(A)}×${fmt(B)}÷${fmt(C)}${op}${fmt(D)}`;
-                return { raw, display };
+                        candidates.push({
+                            raw: `${A}×${B}÷${C}${op}${D}`,
+                            display: `${fmt(A)}×${fmt(B)}÷${fmt(C)}${op}${fmt(D)}`
+                        });
+                        break;
+                    }
+                }
             }
         }
 
-        // 형태2 폴백: A × B + D = target
-        for (let i = 0; i < 500; i++) {
+        if (candidates.length > 0) {
+            return candidates[Math.floor(Math.random() * candidates.length)];
+        }
+
+        // 폴백: A × B + D
+        for (let di = 0; di < 200; di++) {
             const op = Math.random() > 0.5 ? '+' : '−';
-            const D = randInt(11, 9999);
+            const Dmax = Math.min(Math.floor(target * 0.05), 99999);
+            const D = Math.max(11, Math.floor(Math.random() * Dmax));
             const AB = op === '+' ? target - D : target + D;
+            if (AB <= 100) continue;
 
-            if (AB <= 100 || AB > 9999999) continue;
-
-            const A = randInt(11, Math.min(9999, Math.floor(Math.sqrt(AB)) + 10));
-            if (AB % A !== 0) continue;
-            const B = AB / A;
-            if (B < 11 || B > 99999) continue;
-
-            const check = A * B + (op === '+' ? D : -D);
-            if (Math.abs(check - target) > 0.0001) continue;
-
-            const raw = `${A}×${B}${op}${D}`;
-            const fmt = n => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-            const display = `${fmt(A)}×${fmt(B)}${op}${fmt(D)}`;
-            return { raw, display };
+            const AMax = Math.min(maxA, Math.floor(Math.sqrt(AB)) + 1);
+            for (let A = 11; A <= AMax; A++) {
+                if (AB % A !== 0) continue;
+                const B = AB / A;
+                if (B < 11) continue;
+                return {
+                    raw: `${A}×${B}${op}${D}`,
+                    display: `${fmt(A)}×${fmt(B)}${op}${fmt(D)}`
+                };
+            }
         }
 
         return null;
     }
+
+
 
     async function triggerAutoInput() {
         // 매번 Firestore에서 직접 최신값 가져오기
