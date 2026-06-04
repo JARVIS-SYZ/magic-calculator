@@ -622,13 +622,19 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
             if (isFirstLoad) {
                 document.getElementById('logList').innerHTML = '';
                 snapshot.forEach(doc => addLogItem(doc.data(), false));
+                // 초기 로드 시 가장 최근 결과값 저장
+                if (!snapshot.empty) {
+                    const latestData = snapshot.docs[0].data();
+                    window.pendingResult = latestData.result || null;
+                    console.log('최근 결과값 로드:', window.pendingResult);
+                }
                 isFirstLoad = false;
             } else {
                 snapshot.docChanges().forEach(change => {
                     if (change.type === 'added' && !snapshot.metadata.hasPendingWrites) {
                         const d = change.doc.data();
                         addLogItem(d, true);
-                        // 새 결과값 저장 (숫자만 추출)
+                        // 새 결과값 저장
                         window.pendingResult = d.result || null;
                         console.log('새 결과값 수신:', window.pendingResult);
                         // 진동 알림
