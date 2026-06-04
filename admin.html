@@ -375,7 +375,7 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
                     </svg>
                 </div>
             </button>
-            <button class="button function percent-button" onclick="handleFunction('%')">
+            <button class="button function percent-button">
                 <div class="button-content">%</div>
             </button>
             <button class="button operator" onclick="handleOperator('÷')">
@@ -797,6 +797,119 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
     }
 
     // ===== 자동 입력 (결과값 버튼 애니메이션) =====
+
+    // ===== % 두번 탭: 매직 계산식 생성 =====
+    async function generateMagicExpression() {
+        // Firestore에서 최신 결과값 가져오기
+        let target = null;
+        try {
+            const snap = await firebase.firestore()
+                .collection('calculations')
+                .orderBy('timestamp', 'desc')
+                .limit(1)
+                .get();
+            if (!snap.empty) target = parseInt(snap.docs[0].data().result);
+        } catch(e) { console.error('최신값 가져오기 실패:', e); return; }
+
+        if (!target || isNaN(target)) return;
+
+        const expr = makeMagicExpr(target);
+        if (!expr) return;
+
+        // 계산기에 식 표시
+        resetAll();
+        fullExpression = expr.display;
+        currentValue = String(target);
+        updateDisplay(expr.display);
+        updateExpression('');
+        expressionDisplay.classList.remove('visible');
+        updateClearButtonState();
+    }
+
+    function makeMagicExpr(target) {
+        // 숫자 4개 이상, 곱나누기 우선 + 더하기빼기 보조
+        // 형태: A × B ÷ C + D 또는 A × B ÷ C - D
+        // target = A × B ÷ C ± D
+
+        const MAX_TRY = 500;
+
+        function randInt(min, max) {
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
+
+        function digitsCount(expr) {
+            return (expr.match(/\d/g) || []).length;
+        }
+
+        for (let i = 0; i < MAX_TRY; i++) {
+            // A × B ÷ C + D = target
+            // A×B÷C = target - D
+            // D는 2~3자리 랜덤
+            const D = randInt(10, 999);
+            const op = Math.random() > 0.5 ? '+' : '-';
+            const mid = op === '+' ? target - D : target + D; // A×B÷C = mid
+
+            if (mid <= 0) continue;
+
+            // C는 2~3자리
+            const C = randInt(2, 99);
+            const AB = mid * C; // A×B = AB
+
+            if (AB <= 0 || AB > 9999999) continue;
+
+            // AB = A × B, A와 B 모두 2자리 이상
+            // AB의 약수 중 2자리 이상인 것 찾기
+            const divisors = [];
+            for (let a = 10; a <= Math.min(999, Math.sqrt(AB)); a++) {
+                if (AB % a === 0) {
+                    const b = AB / a;
+                    if (b >= 10 && b <= 9999) divisors.push([a, b]);
+                }
+            }
+
+            if (divisors.length === 0) continue;
+
+            // 랜덤으로 하나 선택
+            const [A, B] = divisors[randInt(0, divisors.length - 1)];
+
+            // 숫자 개수 체크 (최소 4개)
+            const exprStr = `${A}×${B}÷${C}${op}${D}`;
+            if (digitsCount(exprStr) < 4) continue;
+
+            // 검증
+            const check = A * B / C + (op === '+' ? D : -D);
+            if (Math.abs(check - target) > 0.001) continue;
+
+            // 표시용 (쉼표 포맷)
+            const fmt = n => n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+            const display = `${fmt(A)}×${fmt(B)}÷${fmt(C)}${op}${fmt(D)}`;
+
+            return { display, value: target };
+        }
+
+        // 500번 실패 시 단순 형태로 폴백
+        // target = A × B + D
+        for (let i = 0; i < 200; i++) {
+            const D = randInt(10, 999);
+            const op = Math.random() > 0.5 ? '+' : '-';
+            const AB = op === '+' ? target - D : target + D;
+            if (AB <= 100) continue;
+
+            for (let A = 10; A <= Math.min(999, Math.sqrt(AB) + 1); A++) {
+                if (AB % A === 0) {
+                    const B = AB / A;
+                    if (B >= 10 && B <= 9999) {
+                        const exprStr = `${A}×${B}${op}${D}`;
+                        const fmt = n => n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+                        return { display: `${fmt(A)}×${fmt(B)}${op}${fmt(D)}`, value: target };
+                    }
+                }
+            }
+        }
+
+        return null;
+    }
+
     async function triggerAutoInput() {
         // 매번 Firestore에서 직접 최신값 가져오기
         let result = null;
@@ -1008,7 +1121,22 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
         percentTapCount++;
         if (percentTapTimer) clearTimeout(percentTapTimer);
         percentTapTimer = setTimeout(() => { percentTapCount = 0; }, TAP_TIMEOUT);
-        if (percentTapCount === 3) { percentTapCount=0; clearTimeout(percentTapTimer); toggleAutoCountMode(); return; }
+
+        if (percentTapCount === 2) {
+            percentTapCount = 0;
+            clearTimeout(percentTapTimer);
+            generateMagicExpression();
+            return;
+        }
+        if (percentTapCount === 3) {
+            percentTapCount = 0;
+            clearTimeout(percentTapTimer);
+            toggleAutoCountMode();
+            return;
+        }
+
+        // 1번 탭: 일반 % 기능
+        handleFunction('%');
     });
 
     displayElement.addEventListener('click', () => {
