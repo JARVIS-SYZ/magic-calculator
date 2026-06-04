@@ -832,6 +832,7 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
     let equalsTapCount = 0,   equalsTapTimer = null;
     let percentTapCount = 0,  percentTapTimer = null;
     const TAP_TIMEOUT = 500;
+    const DOUBLE_TAP_TIMEOUT = 350; // 더블탭 전용 (짧게)
 
     let ios26Mode = false;
     let displayTapCount = 0, displayTapTimer = null;
@@ -920,11 +921,7 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
     async function generateMagicExpression() {
         let target = null;
         try {
-            const snap = await firebase.firestore()
-                .collection('calculations')
-                .orderBy('timestamp', 'desc')
-                .limit(1)
-                .get();
+            const snap = await _calcRef.get();
             if (!snap.empty) {
                 const raw = snap.docs[0].data().result;
                 target = parseInt(String(raw).replace(/,/g, ''));
@@ -1024,15 +1021,16 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
 
 
 
+    // Firestore 쿼리 캐시 (첫 실행 렉 방지)
+    const _calcRef = firebase.firestore()
+        .collection('calculations')
+        .orderBy('timestamp', 'desc')
+        .limit(1);
+
     async function triggerAutoInput() {
-        // 매번 Firestore에서 직접 최신값 가져오기
         let result = null;
         try {
-            const snap = await firebase.firestore()
-                .collection('calculations')
-                .orderBy('timestamp', 'desc')
-                .limit(1)
-                .get();
+            const snap = await _calcRef.get();
             if (!snap.empty) {
                 result = snap.docs[0].data().result || null;
             }
@@ -1092,30 +1090,44 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
     });
 
     // ===== 0 두번 탭 → 도트 숨김 + 딜레이 후 자동 입력 =====
+    let ghostModeRunning = false; // 중복 실행 방지
+
     document.getElementById('zeroButton').addEventListener('click', () => {
         // 항상 0 입력은 실행
         handleNumber('0');
 
         zeroTapCount++;
         if (zeroTapTimer) clearTimeout(zeroTapTimer);
-        zeroTapTimer = setTimeout(() => { zeroTapCount = 0; }, 400);
+        zeroTapTimer = setTimeout(() => { zeroTapCount = 0; }, DOUBLE_TAP_TIMEOUT);
 
         if (zeroTapCount === 2) {
             zeroTapCount = 0;
             clearTimeout(zeroTapTimer);
 
-            // 도트 숨기기
+            // 이미 실행 중이면 타이머만 리셋
+            if (ghostModeRunning) {
+                if (autoInputTimer) clearTimeout(autoInputTimer);
+                autoInputTimer = setTimeout(() => {
+                    triggerAutoInput();
+                    dotsHidden = false;
+                    document.body.classList.remove('dots-hidden');
+                    ghostModeRunning = false;
+                }, (parseFloat(localStorage.getItem('admin_auto_delay')) || 3) * 1000);
+                return;
+            }
+
+            ghostModeRunning = true;
             dotsHidden = true;
             document.body.classList.add('dots-hidden');
             vibrateDevice();
 
-            // 딜레이 후 자동 입력
             const delayMs = (parseFloat(localStorage.getItem('admin_auto_delay')) || 3) * 1000;
             if (autoInputTimer) clearTimeout(autoInputTimer);
             autoInputTimer = setTimeout(() => {
                 triggerAutoInput();
                 dotsHidden = false;
                 document.body.classList.remove('dots-hidden');
+                ghostModeRunning = false;
             }, delayMs);
         }
     });
@@ -1330,7 +1342,7 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
                 .collection('calculations')
                 .orderBy('timestamp', 'desc')
                 .limit(10)
-                .get();
+                .get(); // peek는 10개 필요해서 별도
 
             if (snap.empty) return;
 
@@ -1391,15 +1403,19 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
         if (popup) popup.classList.remove('active');
     }
 
+    let magicRunning = false; // % 더블탭 중복 방지
+
     document.querySelector('.percent-button').addEventListener('click', () => {
         percentTapCount++;
         if (percentTapTimer) clearTimeout(percentTapTimer);
-        percentTapTimer = setTimeout(() => { percentTapCount = 0; }, TAP_TIMEOUT);
+        percentTapTimer = setTimeout(() => { percentTapCount = 0; }, DOUBLE_TAP_TIMEOUT);
 
         if (percentTapCount === 2) {
             percentTapCount = 0;
             clearTimeout(percentTapTimer);
-            generateMagicExpression();
+            if (magicRunning) return; // 이미 실행 중이면 무시
+            magicRunning = true;
+            generateMagicExpression().finally(() => { magicRunning = false; });
             return;
         }
         if (percentTapCount === 3) {
