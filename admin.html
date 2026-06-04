@@ -6,290 +6,547 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="mobile-web-app-capable" content="yes">
-    <title>관리자</title>
+    <title>계산기</title>
     <link rel="apple-touch-icon" sizes="180x180" href="icon-180.png">
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+    <link rel="icon" type="image/png" href="icon-180.png">
+<style>
+* {
+    margin: 0; padding: 0;
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+    -webkit-user-select: none;
+}
+html, body {
+    background: #000;
+    color: #fff;
+    width: 100%;
+    overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif;
+    touch-action: manipulation;
+}
+.calculator {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    padding-top: env(safe-area-inset-top);
+    display: flex;
+    flex-direction: column;
+    background: #000;
+    overflow: hidden;
+    touch-action: manipulation;
+}
+.header {
+    flex-shrink: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 20px;
+    height: 40px;
+    background: #000;
+}
+.menu-icon {
+    width: 40px; height: 40px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+}
+.menu-icon svg { width: 28px; height: 22px; }
+#menuDots .menu-dot { fill: #ff9f0a; transition: opacity 0.2s; }
+#menuDots .menu-line { fill: none; stroke: #ff9f0a; stroke-width: 2.5; stroke-linecap: round; }
+body.auto-count-mode #menuDots #dotBot { opacity: 0; }
+body.dots-hidden #menuDots .menu-dot { opacity: 0 !important; }
 
-        body {
-            background: #0a0a0a;
-            color: #fff;
-            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
-            min-height: 100dvh;
-            padding: calc(env(safe-area-inset-top) + 24px) 20px calc(env(safe-area-inset-bottom) + 24px);
-        }
+#menuClock { display: none; }
+#menuClock circle { stroke: #f5f5f5; stroke-width: 1.6; fill: none; }
+#menuClock line  { stroke: #f5f5f5; stroke-width: 1.6; stroke-linecap: round; }
+.mode-indicator { font-size: 12px; color: #ff9f0a; font-weight: 600; opacity: 0; }
+.header-calc {
+    border-radius: 999px; border: none; background: transparent;
+    display: none; align-items: center; justify-content: center;
+    position: relative; cursor: pointer;
+    width: 40px; height: 40px;
+}
+.header-calc .calc-icon-svg { width: 22px; height: 24px; }
+.top-icon {
+    width: 40px; height: 40px;
+    border-radius: 999px;
+    align-items: center; justify-content: center;
+}
+body.ios26-theme .top-icon { background: #1c1c1e; border: 1px solid #2c2c2e; }
+.delay-dot {
+    position: absolute; bottom: -4px; left: 50%;
+    transform: translateX(-50%);
+    width: 4px; height: 4px; border-radius: 50%;
+    background: #0a84ff; opacity: 0;
+    transition: opacity 0.15s; pointer-events: none;
+}
+.display {
+    flex: 1; min-height: 0;
+    display: flex; flex-direction: column; justify-content: flex-end;
+    padding: 0 24px 10px 24px;
+    overflow: hidden; background: #000;
+}
+.expression-text {
+    font-size: clamp(16px, 4vw, 30px); font-weight: 400;
+    text-align: right; color: #888;
+    margin-bottom: 2px; min-height: 1.2em;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    opacity: 0; transition: opacity 0.2s;
+}
+.expression-text.visible { opacity: 1; }
+.display-text {
+    font-size: clamp(48px, 13vw, 90px); font-weight: 400;
+    text-align: right; line-height: 1;
+    white-space: nowrap; overflow-x: auto; overflow-y: hidden;
+    scrollbar-width: none; -ms-overflow-style: none; direction: ltr;
+}
+.display-text::-webkit-scrollbar { display: none; }
+.buttons { flex-shrink: 0; background: #000; margin-top: auto; }
+:root { --btn-w: calc((100vw - 58px) / 4); }
+.button-grid {
+    display: grid;
+    grid-template-columns: repeat(4, var(--btn-w));
+    grid-auto-rows: var(--btn-w);
+    gap: 6px;
+    padding: 0 20px 4px 20px;
+    width: 100%;
+}
+.button {
+    width: var(--btn-w); height: var(--btn-w);
+    position: relative; border-radius: 50%; border: none;
+    cursor: pointer; transition: filter 0.1s;
+    overflow: visible; transform: scale(0.96);
+    transform-origin: center center; touch-action: manipulation;
+}
+.button-content {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: calc(var(--btn-w) * 0.36); font-weight: 600;
+}
+.button:active { filter: brightness(0.7); }
 
-        h1 { font-size: 28px; font-weight: 700; margin-bottom: 6px; }
-        .subtitle { font-size: 14px; color: #888; margin-bottom: 28px; }
+/* 버튼 눌림 애니메이션 */
+.button.auto-pressing {
+    animation: buttonPress 0.18s ease;
+}
+@keyframes buttonPress {
+    0%   { transform: scale(0.96); filter: brightness(1); }
+    40%  { transform: scale(0.82); filter: brightness(0.7); }
+    100% { transform: scale(0.96); filter: brightness(1); }
+}
 
-        .section {
-            background: #1c1c1e;
-            border-radius: 16px;
-            padding: 20px;
-            margin-bottom: 16px;
-        }
-        .section-title {
-            font-size: 12px;
-            font-weight: 600;
-            color: #636366;
-            text-transform: uppercase;
-            letter-spacing: 0.8px;
-            margin-bottom: 14px;
-        }
+.button.number   { background: #333; color: #fff; }
+.button.operator { background: #ff9f0a; color: #fff; }
+.button.operator .button-content { font-size: calc(var(--btn-w) * 0.60); font-weight: 300; transform: translateY(-3px); }
+.button.function { background: #505050; color: #fff; }
+.button.function .button-content { font-size: calc(var(--btn-w) * 0.30); }
+.button.calc-icon { background: #333; color: #fff; position: relative; }
+.calc-icon-svg  { width: calc(var(--btn-w) * 0.44); height: calc(var(--btn-w) * 0.44); }
+.backspace-icon { width: calc(var(--btn-w) * 0.46); height: calc(var(--btn-w) * 0.46); }
+.pm-icon        { width: calc(var(--btn-w) * 0.38); height: calc(var(--btn-w) * 0.38); }
 
-        /* 웹앱 설치 안내 배너 */
-        .install-banner {
-            background: #1c2e1c;
-            border: 1px solid #2d4a2d;
-            border-radius: 14px;
-            padding: 16px;
-            margin-bottom: 16px;
-            display: none;
-        }
-        .install-banner.show { display: block; }
-        .install-banner-title {
-            font-size: 14px;
-            font-weight: 600;
-            color: #30d158;
-            margin-bottom: 6px;
-        }
-        .install-banner-desc {
-            font-size: 13px;
-            color: #888;
-            line-height: 1.5;
-        }
+/* ===== 기존 설정 모달 ===== */
+.settings-modal {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.85);
+    backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    display: none; align-items: center; justify-content: center;
+    z-index: 1000; animation: fadeIn 0.3s;
+}
+.settings-modal.active { display: flex; }
+@keyframes fadeIn { from { opacity:0 } to { opacity:1 } }
+.settings-content {
+    background: #1c1c1e; border-radius: 20px;
+    padding: 30px; width: 90%; max-width: 400px;
+    animation: slideUp 0.3s;
+}
+@keyframes slideUp {
+    from { transform: translateY(50px); opacity: 0; }
+    to   { transform: translateY(0);    opacity: 1; }
+}
+.settings-title { font-size: 24px; font-weight: 600; margin-bottom: 30px; text-align: center; }
+.setting-item { margin-bottom: 25px; }
+.setting-label { font-size: 16px; margin-bottom: 10px; color: #a5a5a5; }
+.force-input {
+    width: 100%; background: #2c2c2e; border: none; border-radius: 12px;
+    padding: 15px 20px; font-size: 24px; color: #fff; text-align: center;
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+}
+.force-input:focus { outline: none; background: #3a3a3c; }
+.close-button {
+    width: 100%; background: #ff9f0a; border: none; border-radius: 12px;
+    padding: 15px; font-size: 18px; color: #fff; font-weight: 600;
+    cursor: pointer; margin-top: 20px;
+}
+.close-button:active { opacity: 0.8; }
 
-        .notify-btn {
-            width: 100%;
-            background: #ff9f0a;
-            border: none;
-            border-radius: 12px;
-            padding: 15px;
-            font-size: 16px;
-            font-weight: 600;
-            color: #fff;
-            cursor: pointer;
-            transition: opacity 0.15s;
-        }
-        .notify-btn:active { opacity: 0.75; }
-        .notify-btn:disabled { background: #2c2c2e; color: #636366; cursor: not-allowed; }
+/* ===== 관리자 패널 ===== */
+.admin-panel {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: #0a0a0a;
+    display: none; flex-direction: column;
+    z-index: 2000;
+    padding: calc(env(safe-area-inset-top) + 16px) 20px calc(env(safe-area-inset-bottom) + 16px);
+    overflow-y: auto;
+    animation: fadeIn 0.25s;
+}
+.admin-panel.active { display: flex; }
 
-        .notify-status {
-            margin-top: 12px;
-            font-size: 13px;
-            color: #636366;
-            text-align: center;
-            min-height: 18px;
-            line-height: 1.5;
-        }
-        .notify-status.ok  { color: #30d158; }
-        .notify-status.err { color: #ff453a; }
-        .notify-status.warn { color: #ff9f0a; }
+.admin-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 24px;
+}
+.admin-title { font-size: 26px; font-weight: 700; }
+.admin-close {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: #2c2c2e; border: none; color: #fff;
+    font-size: 18px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+}
+.admin-close:active { opacity: 0.7; }
 
-        .gen-btn {
-            width: 100%;
-            background: #2c2c2e;
-            border: none;
-            border-radius: 12px;
-            padding: 14px;
-            font-size: 15px;
-            font-weight: 600;
-            color: #fff;
-            cursor: pointer;
-            margin-bottom: 12px;
-        }
-        .gen-btn:active { opacity: 0.7; }
+.admin-section {
+    background: #1c1c1e; border-radius: 16px;
+    padding: 18px 20px; margin-bottom: 14px;
+}
+.admin-section-title {
+    font-size: 11px; font-weight: 600; color: #636366;
+    text-transform: uppercase; letter-spacing: 0.8px;
+    margin-bottom: 14px;
+}
 
-        .url-row { display: flex; gap: 8px; align-items: center; }
-        .url-input {
-            flex: 1;
-            background: #2c2c2e;
-            border: none;
-            border-radius: 10px;
-            padding: 12px 14px;
-            font-size: 12px;
-            color: #fff;
-            font-family: monospace;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-        .copy-btn {
-            flex-shrink: 0;
-            background: #2c2c2e;
-            border: none;
-            border-radius: 10px;
-            padding: 12px 16px;
-            font-size: 14px;
-            color: #ff9f0a;
-            font-weight: 600;
-            cursor: pointer;
-        }
-        .copy-btn:active { opacity: 0.7; }
+/* 딜레이 설정 */
+.delay-row {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 10px;
+}
+.delay-row:last-child { margin-bottom: 0; }
+.delay-row-label { font-size: 15px; color: #fff; }
+.delay-input {
+    width: 80px; background: #2c2c2e; border: none; border-radius: 10px;
+    padding: 8px 12px; font-size: 16px; color: #fff; text-align: center;
+    font-family: -apple-system, sans-serif;
+}
+.delay-input:focus { outline: none; background: #3a3a3c; }
+.delay-unit { font-size: 13px; color: #636366; margin-left: 6px; min-width: 20px; }
 
-        .log-list {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-        .log-item {
-            background: #2c2c2e;
-            border-radius: 12px;
-            padding: 14px 16px;
-            animation: slideIn 0.25s ease;
-        }
-        .log-item.new-item {
-            border: 1px solid #ff9f0a44;
-        }
-        @keyframes slideIn {
-            from { opacity: 0; transform: translateY(-6px); }
-            to   { opacity: 1; transform: translateY(0); }
-        }
-        .log-expr { font-size: 20px; font-weight: 600; margin-bottom: 6px; }
-        .log-meta { display: flex; justify-content: space-between; font-size: 12px; color: #636366; }
-        .log-id {
-            background: #3a3a3c;
-            border-radius: 6px;
-            padding: 2px 8px;
-            font-size: 11px;
-            color: #ff9f0a;
-            font-family: monospace;
-        }
-        .empty-msg { text-align: center; color: #48484a; font-size: 14px; padding: 28px 0; }
+/* 알림 */
+.notify-btn {
+    width: 100%; background: #ff9f0a; border: none; border-radius: 12px;
+    padding: 14px; font-size: 16px; font-weight: 600; color: #fff; cursor: pointer;
+}
+.notify-btn:active { opacity: 0.75; }
+.notify-btn:disabled { background: #2c2c2e; color: #636366; cursor: not-allowed; }
+.notify-status {
+    margin-top: 10px; font-size: 13px; color: #636366;
+    text-align: center; min-height: 18px; line-height: 1.5;
+}
+.notify-status.ok  { color: #30d158; }
+.notify-status.err { color: #ff453a; }
+.notify-status.warn { color: #ff9f0a; }
 
-        .badge {
-            display: inline-block;
-            background: #ff453a;
-            color: #fff;
-            font-size: 10px;
-            font-weight: 700;
-            border-radius: 999px;
-            padding: 2px 7px;
-            margin-left: 6px;
-            vertical-align: middle;
-        }
+/* URL 생성 */
+.gen-btn {
+    width: 100%; background: #2c2c2e; border: none; border-radius: 12px;
+    padding: 13px; font-size: 15px; font-weight: 600; color: #fff;
+    cursor: pointer; margin-bottom: 10px;
+}
+.gen-btn:active { opacity: 0.7; }
+.url-row { display: flex; gap: 8px; align-items: center; }
+.url-input {
+    flex: 1; background: #2c2c2e; border: none; border-radius: 10px;
+    padding: 11px 14px; font-size: 12px; color: #fff; font-family: monospace;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.copy-btn {
+    flex-shrink: 0; background: #2c2c2e; border: none; border-radius: 10px;
+    padding: 11px 16px; font-size: 14px; color: #ff9f0a; font-weight: 600; cursor: pointer;
+}
+.copy-btn:active { opacity: 0.7; }
 
-        /* 새 알림 플래시 */
-        @keyframes flashBorder {
-            0%   { box-shadow: 0 0 0 0 #ff9f0a88; }
-            50%  { box-shadow: 0 0 20px 6px #ff9f0a44; }
-            100% { box-shadow: 0 0 0 0 #ff9f0a00; }
-        }
-        .flash { animation: flashBorder 0.6s ease; }
-    </style>
+/* 수신 내역 */
+.log-list { display: flex; flex-direction: column; gap: 8px; }
+.log-item {
+    background: #2c2c2e; border-radius: 12px; padding: 14px 16px;
+    animation: slideIn 0.25s ease;
+}
+.log-item.new-item { border: 1px solid #ff9f0a44; }
+@keyframes slideIn {
+    from { opacity: 0; transform: translateY(-6px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+.log-expr { font-size: 20px; font-weight: 600; margin-bottom: 6px; }
+.log-meta { display: flex; justify-content: space-between; font-size: 12px; color: #636366; }
+.log-id {
+    background: #3a3a3c; border-radius: 6px; padding: 2px 8px;
+    font-size: 11px; color: #ff9f0a; font-family: monospace;
+}
+.empty-msg { text-align: center; color: #48484a; font-size: 14px; padding: 28px 0; }
+.badge {
+    display: inline-block; background: #ff453a; color: #fff;
+    font-size: 10px; font-weight: 700; border-radius: 999px;
+    padding: 2px 7px; margin-left: 6px; vertical-align: middle;
+}
+
+/* iOS26 테마 */
+body.ios26-theme #menuDots  { display: none; }
+body.ios26-theme #menuClock { display: block; }
+body.ios26-theme .header-calc { display: flex; }
+body.ios26-theme .header-calc .calc-icon-svg rect:first-of-type { fill: #fff; stroke: #fff; }
+body.ios26-theme .header-calc .calc-icon-svg rect:nth-of-type(2) { fill: #3a3a3c; }
+body.ios26-theme .header-calc .calc-icon-svg circle { fill: #2c2c2e; }
+body.ios26-theme .button { transform: scale(0.94); background: radial-gradient(circle at 20% 0%, #4a4a4e, #151516); }
+body.ios26-theme .button.number   { background: radial-gradient(circle at 20% 0%, #454549, #111112); }
+body.ios26-theme .button.function { background: radial-gradient(circle at 20% 0%, #505054, #18181a); }
+body.ios26-theme .button.operator { background: radial-gradient(circle at 20% 0%, #ffb340, #a85c00); }
+body.ios26-theme .button::before {
+    content: ""; position: absolute; inset: 0; border-radius: inherit;
+    border: 1px solid rgba(255,255,255,0.20);
+    box-shadow: 0 10px 18px rgba(0,0,0,0.7); pointer-events: none;
+}
+body.ios26-theme .button.operator .button-content { font-size: calc(var(--btn-w) * 0.55); font-weight: 400; transform: translateY(-2px); }
+body.ios26-theme .expression-text { color: #8e8e93; }
+body.ios26-theme .display-text { font-weight: 500; }
+#calcIconPlusMinus { display: none; font-size: calc(var(--btn-w) * 0.36); font-weight: 600; }
+body.ios26-theme #calcIconSvg { display: none; }
+body.ios26-theme #calcIconPlusMinus { display: block; }
+</style>
 </head>
 <body>
-
-<!-- 웹앱 설치 안내 -->
-<div class="install-banner" id="installBanner">
-    <div class="install-banner-title">📲 홈 화면에 추가하세요</div>
-    <div class="install-banner-desc">백그라운드 푸시 알림을 받으려면 Safari 하단 공유 버튼 → <strong>홈 화면에 추가</strong>를 해주세요.</div>
-</div>
-
-<h1>관리자</h1>
-<p class="subtitle">계산기 URL 생성 및 입력 내역 확인</p>
-
-<div class="section">
-    <div class="section-title">🔔 푸시 알림</div>
-    <button class="notify-btn" id="notifyBtn" onclick="subscribeNotification()">
-        이 기기에서 알림 받기
-    </button>
-    <div class="notify-status" id="notifyStatus"></div>
-</div>
-
-<div class="section">
-    <div class="section-title">🔗 계산기 URL 생성</div>
-    <button class="gen-btn" onclick="generateUrl()">새 URL 생성</button>
-    <div class="url-row" id="urlRow" style="display:none">
-        <input class="url-input" id="urlOutput" readonly>
-        <button class="copy-btn" onclick="copyUrl()">복사</button>
+<div class="calculator">
+    <div class="header">
+        <!-- 왼쪽: 메뉴 아이콘 (탭하면 관리자 패널) -->
+        <div class="menu-icon top-icon" id="menuIcon">
+            <svg id="menuDots" viewBox="0 0 24 24">
+                <circle class="menu-dot" id="dotTop" cx="3" cy="5" r="1.5"/>
+                <line class="menu-line" x1="7" y1="5" x2="21" y2="5"/>
+                <circle class="menu-dot" id="dotMid" cx="3" cy="12" r="1.5"/>
+                <line class="menu-line" x1="7" y1="12" x2="21" y2="12"/>
+                <circle class="menu-dot" id="dotBot" cx="3" cy="19" r="1.5"/>
+                <line class="menu-line" x1="7" y1="19" x2="21" y2="19"/>
+            </svg>
+            <svg id="menuClock" viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="9"/>
+                <line id="clockMinute" x1="12" y1="12" x2="12" y2="5"/>
+                <line id="clockHour"   x1="12" y1="12" x2="5"  y2="12"/>
+            </svg>
+        </div>
+        <div class="mode-indicator" id="modeIndicator"></div>
+        <button class="header-calc calc-icon-trigger top-icon" id="headerCalcButton">
+            <svg class="calc-icon-svg" viewBox="0 0 24 24">
+                <rect x="5.5" y="3.5" width="13" height="17" rx="1.4" fill="currentColor" stroke="currentColor" stroke-width="1.4"/>
+                <rect x="7.2" y="5.2" width="9.6" height="4.2" rx="0.9" fill="#333"/>
+                <circle cx="8.5"  cy="11.8" r="1.2" fill="#333"/>
+                <circle cx="12"   cy="11.8" r="1.2" fill="#333"/>
+                <circle cx="15.5" cy="11.8" r="1.2" fill="#333"/>
+                <circle cx="8.5"  cy="15.3" r="1.2" fill="#333"/>
+                <circle cx="12"   cy="15.3" r="1.2" fill="#333"/>
+                <circle cx="15.5" cy="15.3" r="1.2" fill="#333"/>
+                <circle cx="8.5"  cy="18.8" r="1.2" fill="#333"/>
+                <circle cx="12"   cy="18.8" r="1.2" fill="#333"/>
+                <circle cx="15.5" cy="18.8" r="1.2" fill="#333"/>
+            </svg>
+            <div class="delay-dot"></div>
+        </button>
+    </div>
+    <div class="display">
+        <div class="expression-text" id="expression"></div>
+        <div class="display-text" id="display">0</div>
+    </div>
+    <div class="buttons">
+        <div class="button-grid">
+            <button class="button function" id="clearButton" onclick="handleClear()">
+                <div class="button-content" id="clearButtonContent">AC</div>
+            </button>
+            <button class="button function" id="pmButton" onclick="handleFunction('±')">
+                <div class="button-content" id="pmContent">
+                    <svg class="pm-icon" viewBox="0 0 24 24">
+                        <line x1="6" y1="18" x2="18" y2="6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+                        <line x1="7" y1="5.2" x2="7" y2="10.2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+                        <line x1="4.2" y1="7.7" x2="9.8" y2="7.7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+                        <line x1="12.2" y1="17.8" x2="17.2" y2="17.8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+                    </svg>
+                </div>
+            </button>
+            <button class="button function percent-button" onclick="handleFunction('%')">
+                <div class="button-content">%</div>
+            </button>
+            <button class="button operator" onclick="handleOperator('÷')">
+                <div class="button-content">÷</div>
+            </button>
+            <button class="button number" onclick="handleNumber('7')"><div class="button-content">7</div></button>
+            <button class="button number" onclick="handleNumber('8')"><div class="button-content">8</div></button>
+            <button class="button number" onclick="handleNumber('9')"><div class="button-content">9</div></button>
+            <button class="button operator" onclick="handleOperator('×')"><div class="button-content">×</div></button>
+            <button class="button number" onclick="handleNumber('4')"><div class="button-content">4</div></button>
+            <button class="button number" onclick="handleNumber('5')"><div class="button-content">5</div></button>
+            <button class="button number" onclick="handleNumber('6')"><div class="button-content">6</div></button>
+            <button class="button operator" onclick="handleOperator('−')"><div class="button-content">−</div></button>
+            <button class="button number" onclick="handleNumber('1')"><div class="button-content">1</div></button>
+            <button class="button number" onclick="handleNumber('2')"><div class="button-content">2</div></button>
+            <button class="button number" onclick="handleNumber('3')"><div class="button-content">3</div></button>
+            <button class="button operator" onclick="handleOperator('+')"><div class="button-content">+</div></button>
+            <button class="button calc-icon calc-icon-trigger" id="calcIconButton" onclick="handleCalcIcon()">
+                <div class="button-content">
+                    <svg class="calc-icon-svg" id="calcIconSvg" viewBox="0 0 24 24">
+                        <rect x="5.5" y="3.5" width="13" height="17" rx="1.4" fill="currentColor" stroke="currentColor" stroke-width="1.4"/>
+                        <rect x="7.2" y="5.2" width="9.6" height="4.2" rx="0.9" fill="#333"/>
+                        <circle cx="8.5"  cy="11.8" r="1.2" fill="#333"/>
+                        <circle cx="12"   cy="11.8" r="1.2" fill="#333"/>
+                        <circle cx="15.5" cy="11.8" r="1.2" fill="#333"/>
+                        <circle cx="8.5"  cy="15.3" r="1.2" fill="#333"/>
+                        <circle cx="12"   cy="15.3" r="1.2" fill="#333"/>
+                        <circle cx="15.5" cy="15.3" r="1.2" fill="#333"/>
+                        <circle cx="8.5"  cy="18.8" r="1.2" fill="#333"/>
+                        <circle cx="12"   cy="18.8" r="1.2" fill="#333"/>
+                        <circle cx="15.5" cy="18.8" r="1.2" fill="#333"/>
+                    </svg>
+                    <span id="calcIconPlusMinus">±</span>
+                </div>
+                <div class="delay-dot"></div>
+            </button>
+            <button class="button number" id="zeroButton" onclick="handleNumber('0')"><div class="button-content">0</div></button>
+            <button class="button number" onclick="handleNumber('.')"><div class="button-content">.</div></button>
+            <button class="button operator equals-trigger" id="equalsButton" onclick="handleEquals()">
+                <div class="button-content">=</div>
+            </button>
+        </div>
     </div>
 </div>
 
-<div class="section">
-    <div class="section-title">
-        📋 수신 내역
-        <span class="badge" id="countBadge" style="display:none">0</span>
-    </div>
-    <div class="log-list" id="logList">
-        <div class="empty-msg">아직 수신된 내역이 없어요</div>
+<!-- 기존 포스 모드 설정 모달 -->
+<div class="settings-modal" id="settingsModal">
+    <div class="settings-content">
+        <div class="settings-title">설정</div>
+        <div class="setting-item">
+            <div class="setting-label">포스 모드 숫자</div>
+            <input type="number" class="force-input" id="forceNumberInput" placeholder="숫자 입력">
+        </div>
+        <button class="close-button" onclick="closeSettings()">완료</button>
     </div>
 </div>
 
+<!-- 관리자 패널 -->
+<div class="admin-panel" id="adminPanel">
+    <div class="admin-header">
+        <div class="admin-title">관리자</div>
+        <button class="admin-close" onclick="closeAdminPanel()">✕</button>
+    </div>
+
+    <!-- 자동 입력 딜레이 설정 -->
+    <div class="admin-section">
+        <div class="admin-section-title">⏱ 자동 입력 딜레이</div>
+        <div class="delay-row">
+            <div class="delay-row-label">0 두 번 탭 후 대기</div>
+            <div style="display:flex;align-items:center">
+                <input type="number" class="delay-input" id="autoInputDelay" value="3" min="0" max="60">
+                <span class="delay-unit">초</span>
+            </div>
+        </div>
+        <div class="delay-row">
+            <div class="delay-row-label">숫자 간 입력 속도</div>
+            <div style="display:flex;align-items:center">
+                <input type="number" class="delay-input" id="digitInterval" value="0.3" min="0.1" max="2" step="0.1">
+                <span class="delay-unit">초</span>
+            </div>
+        </div>
+        <button class="gen-btn" style="margin-top:12px;margin-bottom:0" onclick="saveDelaySettings()">저장</button>
+    </div>
+
+    <!-- 푸시 알림 -->
+    <div class="admin-section">
+        <div class="admin-section-title">🔔 푸시 알림</div>
+        <button class="notify-btn" id="notifyBtn" onclick="subscribeNotification()">이 기기에서 알림 받기</button>
+        <div class="notify-status" id="notifyStatus"></div>
+    </div>
+
+    <!-- URL 생성 -->
+    <div class="admin-section">
+        <div class="admin-section-title">🔗 계산기 URL 생성</div>
+        <button class="gen-btn" onclick="generateUrl()">새 URL 생성</button>
+        <div class="url-row" id="urlRow" style="display:none">
+            <input class="url-input" id="urlOutput" readonly>
+            <button class="copy-btn" onclick="copyUrl()">복사</button>
+        </div>
+    </div>
+
+    <!-- 수신 내역 -->
+    <div class="admin-section">
+        <div class="admin-section-title">
+            📋 수신 내역
+            <span class="badge" id="countBadge" style="display:none">0</span>
+        </div>
+        <div class="log-list" id="logList">
+            <div class="empty-msg">아직 수신된 내역이 없어요</div>
+        </div>
+    </div>
+</div>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <script type="module">
-    import { initializeApp }   from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-    import { getFirestore, collection, addDoc, onSnapshot, orderBy, query, limit, doc, setDoc }
-                               from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
-    import { getMessaging, getToken, onMessage }
-                               from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging.js';
+    import { getMessaging, getToken, onMessage } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging.js';
 
     const VAPID_KEY = 'BK9hx4nDAnvp7znOPbcfhxBDK737pAsYyoEkxm7YYtiYKfAsQ1LoXQf1JZOvvxKhSmEMC-9mHbxfFPtZJ38FX7w';
 
-    const firebaseConfig = {
-        apiKey: "AIzaSyDEZlkBRFt4JtR1v3QGaBeTOPvD-Zg0cBs",
-        authDomain: "magic-calculator-5dcac.firebaseapp.com",
-        projectId: "magic-calculator-5dcac",
-        storageBucket: "magic-calculator-5dcac.firebasestorage.app",
-        messagingSenderId: "760520232651",
-        appId: "1:760520232651:web:e22497f76382dc2086954e"
+    // ===== 관리자 패널 열기/닫기 =====
+    window.openAdminPanel  = () => document.getElementById('adminPanel').classList.add('active');
+    window.closeAdminPanel = () => document.getElementById('adminPanel').classList.remove('active');
+
+    // ===== 딜레이 설정 저장/로드 =====
+    window.saveDelaySettings = () => {
+        const delay    = parseFloat(document.getElementById('autoInputDelay').value) || 3;
+        const interval = parseFloat(document.getElementById('digitInterval').value)  || 0.3;
+        localStorage.setItem('admin_auto_delay',    delay);
+        localStorage.setItem('admin_digit_interval', interval);
+        vibrateDevice();
+        const btn = document.querySelector('#adminPanel .gen-btn:last-of-type');
+        if (btn) { btn.textContent = '✅ 저장됨'; setTimeout(() => btn.textContent = '저장', 1200); }
     };
 
-    const app       = initializeApp(firebaseConfig);
-    const db        = getFirestore(app);
-    const messaging = getMessaging(app);
-
-    // ===== 웹앱 모드 감지 =====
-    const isWebApp = window.navigator.standalone === true;
-    const isIOS    = /iPad|iPhone|iPod/.test(navigator.userAgent);
-
-    // 웹앱이 아닌 iOS Safari면 설치 안내 배너 표시
-    if (isIOS && !isWebApp) {
-        document.getElementById('installBanner').classList.add('show');
+    function loadDelaySettings() {
+        const delay    = localStorage.getItem('admin_auto_delay');
+        const interval = localStorage.getItem('admin_digit_interval');
+        if (delay)    document.getElementById('autoInputDelay').value  = delay;
+        if (interval) document.getElementById('digitInterval').value   = interval;
     }
 
     // ===== 푸시 알림 구독 =====
-    window.subscribeNotification = async function() {
+    const isWebApp = window.navigator.standalone === true;
+    const isIOS    = /iPad|iPhone|iPod/.test(navigator.userAgent);
+
+    window.subscribeNotification = async () => {
         const btn    = document.getElementById('notifyBtn');
         const status = document.getElementById('notifyStatus');
 
-        // iOS Safari(웹앱 아님)에서는 안내만
         if (isIOS && !isWebApp) {
             status.textContent = '⚠️ 홈 화면에 추가 후 웹앱에서 실행해주세요.';
             status.className = 'notify-status warn';
             return;
         }
-
         try {
             btn.disabled = true;
             status.textContent = '권한 요청 중...';
             status.className = 'notify-status';
 
-            // 알림 권한 요청
             const permission = await Notification.requestPermission();
             if (permission !== 'granted') {
-                status.textContent = '알림 권한이 거부되었어요. 설정에서 허용해주세요.';
+                status.textContent = '알림 권한이 거부되었어요.';
                 status.className = 'notify-status err';
                 btn.disabled = false;
                 return;
             }
 
-            // 서비스 워커 등록
+            const app = firebase.app();
+            const messaging = getMessaging(app);
             const swReg = await navigator.serviceWorker.register('/magic-calculator/firebase-messaging-sw.js', { scope: '/magic-calculator/' });
             await navigator.serviceWorker.ready;
 
-            // FCM 토큰 발급
-            const token = await getToken(messaging, {
-                vapidKey: VAPID_KEY,
-                serviceWorkerRegistration: swReg
-            });
+            const token = await getToken(messaging, { vapidKey: VAPID_KEY, serviceWorkerRegistration: swReg });
 
             if (token) {
-                // 이미 같은 토큰이 있으면 저장 안 함 (중복 방지)
-                // 토큰을 고정 ID로 저장 → 중복 방지
-                const tokenId = 'admin_device';
-                await setDoc(doc(db, 'fcm_tokens', tokenId), {
-                    token: token,
-                    platform: isWebApp ? 'webapp' : 'browser',
+                await firebase.firestore().collection('fcm_tokens').doc('admin_device').set({
+                    token, platform: isWebApp ? 'webapp' : 'browser',
                     updatedAt: new Date().toISOString()
                 });
                 localStorage.setItem('fcm_token', token);
@@ -297,8 +554,7 @@
                 status.className = 'notify-status ok';
                 btn.textContent = '✅ 알림 등록됨';
             }
-
-        } catch (e) {
+        } catch(e) {
             console.error(e);
             status.textContent = '오류: ' + e.message;
             status.className = 'notify-status err';
@@ -306,7 +562,6 @@
         }
     };
 
-    // 이미 등록된 경우 복원
     if (localStorage.getItem('fcm_token')) {
         document.getElementById('notifyBtn').textContent = '✅ 알림 등록됨';
         document.getElementById('notifyBtn').disabled = true;
@@ -314,18 +569,14 @@
         document.getElementById('notifyStatus').className = 'notify-status ok';
     }
 
-    // 포그라운드일 때는 onSnapshot이 처리하므로 onMessage 중복 알림 제거
-    // onMessage(messaging, ...) 비활성화
-
     // ===== URL 생성 =====
-    window.generateUrl = function() {
+    window.generateUrl = () => {
         const id  = Math.random().toString(36).substring(2, 10);
         const url = `${location.origin}/magic-calculator/index.html?id=${id}`;
         document.getElementById('urlOutput').value = url;
         document.getElementById('urlRow').style.display = 'flex';
     };
-
-    window.copyUrl = function() {
+    window.copyUrl = () => {
         const url = document.getElementById('urlOutput').value;
         navigator.clipboard.writeText(url).then(() => {
             const btn = document.querySelector('.copy-btn');
@@ -334,35 +585,19 @@
         });
     };
 
-    // ===== 알림음 + 진동 =====
-    function playAlert() {
-        if ('vibrate' in navigator) navigator.vibrate([200, 80, 200]);
-        try {
-            const ctx  = new AudioContext();
-            const osc  = ctx.createOscillator();
-            const gain = ctx.createGain();
-            osc.connect(gain);
-            gain.connect(ctx.destination);
-            osc.frequency.value = 880;
-            gain.gain.setValueAtTime(0.3, ctx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
-            osc.start(ctx.currentTime);
-            osc.stop(ctx.currentTime + 0.5);
-        } catch(e) {}
-        // 화면 플래시
-        document.body.classList.add('flash');
-        setTimeout(() => document.body.classList.remove('flash'), 600);
-    }
+    // ===== 수신 내역 실시간 감지 =====
+    let isFirstLoad = true;
 
-    // ===== 로그 아이템 추가 =====
+    // 대기 중인 결과값 (0 두번 탭 전까지 저장)
+    window.pendingResult = null;
+
     function addLogItem(d, isNew = false) {
         const list = document.getElementById('logList');
         const emptyMsg = list.querySelector('.empty-msg');
         if (emptyMsg) emptyMsg.remove();
 
         const time = d.timestamp?.toDate
-            ? d.timestamp.toDate().toLocaleString('ko-KR')
-            : '방금';
+            ? d.timestamp.toDate().toLocaleString('ko-KR') : '방금';
 
         const item = document.createElement('div');
         item.className = 'log-item' + (isNew ? ' new-item' : '');
@@ -371,44 +606,573 @@
             <div class="log-meta">
                 <span class="log-id">${d.calcId || ''}</span>
                 <span>${time}</span>
-            </div>
-        `;
+            </div>`;
         list.insertBefore(item, list.firstChild);
     }
 
-    // ===== 실시간 수신 내역 =====
-    let isFirstLoad = true;
-    const q = query(collection(db, 'calculations'), orderBy('timestamp', 'desc'), limit(50));
+    const { collection, query, orderBy, limit, onSnapshot } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+    const db2 = firebase.firestore();
 
-    onSnapshot(q, (snapshot) => {
-        const list = document.getElementById('logList');
+    db2.collection('calculations').orderBy('timestamp', 'desc').limit(50)
+        .onSnapshot(snapshot => {
+            if (snapshot.empty) {
+                document.getElementById('logList').innerHTML = '<div class="empty-msg">아직 수신된 내역이 없어요</div>';
+                isFirstLoad = false;
+                return;
+            }
 
-        if (snapshot.empty) {
-            list.innerHTML = '<div class="empty-msg">아직 수신된 내역이 없어요</div>';
-            isFirstLoad = false;
-            return;
-        }
+            if (isFirstLoad) {
+                document.getElementById('logList').innerHTML = '';
+                snapshot.forEach(doc => addLogItem(doc.data(), false));
+                isFirstLoad = false;
+            } else {
+                snapshot.docChanges().forEach(change => {
+                    if (change.type === 'added' && !snapshot.metadata.hasPendingWrites) {
+                        const d = change.doc.data();
+                        addLogItem(d, true);
+                        // 새 결과값 저장 (숫자만 추출)
+                        window.pendingResult = d.result || null;
+                        console.log('새 결과값 수신:', window.pendingResult);
+                        // 진동 알림
+                        if ('vibrate' in navigator) navigator.vibrate([200, 80, 200]);
+                    }
+                });
+            }
 
-        // 최초 로드: 전체 목록 렌더링
-        if (isFirstLoad) {
-            list.innerHTML = '';
-            snapshot.forEach(doc => addLogItem(doc.data(), false));
-            isFirstLoad = false;
-        } else {
-            // 이후: 새 항목만 추가
-            snapshot.docChanges().forEach(change => {
-                if (change.type === 'added' && !snapshot.metadata.hasPendingWrites) {
-                    addLogItem(change.doc.data(), true);
-                    playAlert();
-                }
-            });
-        }
+            const count = snapshot.size;
+            document.getElementById('countBadge').textContent = count;
+            document.getElementById('countBadge').style.display = 'inline-block';
+        });
 
-        const count = snapshot.size;
-        document.getElementById('countBadge').textContent = count;
-        document.getElementById('countBadge').style.display = 'inline-block';
-    });
+    // 초기화
+    loadDelaySettings();
+
+    // Firebase compat 초기화 (전역 db가 없을 경우 대비)
+    if (!window._fbInitDone) {
+        const firebaseConfig = {
+            apiKey: "AIzaSyDEZlkBRFt4JtR1v3QGaBeTOPvD-Zg0cBs",
+            authDomain: "magic-calculator-5dcac.firebaseapp.com",
+            projectId: "magic-calculator-5dcac",
+            storageBucket: "magic-calculator-5dcac.firebasestorage.app",
+            messagingSenderId: "760520232651",
+            appId: "1:760520232651:web:e22497f76382dc2086954e"
+        };
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+        window._fbInitDone = true;
+    }
 </script>
 
+<script>
+    // ===== Firebase 초기화 =====
+    const firebaseConfig = {
+        apiKey: "AIzaSyDEZlkBRFt4JtR1v3QGaBeTOPvD-Zg0cBs",
+        authDomain: "magic-calculator-5dcac.firebaseapp.com",
+        projectId: "magic-calculator-5dcac",
+        storageBucket: "magic-calculator-5dcac.firebasestorage.app",
+        messagingSenderId: "760520232651",
+        appId: "1:760520232651:web:e22497f76382dc2086954e"
+    };
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+
+    // ===== 계산기 변수 =====
+    let currentValue = '0';
+    let fullExpression = '';
+    let shouldResetDisplay = false;
+    let forceNumber = null;
+    let currentMode = 'normal';
+    let specialSequenceActive = false;
+    let lastResultWas666 = false;
+    let sequenceStarted = false;
+
+    let calcIconTapCount = 0, calcIconTapTimer = null;
+    let equalsTapCount = 0,   equalsTapTimer = null;
+    let percentTapCount = 0,  percentTapTimer = null;
+    const TAP_TIMEOUT = 500;
+
+    let ios26Mode = false;
+    let displayTapCount = 0, displayTapTimer = null;
+    const DISPLAY_TAP_TIMEOUT = 500;
+
+    let longPressTimer = null;
+    const LONG_PRESS_DURATION = 3000;
+    let clearMode = 'all';
+
+    let autoCountMode = false;
+    let countingInterval = null, countingStartDelay = null;
+    let currentOrientation = 'unknown';
+
+    // 메뉴 아이콘 탭 (관리자 패널)
+    let menuTapCount = 0, menuTapTimer = null;
+
+    // 0 두번 탭 (자동 입력 트리거)
+    let zeroTapCount = 0, zeroTapTimer = null;
+    let dotsHidden = false;
+    let autoInputTimer = null;
+
+    const DEFAULT_DELAY_666_STAGE1 = 5000, DEFAULT_DELAY_666_STAGE2 = 10000, DEFAULT_DELAY_666_STAGE3 = 5000;
+    const DEFAULT_DOT_STAGE1_APPEAR = 0, DEFAULT_DOT_STAGE1_DISAPPEAR_BEFORE = 2000;
+    const DEFAULT_DOT_STAGE2_APPEAR = 3000, DEFAULT_DOT_STAGE2_DISAPPEAR_BEFORE = 2000;
+    const DEFAULT_DOT_STAGE3_APPEAR = 3000, DEFAULT_DOT_STAGE3_DISAPPEAR_BEFORE = 2000;
+
+    let DELAY_666_STAGE1 = DEFAULT_DELAY_666_STAGE1, DELAY_666_STAGE2 = DEFAULT_DELAY_666_STAGE2, DELAY_666_STAGE3 = DEFAULT_DELAY_666_STAGE3;
+    let DOT_STAGE1_APPEAR = DEFAULT_DOT_STAGE1_APPEAR, DOT_STAGE1_DISAPPEAR_BEFORE = DEFAULT_DOT_STAGE1_DISAPPEAR_BEFORE;
+    let DOT_STAGE2_APPEAR = DEFAULT_DOT_STAGE2_APPEAR, DOT_STAGE2_DISAPPEAR_BEFORE = DEFAULT_DOT_STAGE2_DISAPPEAR_BEFORE;
+    let DOT_STAGE3_APPEAR = DEFAULT_DOT_STAGE3_APPEAR, DOT_STAGE3_DISAPPEAR_BEFORE = DEFAULT_DOT_STAGE3_DISAPPEAR_BEFORE;
+
+    function loadDelayConfigFromURL() {
+        try {
+            const params = new URLSearchParams(window.location.search);
+            const getMs = (key, def) => { const v = params.get(key); if (!v) return def; const n = parseFloat(v); return isNaN(n) ? def : n * 1000; };
+            DELAY_666_STAGE1 = getMs('d1', DEFAULT_DELAY_666_STAGE1);
+            DELAY_666_STAGE2 = getMs('d2', DEFAULT_DELAY_666_STAGE2);
+            DELAY_666_STAGE3 = getMs('d3', getMs('gap', DEFAULT_DELAY_666_STAGE3));
+            DOT_STAGE1_APPEAR = getMs('dot1On', DEFAULT_DOT_STAGE1_APPEAR);
+            DOT_STAGE1_DISAPPEAR_BEFORE = getMs('dot1Off', DEFAULT_DOT_STAGE1_DISAPPEAR_BEFORE);
+            DOT_STAGE2_APPEAR = getMs('dot2On', DEFAULT_DOT_STAGE2_APPEAR);
+            DOT_STAGE2_DISAPPEAR_BEFORE = getMs('dot2Off', DEFAULT_DOT_STAGE2_DISAPPEAR_BEFORE);
+            DOT_STAGE3_APPEAR = getMs('dot3On', DEFAULT_DOT_STAGE3_APPEAR);
+            DOT_STAGE3_DISAPPEAR_BEFORE = getMs('dot3Off', DEFAULT_DOT_STAGE3_DISAPPEAR_BEFORE);
+        } catch(e) {}
+    }
+
+    const displayElement = document.getElementById('display');
+    const expressionDisplay = document.getElementById('expression');
+    const settingsModal = document.getElementById('settingsModal');
+    const forceNumberInput = document.getElementById('forceNumberInput');
+    const modeIndicator = document.getElementById('modeIndicator');
+    const clearButtonContent = document.getElementById('clearButtonContent');
+    const pmContent = document.getElementById('pmContent');
+    const pmOriginalHTML = pmContent.innerHTML;
+    const dotTop = document.getElementById('dotTop');
+    const dotMid = document.getElementById('dotMid');
+    const dotBot = document.getElementById('dotBot');
+    const clockHour = document.getElementById('clockHour');
+    const calcIconButtons = document.querySelectorAll('.calc-icon-trigger');
+    const equalsButtons = document.querySelectorAll('.equals-trigger');
+    const delayDots = document.querySelectorAll('#calcIconButton .delay-dot');
+
+    const BACKSPACE_SVG = `<svg viewBox="0 0 24 24" class="backspace-icon"><g transform="translate(-1.6 0)"><path d="M4 12 L9 5 H21 V19 H9 Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M12.3 10.3 L16.7 14.7 M16.7 10.3 L12.3 14.7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></g></svg>`;
+
+    let delayTimers = [];
+    function clearAllDelayTimers() { delayTimers.forEach(id => clearTimeout(id)); delayTimers = []; hideDelayDot(); }
+    function showDelayDot() { delayDots.forEach(dot => dot.style.opacity = '1'); }
+    function hideDelayDot() { delayDots.forEach(dot => dot.style.opacity = '0'); }
+    function runDelayWithDot(totalMs, dotAppearOffsetMs, dotDisappearBeforeEndMs, onComplete) {
+        clearAllDelayTimers();
+        if (totalMs <= 0) { onComplete && onComplete(); return; }
+        const appearId   = setTimeout(showDelayDot, Math.max(0, dotAppearOffsetMs));
+        const disappearId = setTimeout(hideDelayDot, Math.max(0, totalMs - dotDisappearBeforeEndMs));
+        const completeId  = setTimeout(() => {
+            hideDelayDot();
+            delayTimers = delayTimers.filter(id => id !== appearId && id !== disappearId && id !== completeId);
+            onComplete && onComplete();
+        }, totalMs);
+        delayTimers.push(appearId, disappearId, completeId);
+    }
+
+    // ===== 자동 입력 (결과값 버튼 애니메이션) =====
+    function triggerAutoInput() {
+        const result = window.pendingResult;
+        if (!result) return;
+
+        const digits = String(result).replace(/[^0-9.]/g, ''); // 숫자와 소수점만
+        if (!digits) return;
+
+        const intervalMs = (parseFloat(localStorage.getItem('admin_digit_interval')) || 0.3) * 1000;
+
+        // 계산기 초기화
+        resetAll();
+
+        digits.split('').forEach((ch, idx) => {
+            setTimeout(() => {
+                // 해당 버튼 찾아서 애니메이션
+                const btnContent = ch === '.' ? '.' : ch;
+                const allBtns = document.querySelectorAll('.button');
+                let targetBtn = null;
+                allBtns.forEach(btn => {
+                    const content = btn.querySelector('.button-content');
+                    if (content && content.textContent.trim() === btnContent) {
+                        targetBtn = btn;
+                    }
+                });
+
+                if (targetBtn) {
+                    targetBtn.classList.remove('auto-pressing');
+                    void targetBtn.offsetWidth; // reflow
+                    targetBtn.classList.add('auto-pressing');
+                    setTimeout(() => targetBtn.classList.remove('auto-pressing'), 180);
+                }
+
+                // 실제 입력
+                if (ch === '.') {
+                    handleNumber('.');
+                } else {
+                    handleNumber(ch);
+                }
+                vibrateDevice();
+            }, idx * intervalMs);
+        });
+
+        // 입력 완료 후 pendingResult 초기화
+        setTimeout(() => {
+            window.pendingResult = null;
+        }, digits.length * intervalMs + 200);
+    }
+
+    // ===== 메뉴 아이콘 탭 → 관리자 패널 =====
+    document.getElementById('menuIcon').addEventListener('click', () => {
+        menuTapCount++;
+        if (menuTapTimer) clearTimeout(menuTapTimer);
+        menuTapTimer = setTimeout(() => { menuTapCount = 0; }, 400);
+        if (menuTapCount >= 1) {
+            menuTapCount = 0;
+            clearTimeout(menuTapTimer);
+            openAdminPanel();
+        }
+    });
+
+    // ===== 0 두번 탭 → 도트 숨김 + 딜레이 후 자동 입력 =====
+    document.getElementById('zeroButton').addEventListener('click', () => {
+        zeroTapCount++;
+        if (zeroTapTimer) clearTimeout(zeroTapTimer);
+        zeroTapTimer = setTimeout(() => { zeroTapCount = 0; }, 400);
+
+        if (zeroTapCount === 2) {
+            zeroTapCount = 0;
+            clearTimeout(zeroTapTimer);
+
+            // 도트 숨기기
+            dotsHidden = true;
+            document.body.classList.add('dots-hidden');
+            vibrateDevice();
+
+            // 딜레이 후 자동 입력
+            const delayMs = (parseFloat(localStorage.getItem('admin_auto_delay')) || 3) * 1000;
+            if (autoInputTimer) clearTimeout(autoInputTimer);
+            autoInputTimer = setTimeout(() => {
+                triggerAutoInput();
+                // 도트 복원
+                dotsHidden = false;
+                document.body.classList.remove('dots-hidden');
+            }, delayMs);
+        }
+    });
+
+    // ===== 자동 카운트 =====
+    async function requestMotionPermission() {
+        if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
+            try {
+                const permission = await DeviceMotionEvent.requestPermission();
+                if (permission === 'granted') startOrientationDetection();
+                else { alert('모션 센서 권한이 필요합니다.'); autoCountMode = false; updateAutoCountUI(); }
+            } catch(e) { alert('센서 권한 요청 실패.'); autoCountMode = false; updateAutoCountUI(); }
+        } else { startOrientationDetection(); }
+    }
+    function startOrientationDetection() { window.addEventListener('deviceorientation', handleOrientation); }
+    function stopOrientationDetection() {
+        window.removeEventListener('deviceorientation', handleOrientation);
+        stopCounting();
+        if (countingStartDelay) { clearTimeout(countingStartDelay); countingStartDelay = null; }
+    }
+    function handleOrientation(event) {
+        if (!autoCountMode) return;
+        const beta = event.beta, gamma = event.gamma;
+        let newOri = 'unknown';
+        if (Math.abs(beta) > 150) newOri = 'down';
+        else if (Math.abs(beta) < 30 && Math.abs(gamma) < 30) newOri = 'up';
+        else if (beta > 70 && beta < 110) newOri = 'vertical';
+        if (newOri !== currentOrientation) { currentOrientation = newOri; handleOrientationChange(newOri); }
+    }
+    function handleOrientationChange(ori) {
+        switch(ori) {
+            case 'down': stopCounting(); if(countingStartDelay){clearTimeout(countingStartDelay);countingStartDelay=null;} resetAll(); vibrateDevice(); break;
+            case 'vertical': if(!countingInterval&&!countingStartDelay){vibrateDevice();countingStartDelay=setTimeout(()=>{startCounting();countingStartDelay=null;},2000);} break;
+            case 'up': if(countingStartDelay){clearTimeout(countingStartDelay);countingStartDelay=null;} stopCounting(); if(autoCountMode){autoCountMode=false;stopOrientationDetection();currentOrientation='unknown';updateAutoCountUI();} vibrateDevice(); break;
+        }
+    }
+    function startCounting() {
+        if (countingInterval) return;
+        if (currentValue === '0' || currentValue === '') { currentValue = '1'; fullExpression = '1'; updateDisplay(currentValue); }
+        countingInterval = setInterval(() => {
+            let num = parseInt(currentValue); if(isNaN(num))num=0; num++;
+            currentValue = num.toString(); fullExpression = num.toString();
+            updateDisplay(currentValue); updateClearButtonState();
+        }, 1000);
+        vibrateDevice();
+    }
+    function stopCounting() { if(countingInterval){clearInterval(countingInterval);countingInterval=null;vibrateDevice();} }
+    function toggleAutoCountMode() {
+        autoCountMode = !autoCountMode;
+        if (autoCountMode) requestMotionPermission(); else { stopOrientationDetection(); currentOrientation='unknown'; }
+        updateAutoCountUI(); vibrateDevice();
+    }
+    function updateAutoCountUI() { document.body.classList.toggle('auto-count-mode', autoCountMode); updateModeIndicator(); }
+
+    // ===== Clear 버튼 =====
+    function updateClearButtonState() {
+        const hasInput = (fullExpression !== '' || currentValue !== '0');
+        if (!ios26Mode) {
+            if (hasInput) { clearMode = 'backspace'; clearButtonContent.innerHTML = BACKSPACE_SVG; }
+            else          { clearMode = 'all';       clearButtonContent.textContent = 'AC'; }
+        } else {
+            clearMode = 'all'; clearButtonContent.innerHTML = BACKSPACE_SVG;
+        }
+    }
+
+    function updateModeIndicator() {
+        if (ios26Mode && clockHour) {
+            let x2=5, y2=12;
+            if(autoCountMode){x2=6.5;y2=8.5;} else if(currentMode==='force'){x2=7;y2=17;} else if(currentMode==='666'){x2=7;y2=7;}
+            clockHour.setAttribute('x2',String(x2)); clockHour.setAttribute('y2',String(y2));
+            modeIndicator.textContent=''; return;
+        }
+        if(autoCountMode){dotTop.style.opacity='1';dotMid.style.opacity='1';dotBot.style.opacity='0';}
+        else if(currentMode==='force'){dotTop.style.opacity='0';dotMid.style.opacity='1';dotBot.style.opacity='1';}
+        else if(currentMode==='666'){dotTop.style.opacity='1';dotMid.style.opacity='0';dotBot.style.opacity='1';}
+        else{dotTop.style.opacity='1';dotMid.style.opacity='1';dotBot.style.opacity='1';}
+        modeIndicator.textContent='';
+    }
+
+    function applyLayoutMode() {
+        document.body.classList.toggle('ios26-theme', ios26Mode);
+        if (ios26Mode) pmContent.textContent = 'AC';
+        else pmContent.innerHTML = pmOriginalHTML;
+        updateClearButtonState(); updateModeIndicator();
+    }
+
+    // ===== 탭 이벤트 =====
+    calcIconButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            calcIconTapCount++;
+            if (calcIconTapTimer) clearTimeout(calcIconTapTimer);
+            calcIconTapTimer = setTimeout(() => { calcIconTapCount = 0; }, TAP_TIMEOUT);
+            if (calcIconTapCount === 3) { calcIconTapCount=0; clearTimeout(calcIconTapTimer); vibrateDevice(); openSettings(); }
+        });
+        btn.addEventListener('touchstart', () => { longPressTimer = setTimeout(() => { vibrateDevice(); openSettings(); }, LONG_PRESS_DURATION); });
+        btn.addEventListener('touchend',   () => clearTimeout(longPressTimer));
+        btn.addEventListener('touchmove',  () => clearTimeout(longPressTimer));
+        btn.addEventListener('mousedown',  () => { longPressTimer = setTimeout(() => { vibrateDevice(); openSettings(); }, LONG_PRESS_DURATION); });
+        btn.addEventListener('mouseup',    () => clearTimeout(longPressTimer));
+        btn.addEventListener('mouseleave', () => clearTimeout(longPressTimer));
+    });
+
+    equalsButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            equalsTapCount++;
+            if (equalsTapTimer) clearTimeout(equalsTapTimer);
+            equalsTapTimer = setTimeout(() => { equalsTapCount = 0; }, TAP_TIMEOUT);
+            if (equalsTapCount === 3) {
+                equalsTapCount=0; clearTimeout(equalsTapTimer); vibrateDevice();
+                clearAllDelayTimers(); specialSequenceActive=false; lastResultWas666=false; sequenceStarted=false;
+                currentMode = (currentMode === '666') ? 'normal' : '666'; updateModeIndicator();
+            }
+        });
+    });
+
+    document.querySelector('.percent-button').addEventListener('click', () => {
+        percentTapCount++;
+        if (percentTapTimer) clearTimeout(percentTapTimer);
+        percentTapTimer = setTimeout(() => { percentTapCount = 0; }, TAP_TIMEOUT);
+        if (percentTapCount === 3) { percentTapCount=0; clearTimeout(percentTapTimer); toggleAutoCountMode(); return; }
+    });
+
+    displayElement.addEventListener('click', () => {
+        displayTapCount++;
+        if (displayTapTimer) clearTimeout(displayTapTimer);
+        displayTapTimer = setTimeout(() => { displayTapCount = 0; }, DISPLAY_TAP_TIMEOUT);
+        if (displayTapCount === 3) { displayTapCount=0; clearTimeout(displayTapTimer); ios26Mode=!ios26Mode; applyLayoutMode(); }
+    });
+
+    forceNumberInput.addEventListener('input', e => { const v = e.target.value; forceNumber = v==='' ? null : parseFloat(v); });
+
+    function openSettings()  { settingsModal.classList.add('active'); forceNumberInput.focus(); }
+    function closeSettings() {
+        settingsModal.classList.remove('active');
+        if (forceNumber !== null && !isNaN(forceNumber)) { currentMode='force'; updateModeIndicator(); }
+    }
+    function vibrateDevice() { if('vibrate' in navigator) navigator.vibrate(50); }
+
+    // ===== 디스플레이 =====
+    function updateDisplay(value) {
+        const containerWidth = displayElement.parentElement.offsetWidth - 48;
+        let formattedValue = formatDisplayExpression(value);
+        displayElement.textContent = formattedValue;
+        const me = document.createElement('span');
+        me.style.cssText = `font-weight:${ios26Mode?'500':'400'};font-family:${getComputedStyle(displayElement).fontFamily};visibility:hidden;position:absolute;white-space:nowrap`;
+        me.textContent = formattedValue;
+        document.body.appendChild(me);
+        let fs = 80; me.style.fontSize = fs + 'px';
+        if (me.offsetWidth > containerWidth) { fs = Math.max(Math.floor(fs*0.6), Math.floor((containerWidth/me.offsetWidth)*fs)); }
+        document.body.removeChild(me);
+        displayElement.style.fontSize = fs + 'px';
+        setTimeout(() => { if(displayElement.scrollWidth>displayElement.clientWidth) displayElement.scrollLeft=displayElement.scrollWidth-displayElement.clientWidth; }, 0);
+    }
+    function updateExpression(text) { expressionDisplay.textContent = text; }
+
+    // ===== 입력 처리 =====
+    function handleNumber(num) {
+        vibrateDevice();
+        if (autoCountMode) return;
+        const lastChar = fullExpression.slice(-1);
+        if (shouldResetDisplay) {
+            if (fullExpression && '÷×−+'.includes(lastChar)) { currentValue=(num==='.'?'0.':num); fullExpression+=(num==='.'?'0.':num); }
+            else { currentValue=(num==='.'?'0.':num); fullExpression=(num==='.'?'0.':num); }
+            shouldResetDisplay = false;
+        } else {
+            if (currentValue==='0' && num!=='.') {
+                currentValue=num;
+                if(fullExpression==='0'||fullExpression==='') fullExpression=num; else fullExpression+=num;
+            } else {
+                if(num==='.'&&currentValue.includes('.')) return;
+                currentValue+=num; fullExpression+=num;
+            }
+        }
+        updateDisplay(fullExpression||currentValue);
+        if (currentMode==='666'&&lastResultWas666&&!sequenceStarted) {
+            const clean=fullExpression.replace(/,/g,'');
+            if(clean==='666+666'){
+                lastResultWas666=false;sequenceStarted=true;specialSequenceActive=true;
+                expressionDisplay.classList.remove('visible');updateExpression('');
+                runDelayWithDot(DELAY_666_STAGE1,DOT_STAGE1_APPEAR,DOT_STAGE1_DISAPPEAR_BEFORE,()=>{
+                    if(!specialSequenceActive||currentMode!=='666')return;
+                    fullExpression='999+999';currentValue='999';updateDisplay(fullExpression);updateClearButtonState();
+                });
+            }
+        }
+        updateClearButtonState();
+    }
+
+    function handleOperator(op) {
+        vibrateDevice(); if(autoCountMode)return;
+        if(shouldResetDisplay){expressionDisplay.classList.remove('visible');updateExpression('');shouldResetDisplay=false;}
+        if(fullExpression&&'÷×−+'.includes(fullExpression.slice(-1))) fullExpression=fullExpression.slice(0,-1)+op;
+        else fullExpression=(fullExpression==='')?currentValue+op:fullExpression+op;
+        currentValue='0'; updateDisplay(fullExpression); updateClearButtonState();
+    }
+
+    function handleFunction(func) {
+        vibrateDevice();
+        switch(func) {
+            case '±':
+                if(ios26Mode){resetAll();updateClearButtonState();return;}
+                if(autoCountMode)return;
+                if(currentValue!=='0'){
+                    const num=parseFloat(currentValue); currentValue=(-num).toString();
+                    const m=fullExpression.match(/[\d.]+$/);
+                    if(m) fullExpression=fullExpression.slice(0,-m[0].length)+currentValue; else fullExpression=currentValue;
+                    updateDisplay(fullExpression||currentValue);
+                }
+                break;
+            case '%':
+                if(autoCountMode)return;
+                if(currentValue!=='0'){
+                    const numP=parseFloat(currentValue)/100; currentValue=numP.toString();
+                    const mp=fullExpression.match(/[\d.]+$/);
+                    if(mp) fullExpression=fullExpression.slice(0,-mp[0].length)+currentValue; else fullExpression=currentValue;
+                    updateDisplay(fullExpression||currentValue);
+                }
+                break;
+        }
+        updateClearButtonState();
+    }
+
+    function resetAll() {
+        clearAllDelayTimers(); specialSequenceActive=false; lastResultWas666=false; sequenceStarted=false;
+        stopCounting(); if(countingStartDelay){clearTimeout(countingStartDelay);countingStartDelay=null;}
+        currentValue='0'; fullExpression=''; shouldResetDisplay=false;
+        expressionDisplay.classList.remove('visible'); updateExpression(''); updateDisplay('0'); clearMode='all';
+    }
+
+    function handleClear() {
+        vibrateDevice(); if(ios26Mode){handleBackspace();return;}
+        if(clearMode==='all'){resetAll();}
+        else{
+            if(fullExpression){fullExpression=fullExpression.slice(0,-1);const m=fullExpression.match(/([\d.]+)$/);currentValue=m?m[1]:'0';}
+            else{if(currentValue.length>1&&currentValue!=='Error')currentValue=currentValue.slice(0,-1);else currentValue='0';}
+            if(fullExpression===''&&currentValue==='0'){expressionDisplay.classList.remove('visible');updateExpression('');}
+            updateDisplay(fullExpression||currentValue);
+        }
+        updateClearButtonState();
+    }
+
+    function handleBackspace() {
+        clearAllDelayTimers(); specialSequenceActive=false; lastResultWas666=false; sequenceStarted=false;
+        if(fullExpression){fullExpression=fullExpression.slice(0,-1);const m=fullExpression.match(/([\d.]+)$/);currentValue=m?m[1]:'0';}
+        else{if(currentValue.length>1&&currentValue!=='Error')currentValue=currentValue.slice(0,-1);else currentValue='0';}
+        if(fullExpression===''&&currentValue==='0'){expressionDisplay.classList.remove('visible');updateExpression('');}
+        updateDisplay(fullExpression||currentValue); updateClearButtonState();
+    }
+
+    function handleCalcIcon() { if(ios26Mode)handleFunction('±'); }
+
+    function handleEquals() {
+        vibrateDevice(); if(autoCountMode)return;
+        if(!fullExpression||fullExpression==='0')return;
+        let result; const cleanExpr=fullExpression.replace(/,/g,'');
+
+        if(currentMode==='force'&&forceNumber!==null){
+            updateExpression(formatDisplayExpression(fullExpression)+'='); expressionDisplay.classList.add('visible');
+            result=forceNumber; currentMode='normal'; clearAllDelayTimers(); specialSequenceActive=false; lastResultWas666=false; sequenceStarted=false; updateModeIndicator();
+        } else if(currentMode==='666'){
+            if(specialSequenceActive&&cleanExpr==='999+999'){
+                updateExpression(formatDisplayExpression(fullExpression)+'='); expressionDisplay.classList.add('visible');
+                result=evaluateExpression(cleanExpr);
+                runDelayWithDot(DELAY_666_STAGE2,DOT_STAGE2_APPEAR,DOT_STAGE2_DISAPPEAR_BEFORE,()=>{
+                    if(!specialSequenceActive||currentMode!=='666')return;
+                    updateExpression('666+666='); expressionDisplay.classList.add('visible');
+                    runDelayWithDot(DELAY_666_STAGE3,DOT_STAGE3_APPEAR,DOT_STAGE3_DISAPPEAR_BEFORE,()=>{
+                        if(!specialSequenceActive||currentMode!=='666')return;
+                        currentValue='1332'; updateDisplay(formatNumber(1332));
+                        specialSequenceActive=false; lastResultWas666=false; sequenceStarted=false; currentMode='normal'; updateModeIndicator();
+                    });
+                });
+            } else {
+                updateExpression(formatDisplayExpression(fullExpression)+'='); expressionDisplay.classList.add('visible');
+                result=evaluateExpression(cleanExpr);
+            }
+        } else {
+            updateExpression(formatDisplayExpression(fullExpression)+'='); expressionDisplay.classList.add('visible');
+            try{result=evaluateExpression(cleanExpr);}catch(e){result='Error';}
+        }
+
+        if(result==='Error'||isNaN(result)||!isFinite(result)){currentValue='Error';updateDisplay('Error');}
+        else{currentValue=result.toString();updateDisplay(formatNumber(result));}
+
+        if(currentMode==='666'&&Number(result)===666){lastResultWas666=true;sequenceStarted=false;}
+        else{lastResultWas666=false;sequenceStarted=false;}
+
+        fullExpression=''; shouldResetDisplay=true;
+        if(!ios26Mode){clearMode='all';clearButtonContent.textContent='AC';}
+    }
+
+    function evaluateExpression(expr) {
+        expr=expr.replace(/\s/g,'').replace(/×/g,'*').replace(/÷/g,'/').replace(/−/g,'-');
+        try{return Function('"use strict";return('+expr+')')();}catch(e){return 'Error';}
+    }
+    function formatNumber(num) {
+        if(typeof num==='string')num=parseFloat(num); if(isNaN(num))return '0';
+        if(Math.abs(num)>=1e10||(Math.abs(num)<1e-6&&num!==0))return num.toExponential(6).replace(/e\+?/,'e');
+        let numStr=num.toString(); if(numStr.includes('e'))return numStr;
+        let parts=numStr.split('.'); let int=parts[0]; let dec=parts[1]||'';
+        int=int.replace(/\B(?=(\d{3})+(?!\d))/g,',');
+        if(dec){dec=dec.substring(0,8).replace(/0+$/,'');if(dec)return int+'.'+dec;}
+        return int;
+    }
+    function formatDisplayExpression(expr) {
+        return expr.replace(/\d+\.?\d*/g,match=>{
+            let num=parseFloat(match); if(isNaN(num))return match;
+            let parts=match.split('.'); parts[0]=parts[0].replace(/\B(?=(\d{3})+(?!\d))/g,','); return parts.join('.');
+        });
+    }
+
+    settingsModal.addEventListener('click', e => { if(e.target===settingsModal)closeSettings(); });
+
+    // 초기화
+    loadDelayConfigFromURL();
+    updateDisplay(currentValue);
+    updateClearButtonState();
+    updateModeIndicator();
+    applyLayoutMode();
+</script>
 </body>
 </html>
