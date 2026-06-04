@@ -590,7 +590,7 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
             <button class="copy-select-btn" id="copyBtn2" onclick="selectCopyIndex(2)">3번째</button>
             <button class="copy-select-btn" id="copyBtn3" onclick="selectCopyIndex(3)">결과값</button>
         </div>
-        <div class="copy-result-preview" id="copyPreview">—</div>
+
     </div>
 
     <!-- 수신 내역 -->
@@ -776,7 +776,6 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
                         window.pendingResult = d.result || null;
                         console.log('새 결과값 수신:', window.pendingResult);
                         // 자동 복사
-                        updateCopyPreview(d);
                         autoCopy(d);
                         // 진동 알림
                         if ('vibrate' in navigator) navigator.vibrate([200, 80, 200]);
@@ -1236,7 +1235,6 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
         document.querySelectorAll('.copy-select-btn').forEach((b, i) => {
             b.classList.toggle('selected', i === idx);
         });
-        // 선택 바꾸면 현재 최신 데이터로 즉시 복사
         autoCopyFromLatest();
     };
 
@@ -1260,24 +1258,11 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
         }
     }
 
-    function updateCopyPreview(data) {
-        const preview = document.getElementById('copyPreview');
-        if (!preview) return;
-        if (!data) { preview.textContent = '—'; return; }
-        const val = getTargetValue(data);
-        preview.textContent = val ? val : '—';
-    }
-
-    // 클립보드 자동 복사
+// 클립보드 자동 복사
     function autoCopy(data) {
         const val = getTargetValue(data);
         if (!val) return;
         navigator.clipboard.writeText(val).then(() => {
-            const preview = document.getElementById('copyPreview');
-            if (preview) {
-                preview.textContent = `✅ ${val} 복사됨`;
-                setTimeout(() => updateCopyPreview(data), 1500);
-            }
             vibrateDevice();
         }).catch(e => console.log('복사 실패(포그라운드 필요):', e));
     }
@@ -1292,7 +1277,6 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
                 .get();
             if (!snap.empty) {
                 const d = snap.docs[0].data();
-                updateCopyPreview(d);
                 autoCopy(d);
             }
         } catch(e) { console.error('자동 복사 실패:', e); }
@@ -1312,7 +1296,7 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
                 equalLongActive = true;
                 vibrateDevice();
                 await showPeekPopup();
-            }, 2000);
+            }, 1000);
         };
         const endLong = () => {
             clearTimeout(equalLongTimer);
