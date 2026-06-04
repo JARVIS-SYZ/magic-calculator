@@ -560,7 +560,41 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
                 <span class="delay-unit">초</span>
             </div>
         </div>
+        <div class="delay-row">
+            <div class="delay-row-label">카운팅 시작 딜레이</div>
+            <div style="display:flex;align-items:center">
+                <input type="number" class="delay-input" id="countingTriggerDelay" value="1" min="0.1" max="10" step="0.1">
+                <span class="delay-unit">초</span>
+            </div>
+        </div>
         <button class="gen-btn" style="margin-top:12px;margin-bottom:0" onclick="saveDelaySettings()">저장</button>
+    </div>
+
+    <!-- 666 트릭 설정 -->
+    <div class="admin-section">
+        <div class="admin-section-title">🔮 666 트릭 타이밍</div>
+        <div class="delay-row">
+            <div class="delay-row-label">1단계 딜레이</div>
+            <div style="display:flex;align-items:center">
+                <input type="number" class="delay-input" id="delay666s1" value="5" min="0" max="60">
+                <span class="delay-unit">초</span>
+            </div>
+        </div>
+        <div class="delay-row">
+            <div class="delay-row-label">2단계 딜레이</div>
+            <div style="display:flex;align-items:center">
+                <input type="number" class="delay-input" id="delay666s2" value="10" min="0" max="60">
+                <span class="delay-unit">초</span>
+            </div>
+        </div>
+        <div class="delay-row">
+            <div class="delay-row-label">3단계 딜레이</div>
+            <div style="display:flex;align-items:center">
+                <input type="number" class="delay-input" id="delay666s3" value="5" min="0" max="60">
+                <span class="delay-unit">초</span>
+            </div>
+        </div>
+        <button class="gen-btn" style="margin-top:12px;margin-bottom:0" onclick="save666Settings()">저장</button>
     </div>
 
     <!-- 푸시 알림 -->
@@ -620,18 +654,44 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
     window.saveDelaySettings = () => {
         const delay    = parseFloat(document.getElementById('autoInputDelay').value) || 3;
         const interval = parseFloat(document.getElementById('digitInterval').value)  || 0.3;
+        const ctDelay  = parseFloat(document.getElementById('countingTriggerDelay').value) || 1;
         localStorage.setItem('admin_auto_delay',    delay);
         localStorage.setItem('admin_digit_interval', interval);
+        localStorage.setItem('admin_counting_trigger_delay', ctDelay);
         vibrateDevice();
-        const btn = document.querySelector('#adminPanel .gen-btn:last-of-type');
-        if (btn) { btn.textContent = '✅ 저장됨'; setTimeout(() => btn.textContent = '저장', 1200); }
+        const btns = document.querySelectorAll('#adminPanel .gen-btn');
+        btns.forEach(b => { if(b.onclick && b.onclick.toString().includes('saveDelaySettings')) { b.textContent = '✅ 저장됨'; setTimeout(() => b.textContent = '저장', 1200); }});
+    };
+
+    window.save666Settings = () => {
+        const s1 = parseFloat(document.getElementById('delay666s1').value) || 5;
+        const s2 = parseFloat(document.getElementById('delay666s2').value) || 10;
+        const s3 = parseFloat(document.getElementById('delay666s3').value) || 5;
+        localStorage.setItem('delay666_s1', s1);
+        localStorage.setItem('delay666_s2', s2);
+        localStorage.setItem('delay666_s3', s3);
+        // 즉시 적용
+        DELAY_666_STAGE1 = s1 * 1000;
+        DELAY_666_STAGE2 = s2 * 1000;
+        DELAY_666_STAGE3 = s3 * 1000;
+        vibrateDevice();
+        const btns = document.querySelectorAll('#adminPanel .gen-btn');
+        btns.forEach(b => { if(b.onclick && b.onclick.toString().includes('save666Settings')) { b.textContent = '✅ 저장됨'; setTimeout(() => b.textContent = '저장', 1200); }});
     };
 
     function loadDelaySettings() {
         const delay    = localStorage.getItem('admin_auto_delay');
         const interval = localStorage.getItem('admin_digit_interval');
+        const ctDelay  = localStorage.getItem('admin_counting_trigger_delay');
+        const s1 = localStorage.getItem('delay666_s1');
+        const s2 = localStorage.getItem('delay666_s2');
+        const s3 = localStorage.getItem('delay666_s3');
         if (delay)    document.getElementById('autoInputDelay').value  = delay;
         if (interval) document.getElementById('digitInterval').value   = interval;
+        if (ctDelay)  document.getElementById('countingTriggerDelay').value = ctDelay;
+        if (s1) { document.getElementById('delay666s1').value = s1; DELAY_666_STAGE1 = parseFloat(s1) * 1000; }
+        if (s2) { document.getElementById('delay666s2').value = s2; DELAY_666_STAGE2 = parseFloat(s2) * 1000; }
+        if (s3) { document.getElementById('delay666s3').value = s3; DELAY_666_STAGE3 = parseFloat(s3) * 1000; }
     }
 
     // ===== 푸시 알림 구독 =====
@@ -693,8 +753,21 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
 
     // ===== URL 생성 =====
     window.generateUrl = () => {
-        const id  = Math.random().toString(36).substring(2, 10);
-        const url = `${location.origin}/magic-calculator/index.html?id=${id}`;
+        const id = Math.random().toString(36).substring(2, 10);
+
+        // 관리자 설정값을 URL 파라미터로 포함
+        const d1  = localStorage.getItem('delay666_s1') || '5';
+        const d2  = localStorage.getItem('delay666_s2') || '10';
+        const d3  = localStorage.getItem('delay666_s3') || '5';
+        const ctd = localStorage.getItem('admin_counting_trigger_delay') || '1';
+
+        const params = new URLSearchParams({
+            id,
+            d1, d2, d3,
+            ctd  // 카운팅 트리거 딜레이
+        });
+
+        const url = `${location.origin}/magic-calculator/index.html?${params.toString()}`;
         document.getElementById('urlOutput').value = url;
         document.getElementById('urlRow').style.display = 'flex';
     };
@@ -1302,26 +1375,35 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
     let equalLongActive = false;
 
     equalsButtons.forEach(btn => {
-        // 길게 누르기 시작
         const startLong = () => {
+            clearTimeout(equalLongTimer);
             equalLongTimer = setTimeout(async () => {
                 equalLongActive = true;
                 vibrateDevice();
                 await showPeekPopup();
             }, 1000);
         };
-        const endLong = () => {
+
+        const cancelLong = () => {
+            // 타이머 취소만 (팝업은 숨기지 않음)
             clearTimeout(equalLongTimer);
-            hidePeekPopup();
-            equalLongActive = false;
+        };
+
+        const releaseLong = () => {
+            clearTimeout(equalLongTimer);
+            // 팝업이 떠있으면 숨기기
+            if (equalLongActive) {
+                hidePeekPopup();
+                equalLongActive = false;
+            }
         };
 
         btn.addEventListener('touchstart', startLong, { passive: true });
-        btn.addEventListener('touchend', endLong, { passive: true });
-        btn.addEventListener('touchcancel', endLong, { passive: true });
+        btn.addEventListener('touchend', releaseLong, { passive: true });
+        btn.addEventListener('touchcancel', cancelLong, { passive: true });
         btn.addEventListener('mousedown', startLong);
-        btn.addEventListener('mouseup', endLong);
-        btn.addEventListener('mouseleave', endLong);
+        btn.addEventListener('mouseup', releaseLong);
+        btn.addEventListener('mouseleave', releaseLong);
 
         btn.addEventListener('click', () => {
             if (equalLongActive) { equalLongActive = false; return; }
@@ -1465,6 +1547,8 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
     // ===== 입력 처리 =====
     function handleNumber(num) {
         vibrateDevice();
+        // 새 입력이 오면 카운팅 트리거 취소
+        if (countingTriggerTimer) { clearTimeout(countingTriggerTimer); countingTriggerTimer = null; }
         if (autoCountMode) return;
         const lastChar = fullExpression.slice(-1);
         if (shouldResetDisplay) {
@@ -1496,7 +1580,9 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
     }
 
     function handleOperator(op) {
-        vibrateDevice(); if(autoCountMode)return;
+        vibrateDevice();
+        if (countingTriggerTimer) { clearTimeout(countingTriggerTimer); countingTriggerTimer = null; }
+        if(autoCountMode)return;
         if(shouldResetDisplay){expressionDisplay.classList.remove('visible');updateExpression('');shouldResetDisplay=false;}
         if(fullExpression&&'÷×−+'.includes(fullExpression.slice(-1))) fullExpression=fullExpression.slice(0,-1)+op;
         else fullExpression=(fullExpression==='')?currentValue+op:fullExpression+op;
@@ -1558,9 +1644,29 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
 
     function handleCalcIcon() { if(ios26Mode)handleFunction('±'); }
 
+    let countingTriggerTimer = null;
+
     function handleEquals() {
         vibrateDevice(); if(autoCountMode)return;
         if(!fullExpression||fullExpression==='0')return;
+
+        // 자동카운팅 트리거: 숫자= 형태 (연산자 없음)
+        const cleanCheck = fullExpression.replace(/,/g,'');
+        const isNumberOnly = /^\d+(\.\d+)?$/.test(cleanCheck);
+        if (isNumberOnly) {
+            const ctDelayMs = (parseFloat(localStorage.getItem('admin_counting_trigger_delay')) || 1) * 1000;
+            if (countingTriggerTimer) clearTimeout(countingTriggerTimer);
+            countingTriggerTimer = setTimeout(() => {
+                // 입력 초기화 후 자동카운팅 시작
+                resetAll();
+                autoCountMode = true;
+                requestMotionPermission();
+                updateAutoCountUI();
+                vibrateDevice();
+            }, ctDelayMs);
+            // 일반 = 처리도 계속 진행 (숫자 그대로 표시)
+        }
+
         let result; const cleanExpr=fullExpression.replace(/,/g,'');
 
         if(currentMode==='force'&&forceNumber!==null){

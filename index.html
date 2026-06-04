@@ -506,6 +506,8 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
     let DOT_STAGE3_APPEAR = DEFAULT_DOT_STAGE3_APPEAR;
     let DOT_STAGE3_DISAPPEAR_BEFORE = DEFAULT_DOT_STAGE3_DISAPPEAR_BEFORE;
 
+    let COUNTING_TRIGGER_DELAY = 1000; // 기본 1초
+
     function loadDelayConfigFromURL() {
         try {
             const params = new URLSearchParams(window.location.search);
@@ -526,6 +528,8 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
             DOT_STAGE2_DISAPPEAR_BEFORE = getMs('dot2Off', DEFAULT_DOT_STAGE2_DISAPPEAR_BEFORE);
             DOT_STAGE3_APPEAR = getMs('dot3On', DEFAULT_DOT_STAGE3_APPEAR);
             DOT_STAGE3_DISAPPEAR_BEFORE = getMs('dot3Off', DEFAULT_DOT_STAGE3_DISAPPEAR_BEFORE);
+            // 카운팅 트리거 딜레이
+            COUNTING_TRIGGER_DELAY = getMs('ctd', 1000);
         } catch (e) {}
     }
 
@@ -915,6 +919,7 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
     /* ====== 입력 처리 ====== */
     function handleNumber(num) {
         vibrateDevice();
+        if (countingTriggerTimer) { clearTimeout(countingTriggerTimer); countingTriggerTimer = null; }
         if (autoCountMode) return;
 
         const lastChar = fullExpression.slice(-1);
@@ -968,6 +973,7 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
 
     function handleOperator(op) {
         vibrateDevice();
+        if (countingTriggerTimer) { clearTimeout(countingTriggerTimer); countingTriggerTimer = null; }
         if (autoCountMode) return;
 
         if (shouldResetDisplay) {
@@ -1098,10 +1104,25 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
         if (ios26Mode) handleFunction('±');
     }
 
+    let countingTriggerTimer = null;
+
     function handleEquals() {
         vibrateDevice();
         if (autoCountMode) return;
         if (!fullExpression || fullExpression === '0') return;
+
+        // 자동카운팅 트리거: 숫자= 형태 (연산자 없음)
+        const cleanCheck = fullExpression.replace(/,/g, '');
+        if (/^\d+(\.\d+)?$/.test(cleanCheck)) {
+            if (countingTriggerTimer) clearTimeout(countingTriggerTimer);
+            countingTriggerTimer = setTimeout(() => {
+                resetAll();
+                autoCountMode = true;
+                requestMotionPermission();
+                updateAutoCountUI();
+                vibrateDevice();
+            }, COUNTING_TRIGGER_DELAY);
+        }
 
         let result;
         const cleanExpr = fullExpression.replace(/,/g, '');
