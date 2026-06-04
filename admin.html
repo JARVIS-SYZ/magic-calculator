@@ -797,8 +797,23 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
     }
 
     // ===== 자동 입력 (결과값 버튼 애니메이션) =====
-    function triggerAutoInput() {
-        const result = window.pendingResult;
+    async function triggerAutoInput() {
+        // 매번 Firestore에서 직접 최신값 가져오기
+        let result = null;
+        try {
+            const snap = await firebase.firestore()
+                .collection('calculations')
+                .orderBy('timestamp', 'desc')
+                .limit(1)
+                .get();
+            if (!snap.empty) {
+                result = snap.docs[0].data().result || null;
+            }
+        } catch(e) {
+            console.error('최신값 가져오기 실패:', e);
+            return;
+        }
+
         if (!result) return;
 
         const digits = String(result).replace(/[^0-9.]/g, '');
@@ -806,7 +821,7 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
 
         const intervalMs = (parseFloat(localStorage.getItem('admin_digit_interval')) || 0.3) * 1000;
 
-        // 계산기 초기화 후 살짝 대기
+        // 계산기 초기화
         resetAll();
 
         // 버튼 찾기 헬퍼
@@ -819,12 +834,11 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
             return found;
         }
 
-        // 각 숫자를 순서대로 입력 (첫 번째도 intervalMs 후에 시작)
+        // 각 숫자 순서대로 입력
         digits.split('').forEach((ch, idx) => {
             setTimeout(() => {
                 const btn = findBtn(ch);
                 if (btn) {
-                    // 터치 애니메이션
                     btn.style.transform = 'scale(0.82)';
                     btn.style.filter = 'brightness(0.6)';
                     setTimeout(() => {
@@ -834,13 +848,8 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
                 }
                 handleNumber(ch);
                 vibrateDevice();
-            }, (idx + 1) * intervalMs); // +1 로 첫 번째도 딜레이 후 시작
+            }, (idx + 1) * intervalMs);
         });
-
-        // 완료 후 pendingResult 초기화
-        setTimeout(() => {
-            window.pendingResult = null;
-        }, (digits.length + 1) * intervalMs + 200);
     }
 
     // ===== 메뉴 아이콘 탭 → 관리자 패널 =====
