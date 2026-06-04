@@ -412,7 +412,7 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
                 </div>
                 <div class="delay-dot"></div>
             </button>
-            <button class="button number" id="zeroButton" onclick="handleNumber('0')"><div class="button-content">0</div></button>
+            <button class="button number" id="zeroButton"><div class="button-content">0</div></button>
             <button class="button number" onclick="handleNumber('.')"><div class="button-content">.</div></button>
             <button class="button operator equals-trigger" id="equalsButton" onclick="handleEquals()">
                 <div class="button-content">=</div>
@@ -866,6 +866,9 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
 
     // ===== 0 두번 탭 → 도트 숨김 + 딜레이 후 자동 입력 =====
     document.getElementById('zeroButton').addEventListener('click', () => {
+        // 항상 0 입력은 실행
+        handleNumber('0');
+
         zeroTapCount++;
         if (zeroTapTimer) clearTimeout(zeroTapTimer);
         zeroTapTimer = setTimeout(() => { zeroTapCount = 0; }, 400);
@@ -884,7 +887,6 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
             if (autoInputTimer) clearTimeout(autoInputTimer);
             autoInputTimer = setTimeout(() => {
                 triggerAutoInput();
-                // 도트 복원
                 dotsHidden = false;
                 document.body.classList.remove('dots-hidden');
             }, delayMs);
