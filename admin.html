@@ -331,6 +331,92 @@ body.ios26-theme .display-text { font-weight: 500; }
 #calcIconPlusMinus { display: none; font-size: calc(var(--btn-w) * 0.36); font-weight: 600; }
 body.ios26-theme #calcIconSvg { display: none; }
 body.ios26-theme #calcIconPlusMinus { display: block; }
+
+/* ===== = 길게 누르기 팝업 ===== */
+.peek-popup {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(28, 28, 30, 0.97);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 20px;
+    padding: 28px 32px;
+    z-index: 3000;
+    display: none;
+    flex-direction: column;
+    align-items: flex-end;
+    min-width: 200px;
+    max-width: 85vw;
+    animation: popIn 0.15s ease;
+}
+.peek-popup.active { display: flex; }
+@keyframes popIn {
+    from { transform: translate(-50%, -50%) scale(0.88); opacity: 0; }
+    to   { transform: translate(-50%, -50%) scale(1);    opacity: 1; }
+}
+.peek-number {
+    font-size: clamp(28px, 8vw, 52px);
+    font-weight: 300;
+    color: #fff;
+    line-height: 1.25;
+    text-align: right;
+    letter-spacing: -0.5px;
+}
+.peek-number:not(:last-child) {
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    padding-bottom: 10px;
+    margin-bottom: 10px;
+    width: 100%;
+}
+
+/* 관리자 패널 복사 선택 */
+.copy-select-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+}
+.copy-select-btn {
+    flex: 1;
+    min-width: 60px;
+    background: #2c2c2e;
+    border: 1.5px solid transparent;
+    border-radius: 10px;
+    padding: 10px 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #888;
+    cursor: pointer;
+    text-align: center;
+}
+.copy-select-btn.selected {
+    border-color: #ff9f0a;
+    color: #ff9f0a;
+    background: #2a1f00;
+}
+.copy-select-btn:active { opacity: 0.7; }
+.copy-result-btn {
+    width: 100%;
+    background: #ff9f0a;
+    border: none;
+    border-radius: 12px;
+    padding: 13px;
+    font-size: 15px;
+    font-weight: 600;
+    color: #fff;
+    cursor: pointer;
+}
+.copy-result-btn:active { opacity: 0.75; }
+.copy-result-preview {
+    font-size: 13px;
+    color: #636366;
+    text-align: center;
+    margin-top: 8px;
+    min-height: 18px;
+}
 </style>
 </head>
 <body>
@@ -447,6 +533,9 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
     </div>
 </div>
 
+<!-- = 길게 누르기 팝업 -->
+<div class="peek-popup" id="peekPopup"></div>
+
 <!-- 관리자 패널 -->
 <div class="admin-panel" id="adminPanel">
     <div class="admin-header">
@@ -489,6 +578,18 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
             <input class="url-input" id="urlOutput" readonly>
             <button class="copy-btn" onclick="copyUrl()">복사</button>
         </div>
+    </div>
+
+    <!-- 복사 선택 -->
+    <div class="admin-section">
+        <div class="admin-section-title">📋 결과값 복사</div>
+        <div class="copy-select-row">
+            <button class="copy-select-btn selected" id="copyBtn1" onclick="selectCopyIndex(0)">1번째</button>
+            <button class="copy-select-btn" id="copyBtn2" onclick="selectCopyIndex(1)">2번째</button>
+            <button class="copy-select-btn" id="copyBtn3" onclick="selectCopyIndex(2)">3번째</button>
+        </div>
+        <button class="copy-result-btn" onclick="copySelectedResult()">클립보드에 복사</button>
+        <div class="copy-result-preview" id="copyPreview">—</div>
     </div>
 
     <!-- 수신 내역 -->
@@ -620,9 +721,9 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
             ? d.timestamp.toDate().toLocaleString('ko-KR') : '방금';
 
         const item = document.createElement('div');
-        item.className = 'log-item' + (isNew ? ' new-item' : '');
+        item.className = 'log-item' + (isNew ? ' new-item' : '') + (d.isForce ? ' force-item' : '');
         item.innerHTML = `
-            <div class="log-expr">${d.expression}</div>
+            <div class="log-expr">${d.isForce ? '🍎 ' : ''}${d.expression}</div>
             <div class="log-meta">
                 <span class="log-id">${d.calcId || ''}</span>
                 <span>${time}</span>
@@ -649,9 +750,9 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
                     const time = d.timestamp?.toDate
                         ? d.timestamp.toDate().toLocaleString('ko-KR') : '방금';
                     const item = document.createElement('div');
-                    item.className = 'log-item';
+                    item.className = 'log-item' + (d.isForce ? ' force-item' : '');
                     item.innerHTML = `
-                        <div class="log-expr">${d.expression}</div>
+                        <div class="log-expr">${d.isForce ? '🍎 ' : ''}${d.expression}</div>
                         <div class="log-meta">
                             <span class="log-id">${d.calcId || ''}</span>
                             <span>${time}</span>
@@ -1114,8 +1215,64 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
         btn.addEventListener('mouseleave', () => clearTimeout(longPressTimer));
     });
 
+    // 복사 선택 상태
+    let selectedCopyIndex = 0;
+    let recentResults = []; // 최근 결과값 저장
+
+    window.selectCopyIndex = (idx) => {
+        selectedCopyIndex = idx;
+        document.querySelectorAll('.copy-select-btn').forEach((b, i) => {
+            b.classList.toggle('selected', i === idx);
+        });
+        updateCopyPreview();
+    };
+
+    function updateCopyPreview() {
+        const preview = document.getElementById('copyPreview');
+        if (!preview) return;
+        const val = recentResults[selectedCopyIndex];
+        preview.textContent = val ? val : '—';
+    }
+
+    window.copySelectedResult = () => {
+        const val = recentResults[selectedCopyIndex];
+        if (!val) return;
+        navigator.clipboard.writeText(val).then(() => {
+            const btn = document.querySelector('.copy-result-btn');
+            btn.textContent = '✅ 복사됨!';
+            setTimeout(() => btn.textContent = '클립보드에 복사', 1500);
+            vibrateDevice();
+        });
+    };
+
+    // = 버튼 길게 누르기 → 팝업
+    let equalLongTimer = null;
+    let equalLongActive = false;
+
     equalsButtons.forEach(btn => {
+        // 길게 누르기 시작
+        const startLong = () => {
+            equalLongTimer = setTimeout(async () => {
+                equalLongActive = true;
+                vibrateDevice();
+                await showPeekPopup();
+            }, 2000);
+        };
+        const endLong = () => {
+            clearTimeout(equalLongTimer);
+            hidePeekPopup();
+            equalLongActive = false;
+        };
+
+        btn.addEventListener('touchstart', startLong, { passive: true });
+        btn.addEventListener('touchend', endLong, { passive: true });
+        btn.addEventListener('touchcancel', endLong, { passive: true });
+        btn.addEventListener('mousedown', startLong);
+        btn.addEventListener('mouseup', endLong);
+        btn.addEventListener('mouseleave', endLong);
+
         btn.addEventListener('click', () => {
+            if (equalLongActive) { equalLongActive = false; return; }
             equalsTapCount++;
             if (equalsTapTimer) clearTimeout(equalsTapTimer);
             equalsTapTimer = setTimeout(() => { equalsTapCount = 0; }, TAP_TIMEOUT);
@@ -1126,6 +1283,73 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
             }
         });
     });
+
+    async function showPeekPopup() {
+        try {
+            const snap = await firebase.firestore()
+                .collection('calculations')
+                .orderBy('timestamp', 'desc')
+                .limit(10)
+                .get();
+
+            if (snap.empty) return;
+
+            // 숫자 추출: 각 계산식에서 숫자들만
+            const popup = document.getElementById('peekPopup');
+            popup.innerHTML = '';
+
+            // 최근 수신 중 숫자 데이터 수집
+            recentResults = [];
+            const seen = new Set();
+
+            snap.docs.forEach(doc => {
+                const d = doc.data();
+                // 계산식에서 모든 숫자 추출
+                const nums = d.expression.match(/[\d,]+/g);
+                if (nums) {
+                    nums.forEach(n => {
+                        const clean = n.replace(/,/g, '');
+                        if (!seen.has(clean) && clean.length > 0) {
+                            seen.add(clean);
+                            recentResults.push(n); // 쉼표 포함 원본
+                        }
+                    });
+                }
+            });
+
+            // 최근 3개 결과값 (expression의 = 뒤 값)
+            const top3Results = [];
+            snap.docs.forEach(doc => {
+                const d = doc.data();
+                const match = d.expression.match(/=\s*([\d,]+)/);
+                if (match && top3Results.length < 3) {
+                    top3Results.push(match[1]);
+                }
+            });
+            recentResults = top3Results;
+            updateCopyPreview();
+
+            // 팝업에 표시: 최근 계산식의 숫자들 줄바꿈
+            const latestDoc = snap.docs[0].data();
+            const allNums = latestDoc.expression.match(/[\d,]+/g) || [];
+
+            allNums.forEach((num, idx) => {
+                const div = document.createElement('div');
+                div.className = 'peek-number';
+                div.textContent = num;
+                popup.appendChild(div);
+            });
+
+            popup.classList.add('active');
+        } catch(e) {
+            console.error('팝업 오류:', e);
+        }
+    }
+
+    function hidePeekPopup() {
+        const popup = document.getElementById('peekPopup');
+        if (popup) popup.classList.remove('active');
+    }
 
     document.querySelector('.percent-button').addEventListener('click', () => {
         percentTapCount++;

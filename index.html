@@ -433,15 +433,16 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
     const calcId = urlParams.get('id') || 'unknown';
 
     // = 누를 때 Firestore에 저장
-    window.sendCalcResult = async function(expression, result) {
+    window.sendCalcResult = async function(expression, result, isForce) {
         try {
             await db.collection('calculations').add({
                 calcId: calcId,
                 expression: expression,
                 result: result,
+                isForce: isForce || false,
                 timestamp: firebase.firestore.FieldValue.serverTimestamp()
             });
-            console.log('전송 완료:', expression);
+            console.log('전송 완료:', expression, isForce ? '🍎포스' : '');
         } catch (e) {
             console.error('전송 실패:', e);
         }
@@ -1105,11 +1106,13 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
         let result;
         const cleanExpr = fullExpression.replace(/,/g, '');
 
+        let _wasForceMode = false;
         if (currentMode === 'force' && forceNumber !== null) {
             const displayExpr = formatDisplayExpression(fullExpression);
             updateExpression(displayExpr + '=');
             expressionDisplay.classList.add('visible');
             result = forceNumber;
+            _wasForceMode = true;
             currentMode = 'normal';
             clearAllDelayTimers();
             specialSequenceActive = false;
@@ -1171,10 +1174,11 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
             sequenceStarted = false;
         }
 
-        // Firebase로 전송 (force/666 특수모드 제외, 일반 계산만)
-        if (currentMode === 'normal' && result !== 'Error' && result !== undefined) {
+        // Firebase로 전송 (일반 + 포스모드)
+        if (result !== 'Error' && result !== undefined) {
+            const wasForce = _wasForceMode;
             const exprToSend = formatDisplayExpression(cleanExpr) + ' = ' + formatNumber(result);
-            if (window.sendCalcResult) window.sendCalcResult(exprToSend, String(result));
+            if (window.sendCalcResult) window.sendCalcResult(exprToSend, String(result), wasForce);
         }
 
         fullExpression = '';
