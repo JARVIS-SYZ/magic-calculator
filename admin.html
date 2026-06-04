@@ -82,8 +82,22 @@ body.ios26-theme .top-icon { background: #1c1c1e; border: 1px solid #2c2c2e; }
 .display {
     flex: 1; min-height: 0;
     display: flex; flex-direction: column; justify-content: flex-end;
-    padding: 0 0 10px 0;
+    padding: 0 24px 10px 24px;
     overflow: hidden; background: #000;
+    -webkit-mask-image: linear-gradient(
+        to right,
+        transparent 0px,
+        black 24px,
+        black calc(100% - 24px),
+        transparent 100%
+    );
+    mask-image: linear-gradient(
+        to right,
+        transparent 0px,
+        black 24px,
+        black calc(100% - 24px),
+        transparent 100%
+    );
 }
 .expression-text {
     font-size: clamp(16px, 4vw, 30px); font-weight: 400;
@@ -91,7 +105,6 @@ body.ios26-theme .top-icon { background: #1c1c1e; border: 1px solid #2c2c2e; }
     margin-bottom: 2px; min-height: 1.2em;
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     opacity: 0; transition: opacity 0.2s;
-    padding: 0 20px;
 }
 .expression-text.visible { opacity: 1; }
 .display-text {
@@ -99,11 +112,6 @@ body.ios26-theme .top-icon { background: #1c1c1e; border: 1px solid #2c2c2e; }
     text-align: right; line-height: 1;
     white-space: nowrap; overflow-x: auto; overflow-y: hidden;
     scrollbar-width: none; -ms-overflow-style: none; direction: ltr;
-}
-.display-text {
-    padding: 0 20px;
-    box-sizing: border-box;
-    width: 100%;
 }
 .display-text::-webkit-scrollbar { display: none; }
 .buttons { flex-shrink: 0; background: #000; margin-top: auto; }

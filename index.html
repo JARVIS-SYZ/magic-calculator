@@ -103,9 +103,24 @@ body.ios26-theme .top-icon { background: #1c1c1e; border: 1px solid #2c2c2e; }
     display: flex;
     flex-direction: column;
     justify-content: flex-end;
-    padding: 0 0 10px 0;
+    padding: 0 24px 10px 24px;
     overflow: hidden;
     background: #000;
+    /* 양쪽 끝 페이드 마스크 */
+    -webkit-mask-image: linear-gradient(
+        to right,
+        transparent 0px,
+        black 24px,
+        black calc(100% - 24px),
+        transparent 100%
+    );
+    mask-image: linear-gradient(
+        to right,
+        transparent 0px,
+        black 24px,
+        black calc(100% - 24px),
+        transparent 100%
+    );
 }
 
 .expression-text {
@@ -130,11 +145,6 @@ body.ios26-theme .top-icon { background: #1c1c1e; border: 1px solid #2c2c2e; }
     overflow-x: auto; overflow-y: hidden;
     scrollbar-width: none; -ms-overflow-style: none;
     direction: ltr;
-}
-.display-text {
-    padding: 0 20px;
-    box-sizing: border-box;
-    width: 100%;
 }
 .display-text::-webkit-scrollbar { display: none; }
 
