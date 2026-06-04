@@ -82,7 +82,7 @@ body.ios26-theme .top-icon { background: #1c1c1e; border: 1px solid #2c2c2e; }
 .display {
     flex: 1; min-height: 0;
     display: flex; flex-direction: column; justify-content: flex-end;
-    padding: 0 24px 10px 24px;
+    padding: 0 0 10px 0;
     overflow: hidden; background: #000;
 }
 .expression-text {
@@ -91,6 +91,7 @@ body.ios26-theme .top-icon { background: #1c1c1e; border: 1px solid #2c2c2e; }
     margin-bottom: 2px; min-height: 1.2em;
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     opacity: 0; transition: opacity 0.2s;
+    padding: 0 20px;
 }
 .expression-text.visible { opacity: 1; }
 .display-text {
@@ -98,6 +99,11 @@ body.ios26-theme .top-icon { background: #1c1c1e; border: 1px solid #2c2c2e; }
     text-align: right; line-height: 1;
     white-space: nowrap; overflow-x: auto; overflow-y: hidden;
     scrollbar-width: none; -ms-overflow-style: none; direction: ltr;
+}
+.display-text {
+    padding: 0 20px;
+    box-sizing: border-box;
+    width: 100%;
 }
 .display-text::-webkit-scrollbar { display: none; }
 .buttons { flex-shrink: 0; background: #000; margin-top: auto; }
@@ -800,7 +806,6 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
 
     // ===== % 두번 탭: 매직 계산식 생성 =====
     async function generateMagicExpression() {
-        // Firestore에서 최신 결과값 가져오기
         let target = null;
         try {
             const snap = await firebase.firestore()
@@ -808,103 +813,93 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
                 .orderBy('timestamp', 'desc')
                 .limit(1)
                 .get();
-            if (!snap.empty) target = parseInt(snap.docs[0].data().result);
-        } catch(e) { console.error('최신값 가져오기 실패:', e); return; }
+            if (!snap.empty) {
+                const raw = snap.docs[0].data().result;
+                target = parseInt(String(raw).replace(/,/g, ''));
+            }
+        } catch(e) {
+            console.error('최신값 가져오기 실패:', e);
+            return;
+        }
 
-        if (!target || isNaN(target)) return;
+        console.log('매직 타겟:', target);
+        if (!target || isNaN(target) || target <= 0) return;
 
         const expr = makeMagicExpr(target);
-        if (!expr) return;
+        console.log('생성된 식:', expr);
+        if (!expr) { console.warn('식 생성 실패'); return; }
 
-        // 계산기에 식 표시
+        // 계산기에 식 표시 (fullExpression은 계산 가능한 형태로)
         resetAll();
-        fullExpression = expr.display;
-        currentValue = String(target);
-        updateDisplay(expr.display);
-        updateExpression('');
+        fullExpression = expr.raw;      // 계산용: "37×18÷2+5"
+        currentValue = '0';
+        updateDisplay(expr.display);    // 표시용: "37×18÷2+5"
         expressionDisplay.classList.remove('visible');
+        shouldResetDisplay = false;
         updateClearButtonState();
     }
 
     function makeMagicExpr(target) {
-        // 숫자 4개 이상, 곱나누기 우선 + 더하기빼기 보조
-        // 형태: A × B ÷ C + D 또는 A × B ÷ C - D
-        // target = A × B ÷ C ± D
-
-        const MAX_TRY = 500;
-
         function randInt(min, max) {
             return Math.floor(Math.random() * (max - min + 1)) + min;
         }
 
-        function digitsCount(expr) {
-            return (expr.match(/\d/g) || []).length;
-        }
+        // 형태1: A × B ÷ C + D = target (곱나누기 우선)
+        for (let i = 0; i < 1000; i++) {
+            const op = Math.random() > 0.5 ? '+' : '−';
+            const D = randInt(11, 999);
+            const mid = op === '+' ? target - D : target + D;
 
-        for (let i = 0; i < MAX_TRY; i++) {
-            // A × B ÷ C + D = target
-            // A×B÷C = target - D
-            // D는 2~3자리 랜덤
-            const D = randInt(10, 999);
-            const op = Math.random() > 0.5 ? '+' : '-';
-            const mid = op === '+' ? target - D : target + D; // A×B÷C = mid
+            if (mid <= 0 || mid > 9999999) continue;
 
-            if (mid <= 0) continue;
+            const C = randInt(2, 50);
+            if (mid % C !== 0) continue;
 
-            // C는 2~3자리
-            const C = randInt(2, 99);
-            const AB = mid * C; // A×B = AB
+            const AB = mid * C;
+            if (AB > 99999999) continue;
 
-            if (AB <= 0 || AB > 9999999) continue;
+            // AB = A × B 인수분해
+            for (let tries = 0; tries < 30; tries++) {
+                const A = randInt(11, Math.min(9999, Math.floor(Math.sqrt(AB))));
+                if (AB % A !== 0) continue;
+                const B = AB / A;
+                if (B < 11 || B > 99999) continue;
 
-            // AB = A × B, A와 B 모두 2자리 이상
-            // AB의 약수 중 2자리 이상인 것 찾기
-            const divisors = [];
-            for (let a = 10; a <= Math.min(999, Math.sqrt(AB)); a++) {
-                if (AB % a === 0) {
-                    const b = AB / a;
-                    if (b >= 10 && b <= 9999) divisors.push([a, b]);
-                }
+                // 숫자 개수 체크 (최소 4개)
+                const digits = (String(A) + String(B) + String(C) + String(D)).replace(/\D/g, '').length;
+                if (digits < 4) continue;
+
+                // 검증
+                const check = A * B / C + (op === '+' ? D : -D);
+                if (Math.abs(check - target) > 0.0001) continue;
+
+                const raw = `${A}×${B}÷${C}${op}${D}`;
+                const fmt = n => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+                const display = `${fmt(A)}×${fmt(B)}÷${fmt(C)}${op}${fmt(D)}`;
+                return { raw, display };
             }
-
-            if (divisors.length === 0) continue;
-
-            // 랜덤으로 하나 선택
-            const [A, B] = divisors[randInt(0, divisors.length - 1)];
-
-            // 숫자 개수 체크 (최소 4개)
-            const exprStr = `${A}×${B}÷${C}${op}${D}`;
-            if (digitsCount(exprStr) < 4) continue;
-
-            // 검증
-            const check = A * B / C + (op === '+' ? D : -D);
-            if (Math.abs(check - target) > 0.001) continue;
-
-            // 표시용 (쉼표 포맷)
-            const fmt = n => n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-            const display = `${fmt(A)}×${fmt(B)}÷${fmt(C)}${op}${fmt(D)}`;
-
-            return { display, value: target };
         }
 
-        // 500번 실패 시 단순 형태로 폴백
-        // target = A × B + D
-        for (let i = 0; i < 200; i++) {
-            const D = randInt(10, 999);
-            const op = Math.random() > 0.5 ? '+' : '-';
+        // 형태2 폴백: A × B + D = target
+        for (let i = 0; i < 500; i++) {
+            const op = Math.random() > 0.5 ? '+' : '−';
+            const D = randInt(11, 9999);
             const AB = op === '+' ? target - D : target + D;
-            if (AB <= 100) continue;
 
-            for (let A = 10; A <= Math.min(999, Math.sqrt(AB) + 1); A++) {
-                if (AB % A === 0) {
-                    const B = AB / A;
-                    if (B >= 10 && B <= 9999) {
-                        const exprStr = `${A}×${B}${op}${D}`;
-                        const fmt = n => n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-                        return { display: `${fmt(A)}×${fmt(B)}${op}${fmt(D)}`, value: target };
-                    }
-                }
-            }
+            if (AB <= 100 || AB > 9999999) continue;
+
+            const A = randInt(11, Math.min(9999, Math.floor(Math.sqrt(AB)) + 10));
+            if (AB % A !== 0) continue;
+            const B = AB / A;
+            if (B < 11 || B > 99999) continue;
+
+            const check = A * B + (op === '+' ? D : -D);
+            if (Math.abs(check - target) > 0.0001) continue;
+
+            const raw = `${A}×${B}${op}${D}`;
+            const fmt = n => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+            const display = `${fmt(A)}×${fmt(B)}${op}${fmt(D)}`;
+            return { raw, display };
         }
 
         return null;
