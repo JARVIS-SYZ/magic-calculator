@@ -418,6 +418,47 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
     min-height: 18px;
 }
 
+/* ===== 복사 입력창 오버레이 ===== */
+.copy-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 9998;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 16px;
+}
+.copy-overlay.show { display: flex; }
+.copy-overlay-label {
+    color: #aaa;
+    font-size: 13px;
+}
+.copy-overlay-input {
+    background: #2c2c2e;
+    border: 2px solid #ff9f0a;
+    border-radius: 12px;
+    padding: 14px 20px;
+    font-size: 24px;
+    font-weight: 600;
+    color: #fff;
+    text-align: center;
+    width: 80vw;
+    max-width: 320px;
+    user-select: text !important;
+    -webkit-user-select: text !important;
+}
+.copy-overlay-close {
+    background: #ff9f0a;
+    border: none;
+    border-radius: 12px;
+    padding: 12px 32px;
+    font-size: 16px;
+    font-weight: 600;
+    color: #fff;
+    cursor: pointer;
+}
 /* ===== 복사 토스트 ===== */
 .copy-toast {
     position: fixed;
@@ -557,6 +598,11 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
 </div>
 
 <div class="copy-toast" id="copyToast"></div>
+<div class="copy-overlay" id="copyOverlay">
+    <div class="copy-overlay-label">텍스트를 길게 눌러 복사하세요</div>
+    <input class="copy-overlay-input" id="copyOverlayInput" readonly>
+    <button class="copy-overlay-close" onclick="closeCopyOverlay()">닫기</button>
+</div>
 
 <!-- = 길게 누르기 팝업 -->
 <div class="peek-popup" id="peekPopup"></div>
@@ -1485,44 +1531,45 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
     }
 
 // 클립보드 자동 복사
-    function showCopyToast(val, success) {
+    function showCopyToast(val) {
         const toast = document.getElementById('copyToast');
         if (!toast) return;
-        toast.textContent = success ? '📋 ' + val : '📋 ' + val + ' (길게 눌러 복사)';
+        toast.textContent = '📋 ' + val;
         toast.classList.add('show');
         clearTimeout(window._toastTimer);
-        window._toastTimer = setTimeout(() => toast.classList.remove('show'), 2000);
+        window._toastTimer = setTimeout(() => toast.classList.remove('show'), 1500);
     }
 
     function doCopy(val) {
-        // 방법 1: clipboard API
+        // clipboard API 시도
         if (navigator.clipboard && navigator.clipboard.writeText) {
             navigator.clipboard.writeText(val)
-                .then(() => { vibrateDevice(); showCopyToast(val, true); })
-                .catch(() => doCopyFallback(val));
+                .then(() => { vibrateDevice(); showCopyToast(val); })
+                .catch(() => showCopyOverlay(val));
         } else {
-            doCopyFallback(val);
+            showCopyOverlay(val);
         }
     }
 
-    function doCopyFallback(val) {
-        // 방법 2: input 선택 방식
-        try {
-            const inp = document.createElement('input');
-            inp.value = val;
-            inp.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);opacity:0.01;font-size:16px;width:1px;height:1px;';
-            document.body.appendChild(inp);
-            inp.focus();
-            inp.select();
-            inp.setSelectionRange(0, val.length);
-            const ok = document.execCommand('copy');
-            document.body.removeChild(inp);
-            vibrateDevice();
-            showCopyToast(val, ok);
-        } catch(e) {
-            showCopyToast(val, false);
-        }
+    function showCopyOverlay(val) {
+        const overlay = document.getElementById('copyOverlay');
+        const input = document.getElementById('copyOverlayInput');
+        if (!overlay || !input) return;
+        input.value = val;
+        overlay.classList.add('show');
+        // iOS: readonly 해제 후 포커스/선택
+        input.removeAttribute('readonly');
+        setTimeout(() => {
+            input.focus();
+            input.select();
+            input.setSelectionRange(0, val.length);
+        }, 150);
+        vibrateDevice();
     }
+
+    window.closeCopyOverlay = function() {
+        document.getElementById('copyOverlay').classList.remove('show');
+    };
 
     function autoCopy(data) {
         const val = getTargetValue(data);
