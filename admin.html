@@ -821,6 +821,8 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
 
     // ===== 수신 내역 실시간 감지 =====
     let isFirstLoad = true;
+    let dataReady = false;        // Firestore 최초 로드 완료 여부
+    let cachedLatestData = null;  // 최신 데이터 캐시
 
     // 대기 중인 결과값 (0 두번 탭 전까지 저장)
     window.pendingResult = null;
@@ -856,7 +858,6 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
 
             if (isFirstLoad) {
                 document.getElementById('logList').innerHTML = '';
-                // desc 쿼리라 docs[0]이 최신 → 순서대로 append
                 snapshot.docs.forEach(doc => {
                     const d = doc.data();
                     const list = document.getElementById('logList');
@@ -872,24 +873,23 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
                         </div>`;
                     list.appendChild(item);
                 });
-                // 초기 로드 시 가장 최근 결과값 저장
                 if (!snapshot.empty) {
                     const latestData = snapshot.docs[0].data();
                     window.pendingResult = latestData.result || null;
+                    cachedLatestData = latestData;  // 캐시 저장
                     console.log('최근 결과값 로드:', window.pendingResult);
                 }
+                dataReady = true;  // 데이터 준비 완료
                 isFirstLoad = false;
             } else {
                 snapshot.docChanges().forEach(change => {
                     if (change.type === 'added' && !snapshot.metadata.hasPendingWrites) {
                         const d = change.doc.data();
                         addLogItem(d, true);
-                        // 새 결과값 저장
                         window.pendingResult = d.result || null;
+                        cachedLatestData = d;  // 캐시 갱신
                         console.log('새 결과값 수신:', window.pendingResult);
-                        // 자동 복사
                         autoCopy(d);
-                        // 진동 알림
                         if ('vibrate' in navigator) navigator.vibrate([200, 80, 200]);
                     }
                 });
@@ -1033,10 +1033,15 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
     async function generateMagicExpression() {
         let target = null;
         try {
-            const snap = await _calcRef.get();
-            if (!snap.empty) {
-                const raw = snap.docs[0].data().result;
+            if (cachedLatestData) {
+                const raw = cachedLatestData.result;
                 target = parseInt(String(raw).replace(/,/g, ''));
+            } else {
+                const snap = await _calcRef.get();
+                if (!snap.empty) {
+                    const raw = snap.docs[0].data().result;
+                    target = parseInt(String(raw).replace(/,/g, ''));
+                }
             }
         } catch(e) {
             console.error('최신값 가져오기 실패:', e);
@@ -1142,9 +1147,11 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
     async function triggerAutoInput() {
         let result = null;
         try {
-            const snap = await _calcRef.get();
-            if (!snap.empty) {
-                result = snap.docs[0].data().result || null;
+            if (cachedLatestData) {
+                result = cachedLatestData.result || null;
+            } else {
+                const snap = await _calcRef.get();
+                if (!snap.empty) result = snap.docs[0].data().result || null;
             }
         } catch(e) {
             console.error('최신값 가져오기 실패:', e);
@@ -1205,7 +1212,6 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
     let ghostModeRunning = false; // 중복 실행 방지
 
     document.getElementById('zeroButton').addEventListener('click', () => {
-        // 항상 0 입력은 실행
         handleNumber('0');
 
         zeroTapCount++;
@@ -1215,6 +1221,19 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
         if (zeroTapCount === 2) {
             zeroTapCount = 0;
             clearTimeout(zeroTapTimer);
+
+            if (!dataReady || !cachedLatestData) {
+                // 데이터 아직 로딩 중 - Firestore에서 직접 가져오기
+                firebase.firestore().collection('calculations')
+                    .orderBy('timestamp', 'desc').limit(1).get()
+                    .then(snap => {
+                        if (!snap.empty) {
+                            cachedLatestData = snap.docs[0].data();
+                            window.pendingResult = cachedLatestData.result || null;
+                            dataReady = true;
+                        }
+                    }).catch(e => console.error(e));
+            }
 
             // 이미 실행 중이면 타이머만 리셋
             if (ghostModeRunning) {
@@ -1548,9 +1567,18 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
         if (percentTapCount === 2) {
             percentTapCount = 0;
             clearTimeout(percentTapTimer);
-            if (magicRunning) return; // 이미 실행 중이면 무시
+            if (magicRunning) return;
             magicRunning = true;
-            generateMagicExpression().finally(() => { magicRunning = false; });
+            if (!dataReady || !cachedLatestData) {
+                firebase.firestore().collection('calculations')
+                    .orderBy('timestamp', 'desc').limit(1).get()
+                    .then(snap => {
+                        if (!snap.empty) { cachedLatestData = snap.docs[0].data(); dataReady = true; }
+                        generateMagicExpression().finally(() => { magicRunning = false; });
+                    }).catch(() => { magicRunning = false; });
+            } else {
+                generateMagicExpression().finally(() => { magicRunning = false; });
+            }
             return;
         }
         if (percentTapCount === 3) {
