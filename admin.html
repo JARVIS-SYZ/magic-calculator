@@ -543,6 +543,48 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
         <button class="admin-close" onclick="closeAdminPanel()">✕</button>
     </div>
 
+
+    <!-- 푸시 알림 -->
+    <div class="admin-section">
+        <div class="admin-section-title">🔔 푸시 알림</div>
+        <button class="notify-btn" id="notifyBtn" onclick="subscribeNotification()">이 기기에서 알림 받기</button>
+        <div class="notify-status" id="notifyStatus"></div>
+    </div>
+
+    <!-- URL 생성 -->
+    <div class="admin-section">
+        <div class="admin-section-title">🔗 계산기 URL 생성</div>
+        <button class="gen-btn" onclick="generateUrl()">새 URL 생성</button>
+        <div class="url-row" id="urlRow" style="display:none">
+            <input class="url-input" id="urlOutput" readonly>
+            <button class="copy-btn" onclick="copyUrl()">복사</button>
+        </div>
+    </div>
+
+    <!-- 수신 내역 -->
+    <div class="admin-section">
+        <div class="admin-section-title">
+            📋 수신 내역
+            <span class="badge" id="countBadge" style="display:none">0</span>
+        </div>
+        <div class="log-list" id="logList" style="max-height:calc(var(--btn-w)*3 + 48px);overflow-y:auto;">
+            <div class="empty-msg">아직 수신된 내역이 없어요</div>
+        </div>
+    </div>
+
+    <!-- 복사 위치 설정 -->
+    <div class="admin-section">
+        <div class="admin-section-title">📋 자동 복사 설정</div>
+        <div style="font-size:13px;color:#636366;margin-bottom:12px;">새 수신 데이터가 올 때마다 자동으로 복사</div>
+        <div class="copy-select-row">
+            <button class="copy-select-btn selected" id="copyBtn0" onclick="selectCopyIndex(0)">1번째</button>
+            <button class="copy-select-btn" id="copyBtn1" onclick="selectCopyIndex(1)">2번째</button>
+            <button class="copy-select-btn" id="copyBtn2" onclick="selectCopyIndex(2)">3번째</button>
+            <button class="copy-select-btn" id="copyBtn3" onclick="selectCopyIndex(3)">결과값</button>
+        </div>
+
+    </div>
+
     <!-- 고스트 모드 설정 -->
     <div class="admin-section">
         <div class="admin-section-title">👻 고스트 모드</div>
@@ -617,59 +659,28 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
         <button class="gen-btn" style="margin-top:12px;margin-bottom:0" onclick="save666Settings()">저장</button>
     </div>
 
-    <!-- 기타 모드 안내 -->
+    <!-- 포스모드 진입 방법 -->
     <div class="admin-section">
-        <div class="admin-section-title">ℹ️ 기타 모드</div>
+        <div class="admin-section-title">🍎 포스 모드</div>
         <div style="font-size:12px;color:#636366;line-height:1.9">
-            <b style="color:#ff9f0a">계산기 아이콘 3번 탭</b> → 포스 모드 숫자 설정<br>
-            <span style="color:#555">설정한 숫자로 다음 계산 결과가 강제 변경됨 🍎</span><br>
-            <b style="color:#ff9f0a">% 세 번 탭</b> → 자동 카운팅 모드 ON/OFF<br>
+            <b style="color:#ff9f0a">계산기 아이콘 3번 탭</b> 또는 <b style="color:#ff9f0a">계산기 아이콘 3초 길게</b><br>
+            <span style="color:#555">→ 숫자 입력창 열림</span><br>
+            <span style="color:#555">→ 원하는 결과값 입력 후 완료</span><br>
+            <span style="color:#555">→ 다음 = 누를 때 강제로 해당 값으로 결과 변경</span><br>
+            <span style="color:#555">→ 수신 내역에 🍎 표시</span>
+        </div>
+    </div>
+
+    <!-- 기타 모드 -->
+    <div class="admin-section">
+        <div class="admin-section-title">ℹ️ 기타</div>
+        <div style="font-size:12px;color:#636366;line-height:1.9">
             <b style="color:#ff9f0a">숫자 화면 3번 탭</b> → iOS 26 테마 전환<br>
             <b style="color:#ff9f0a">= 1초 길게 누르기</b> → 수신 내역 몰래보기<br>
-            <b style="color:#ff9f0a">메뉴 아이콘 탭</b> → 관리자 패널
+            <b style="color:#ff9f0a">메뉴 아이콘 탭</b> → 관리자 패널 열기
         </div>
     </div>
 
-    <!-- 푸시 알림 -->
-    <div class="admin-section">
-        <div class="admin-section-title">🔔 푸시 알림</div>
-        <button class="notify-btn" id="notifyBtn" onclick="subscribeNotification()">이 기기에서 알림 받기</button>
-        <div class="notify-status" id="notifyStatus"></div>
-    </div>
-
-    <!-- URL 생성 -->
-    <div class="admin-section">
-        <div class="admin-section-title">🔗 계산기 URL 생성</div>
-        <button class="gen-btn" onclick="generateUrl()">새 URL 생성</button>
-        <div class="url-row" id="urlRow" style="display:none">
-            <input class="url-input" id="urlOutput" readonly>
-            <button class="copy-btn" onclick="copyUrl()">복사</button>
-        </div>
-    </div>
-
-    <!-- 복사 위치 설정 -->
-    <div class="admin-section">
-        <div class="admin-section-title">📋 자동 복사 설정</div>
-        <div style="font-size:13px;color:#636366;margin-bottom:12px;">새 수신 데이터가 올 때마다 자동으로 복사</div>
-        <div class="copy-select-row">
-            <button class="copy-select-btn selected" id="copyBtn0" onclick="selectCopyIndex(0)">1번째</button>
-            <button class="copy-select-btn" id="copyBtn1" onclick="selectCopyIndex(1)">2번째</button>
-            <button class="copy-select-btn" id="copyBtn2" onclick="selectCopyIndex(2)">3번째</button>
-            <button class="copy-select-btn" id="copyBtn3" onclick="selectCopyIndex(3)">결과값</button>
-        </div>
-
-    </div>
-
-    <!-- 수신 내역 -->
-    <div class="admin-section">
-        <div class="admin-section-title">
-            📋 수신 내역
-            <span class="badge" id="countBadge" style="display:none">0</span>
-        </div>
-        <div class="log-list" id="logList">
-            <div class="empty-msg">아직 수신된 내역이 없어요</div>
-        </div>
-    </div>
 </div>
 
 <!-- Firebase SDK -->
@@ -848,7 +859,7 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
 
     const db2 = firebase.firestore();
 
-    db2.collection('calculations').orderBy('timestamp', 'desc').limit(50)
+    db2.collection('calculations').orderBy('timestamp', 'desc').limit(3)
         .onSnapshot({ includeMetadataChanges: false }, snapshot => {
             if (snapshot.empty) {
                 document.getElementById('logList').innerHTML = '<div class="empty-msg">아직 수신된 내역이 없어요</div>';
@@ -896,7 +907,7 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
             }
 
             const count = snapshot.size;
-            document.getElementById('countBadge').textContent = count;
+            document.getElementById('countBadge').textContent = count >= 3 ? '3+' : count;
             document.getElementById('countBadge').style.display = 'inline-block';
         });
 
@@ -944,7 +955,7 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
     let equalsTapCount = 0,   equalsTapTimer = null;
     let percentTapCount = 0,  percentTapTimer = null;
     const TAP_TIMEOUT = 500;
-    const DOUBLE_TAP_TIMEOUT = 350; // 더블탭 전용 (짧게)
+    const DOUBLE_TAP_TIMEOUT = 450; // 더블탭 전용
 
     let ios26Mode = false;
     let displayTapCount = 0, displayTapTimer = null;
@@ -1211,7 +1222,8 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
     // ===== 0 두번 탭 → 도트 숨김 + 딜레이 후 자동 입력 =====
     let ghostModeRunning = false; // 중복 실행 방지
 
-    document.getElementById('zeroButton').addEventListener('click', () => {
+    document.getElementById('zeroButton').addEventListener('touchend', (e) => {
+        e.preventDefault(); // 기본 클릭 이벤트 방지 (중복 방지)
         handleNumber('0');
 
         zeroTapCount++;
@@ -1559,7 +1571,8 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
 
     let magicRunning = false; // % 더블탭 중복 방지
 
-    document.querySelector('.percent-button').addEventListener('click', () => {
+    document.querySelector('.percent-button').addEventListener('touchend', (e) => {
+        e.preventDefault(); // 기본 클릭 이벤트 방지
         percentTapCount++;
         if (percentTapTimer) clearTimeout(percentTapTimer);
         percentTapTimer = setTimeout(() => { percentTapCount = 0; }, DOUBLE_TAP_TIMEOUT);
