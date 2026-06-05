@@ -703,6 +703,9 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
         messagingSenderId: "760520232651",
         appId: "1:760520232651:web:e22497f76382dc2086954e"
     };
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    let ios26Mode = false;
+    let countingTriggerTimer = null;
 
 
     const VAPID_KEY = 'BK9hx4nDAnvp7znOPbcfhxBDK737pAsYyoEkxm7YYtiYKfAsQ1LoXQf1JZOvvxKhSmEMC-9mHbxfFPtZJ38FX7w';
@@ -932,7 +935,6 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
     loadDelaySettings();
 
 
-    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
 
     // ===== 계산기 변수 =====
     let currentValue = '0';
@@ -950,7 +952,6 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
     const TAP_TIMEOUT = 500;
     const DOUBLE_TAP_TIMEOUT = 450; // 더블탭 전용
 
-    let ios26Mode = false;
     let displayTapCount = 0, displayTapTimer = null;
     const DISPLAY_TAP_TIMEOUT = 500;
 
@@ -1752,7 +1753,6 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
 
     function handleCalcIcon() { if(ios26Mode)handleFunction('±'); }
 
-    let countingTriggerTimer = null;
 
     function handleEquals() {
         vibrateDevice(); if(autoCountMode)return;
