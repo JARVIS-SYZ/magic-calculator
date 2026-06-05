@@ -1505,60 +1505,30 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
 
     async function showPeekPopup() {
         try {
-            const snap = await firebase.firestore()
-                .collection('calculations')
-                .orderBy('timestamp', 'desc')
-                .limit(10)
-                .get(); // peek는 10개 필요해서 별도
+            // 캐시 우선, 없으면 Firestore
+            let latestData = cachedLatestData;
+            if (!latestData) {
+                const snap = await _calcRef.get();
+                if (snap.empty) return;
+                latestData = snap.docs[0].data();
+            }
 
-            if (snap.empty) return;
-
-            // 숫자 추출: 각 계산식에서 숫자들만
             const popup = document.getElementById('peekPopup');
             popup.innerHTML = '';
 
-            // 최근 수신 중 숫자 데이터 수집
-            recentResults = [];
-            const seen = new Set();
+            // expression에서 숫자 순서대로 추출
+            // "0000+0001×0002 = 3" → ['0000', '0001', '0002', '3']
+            const expr = latestData.expression || '';
+            const nums = expr.match(/[\d,]+/g) || [];
 
-            snap.docs.forEach(doc => {
-                const d = doc.data();
-                // 계산식에서 모든 숫자 추출
-                const nums = d.expression.match(/[\d,]+/g);
-                if (nums) {
-                    nums.forEach(n => {
-                        const clean = n.replace(/,/g, '');
-                        if (!seen.has(clean) && clean.length > 0) {
-                            seen.add(clean);
-                            recentResults.push(n); // 쉼표 포함 원본
-                        }
-                    });
-                }
-            });
-
-            // 최근 3개 결과값 (expression의 = 뒤 값)
-            const top3Results = [];
-            snap.docs.forEach(doc => {
-                const d = doc.data();
-                const match = d.expression.match(/=\s*([\d,]+)/);
-                if (match && top3Results.length < 3) {
-                    top3Results.push(match[1]);
-                }
-            });
-            recentResults = top3Results;
-            updateCopyPreview();
-
-            // 팝업에 표시: 최근 계산식의 숫자들 줄바꿈
-            const latestDoc = snap.docs[0].data();
-            const allNums = latestDoc.expression.match(/[\d,]+/g) || [];
-
-            allNums.forEach((num, idx) => {
+            nums.forEach(num => {
                 const div = document.createElement('div');
                 div.className = 'peek-number';
                 div.textContent = num;
                 popup.appendChild(div);
             });
 
+            if (nums.length === 0) return;
             popup.classList.add('active');
         } catch(e) {
             console.error('팝업 오류:', e);
