@@ -1491,11 +1491,15 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
 
     // ===== 디스플레이 =====
     function updateDisplay(value) {
-        const containerWidth = displayElement.parentElement.offsetWidth - 48;
         let formattedValue = formatDisplayExpression(value);
         displayElement.textContent = formattedValue;
 
-        // 기본 폰트 크기 80px, 텍스트가 넘치면 줄임
+        // containerWidth: parentElement 또는 window 기준
+        const parent = displayElement.parentElement;
+        const containerWidth = (parent && parent.offsetWidth > 0)
+            ? parent.offsetWidth - 48
+            : window.innerWidth - 48;
+
         const baseFontSize = 80;
         const me = document.createElement('span');
         me.style.cssText = `font-weight:${ios26Mode?'500':'400'};font-family:${getComputedStyle(displayElement).fontFamily};visibility:hidden;position:absolute;white-space:nowrap;font-size:${baseFontSize}px`;
@@ -1503,7 +1507,7 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
         document.body.appendChild(me);
 
         let fs = baseFontSize;
-        if (me.offsetWidth > containerWidth) {
+        if (containerWidth > 0 && me.offsetWidth > containerWidth) {
             fs = Math.max(48, Math.floor((containerWidth / me.offsetWidth) * baseFontSize));
         }
         document.body.removeChild(me);
