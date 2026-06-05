@@ -1616,35 +1616,25 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
     function vibrateDevice() { if('vibrate' in navigator) navigator.vibrate(50); }
 
     // ===== 디스플레이 =====
-    let _measureSpan = null;
-
     function updateDisplay(value) {
-        // 측정용 span lazy init
-        if (!_measureSpan) {
-            _measureSpan = document.createElement('span');
-            _measureSpan.style.cssText = 'visibility:hidden;position:fixed;top:-9999px;white-space:nowrap;pointer-events:none;';
-            document.body.appendChild(_measureSpan);
-        }
-
         const containerWidth = displayElement.parentElement.offsetWidth - 48;
         let formattedValue = formatDisplayExpression(value);
         displayElement.textContent = formattedValue;
 
-        const baseFontSize = Math.min(90, Math.max(48, window.innerWidth * 0.13));
-
-        _measureSpan.style.fontFamily = getComputedStyle(displayElement).fontFamily;
-        _measureSpan.style.fontWeight = ios26Mode ? '500' : '400';
-        _measureSpan.style.fontSize = baseFontSize + 'px';
-        _measureSpan.textContent = formattedValue;
+        // 기본 폰트 크기 80px, 텍스트가 넘치면 줄임
+        const baseFontSize = 80;
+        const me = document.createElement('span');
+        me.style.cssText = `font-weight:${ios26Mode?'500':'400'};font-family:${getComputedStyle(displayElement).fontFamily};visibility:hidden;position:absolute;white-space:nowrap;font-size:${baseFontSize}px`;
+        me.textContent = formattedValue;
+        document.body.appendChild(me);
 
         let fs = baseFontSize;
-        if (_measureSpan.offsetWidth > containerWidth) {
-            fs = Math.max(
-                Math.floor(baseFontSize * 0.5),
-                Math.floor((containerWidth / _measureSpan.offsetWidth) * baseFontSize)
-            );
+        if (me.offsetWidth > containerWidth) {
+            fs = Math.max(48, Math.floor((containerWidth / me.offsetWidth) * baseFontSize));
         }
+        document.body.removeChild(me);
         displayElement.style.fontSize = fs + 'px';
+
         setTimeout(() => {
             if (displayElement.scrollWidth > displayElement.clientWidth) {
                 displayElement.scrollLeft = displayElement.scrollWidth - displayElement.clientWidth;
