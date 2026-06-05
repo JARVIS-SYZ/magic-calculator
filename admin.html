@@ -372,44 +372,7 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
     width: 100%;
 }
 
-/* 관리자 패널 복사 선택 */
-.copy-select-row {
-    display: flex;
-    gap: 8px;
-    margin-bottom: 12px;
-    flex-wrap: wrap;
-}
-.copy-select-btn {
-    flex: 1;
-    min-width: 60px;
-    background: #2c2c2e;
-    border: 1.5px solid transparent;
-    border-radius: 10px;
-    padding: 10px 8px;
-    font-size: 13px;
-    font-weight: 600;
-    color: #888;
-    cursor: pointer;
-    text-align: center;
-}
-.copy-select-btn.selected {
-    border-color: #ff9f0a;
-    color: #ff9f0a;
-    background: #2a1f00;
-}
-.copy-select-btn:active { opacity: 0.7; }
-.copy-result-btn {
-    width: 100%;
-    background: #ff9f0a;
-    border: none;
-    border-radius: 12px;
-    padding: 13px;
-    font-size: 15px;
-    font-weight: 600;
-    color: #fff;
-    cursor: pointer;
-}
-.copy-result-btn:active { opacity: 0.75; }
+
 .copy-result-preview {
     font-size: 13px;
     color: #636366;
@@ -418,48 +381,7 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
     min-height: 18px;
 }
 
-/* ===== 복사 입력창 오버레이 ===== */
-.copy-overlay {
-    position: fixed;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0,0,0,0.7);
-    z-index: 9998;
-    display: none;
-    align-items: center;
-    justify-content: center;
-    flex-direction: column;
-    gap: 16px;
-}
-.copy-overlay.show { display: flex; }
-.copy-overlay-label {
-    color: #aaa;
-    font-size: 13px;
-}
-.copy-overlay-input {
-    background: #2c2c2e;
-    border: 2px solid #ff9f0a;
-    border-radius: 12px;
-    padding: 14px 20px;
-    font-size: 24px;
-    font-weight: 600;
-    color: #fff;
-    text-align: center;
-    width: 80vw;
-    max-width: 320px;
-    user-select: text !important;
-    -webkit-user-select: text !important;
-}
-.copy-overlay-close {
-    background: #ff9f0a;
-    border: none;
-    border-radius: 12px;
-    padding: 12px 32px;
-    font-size: 16px;
-    font-weight: 600;
-    color: #fff;
-    cursor: pointer;
-}
-/* ===== 복사 토스트 ===== */
+
 .copy-toast {
     position: fixed;
     top: calc(env(safe-area-inset-top) + 52px);
@@ -597,12 +519,7 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
     </div>
 </div>
 
-<div class="copy-toast" id="copyToast"></div>
-<div class="copy-overlay" id="copyOverlay">
-    <div class="copy-overlay-label">텍스트를 길게 눌러 복사하세요</div>
-    <input class="copy-overlay-input" id="copyOverlayInput" readonly>
-    <button class="copy-overlay-close" onclick="closeCopyOverlay()">닫기</button>
-</div>
+        </div>
 
 <!-- = 길게 누르기 팝업 -->
 <div class="peek-popup" id="peekPopup"></div>
@@ -641,19 +558,6 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
         <div class="log-list" id="logList" style="max-height:calc(var(--btn-w)*2 + 36px);overflow-y:auto;-webkit-overflow-scrolling:touch;">
             <div class="empty-msg">아직 수신된 내역이 없어요</div>
         </div>
-    </div>
-
-    <!-- 복사 위치 설정 -->
-    <div class="admin-section">
-        <div class="admin-section-title">📋 자동 복사 설정</div>
-        <div style="font-size:13px;color:#636366;margin-bottom:12px;">새 수신 데이터가 올 때마다 자동으로 복사</div>
-        <div class="copy-select-row">
-            <button class="copy-select-btn selected" id="copyBtn0" onclick="selectCopyIndex(0)">1번째</button>
-            <button class="copy-select-btn" id="copyBtn1" onclick="selectCopyIndex(1)">2번째</button>
-            <button class="copy-select-btn" id="copyBtn2" onclick="selectCopyIndex(2)">3번째</button>
-            <button class="copy-select-btn" id="copyBtn3" onclick="selectCopyIndex(3)">결과값</button>
-        </div>
-
     </div>
 
     <!-- 고스트 모드 설정 -->
@@ -928,9 +832,6 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
 
     // 대기 중인 결과값 (0 두번 탭 전까지 저장)
     window.pendingResult = null;
-
-    let logLongPressTimer = null;
-
     function addLogItem(d, isNew = false) {
         const list = document.getElementById('logList');
         const emptyMsg = list.querySelector('.empty-msg');
@@ -947,20 +848,6 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
                 <span class="log-id">${d.calcId || ''}</span>
                 <span>${time}</span>
             </div>`;
-
-        // 길게 누르면 해당 항목의 설정된 위치 값 복사
-        item.addEventListener('touchstart', () => {
-            logLongPressTimer = setTimeout(() => {
-                const val = getTargetValue(d);
-                if (!val) return;
-                doCopy(val);
-                item.style.background = '#2a3a2a';
-                setTimeout(() => item.style.background = '', 600);
-            }, 600);
-        }, { passive: true });
-        item.addEventListener('touchend', () => clearTimeout(logLongPressTimer));
-        item.addEventListener('touchmove', () => clearTimeout(logLongPressTimer));
-
         list.insertBefore(item, list.firstChild);
     }
 
@@ -1006,11 +893,7 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
                         addLogItem(d, true);
                         window.pendingResult = d.result || null;
                         cachedLatestData = d;  // 캐시 갱신
-                        console.log('새 결과값 수신:', window.pendingResult);
-                        autoCopy(d);
-                        if ('vibrate' in navigator) navigator.vibrate([200, 80, 200]);
-                        // 다음 터치 시 복사 (iOS 제스처 컨텍스트 활용)
-                        copyOnNextTouch = true;
+                        console.log('새 결과값 수신:', window.pendingResult);                        if ('vibrate' in navigator) navigator.vibrate([200, 80, 200]);
                     }
                 });
             }
@@ -1472,129 +1355,10 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
         btn.addEventListener('mouseup',    () => clearTimeout(longPressTimer));
         btn.addEventListener('mouseleave', () => clearTimeout(longPressTimer));
     });
+    };에 맞는 값 가져오기    }
 
-    // ===== 자동 복사 설정 =====
-    let selectedCopyIndex = parseInt(localStorage.getItem('copy_index') || '0');
-
-    // 버튼 초기 상태 복원
-    function restoreCopyButtons() {
-        document.querySelectorAll('.copy-select-btn').forEach((b, i) => {
-            b.classList.toggle('selected', i === selectedCopyIndex);
-        });
+// 클립보드 자동 복사    // 앱 열릴 때 + 새 데이터 올 때 자동 복사        } catch(e) { console.error('자동 복사 실패:', e); }
     }
-    restoreCopyButtons();
-
-    window.selectCopyIndex = (idx) => {
-        selectedCopyIndex = idx;
-        localStorage.setItem('copy_index', idx);
-        document.querySelectorAll('.copy-select-btn').forEach((b, i) => {
-            b.classList.toggle('selected', i === idx);
-        });
-        autoCopyFromLatest();
-
-    // 앱이 포그라운드로 돌아올 때 자동 복사
-    // iOS 웹앱에서 clipboard는 포그라운드(사용자 활성 상태)에서만 가능
-    document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'visible') {
-            autoCopyFromLatest();
-        }
-    });
-
-    // 화면 터치 시에도 최신 데이터 복사 시도 (제스처 컨텍스트 활용)
-    let copyOnNextTouch = false;
-    document.addEventListener('touchstart', () => {
-        if (copyOnNextTouch) {
-            copyOnNextTouch = false;
-            autoCopyFromLatest();
-        }
-    }, { passive: true });
-    };
-
-    // 계산식에서 숫자 추출 (순서대로)
-    function extractNumbers(expression) {
-        // 쉼표 제거 후 숫자 추출
-        const clean = expression.replace(/,/g, '');
-        const nums = clean.match(/\d+\.?\d*/g) || [];
-        return nums;
-    }
-
-    // 설정된 인덱스에 맞는 값 가져오기
-    function getTargetValue(data) {
-        const nums = extractNumbers(data.expression);
-        if (selectedCopyIndex === 3) {
-            // 결과값
-            return data.result || (nums.length > 0 ? nums[nums.length - 1] : null);
-        } else {
-            // 1번째(0), 2번째(1), 3번째(2)
-            return nums[selectedCopyIndex] || null;
-        }
-    }
-
-// 클립보드 자동 복사
-    function showCopyToast(val) {
-        const toast = document.getElementById('copyToast');
-        if (!toast) return;
-        toast.textContent = '📋 ' + val;
-        toast.classList.add('show');
-        clearTimeout(window._toastTimer);
-        window._toastTimer = setTimeout(() => toast.classList.remove('show'), 1500);
-    }
-
-    function doCopy(val) {
-        // clipboard API 시도
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(val)
-                .then(() => { vibrateDevice(); showCopyToast(val); })
-                .catch(() => showCopyOverlay(val));
-        } else {
-            showCopyOverlay(val);
-        }
-    }
-
-    function showCopyOverlay(val) {
-        const overlay = document.getElementById('copyOverlay');
-        const input = document.getElementById('copyOverlayInput');
-        if (!overlay || !input) return;
-        input.value = val;
-        overlay.classList.add('show');
-        // iOS: readonly 해제 후 포커스/선택
-        input.removeAttribute('readonly');
-        setTimeout(() => {
-            input.focus();
-            input.select();
-            input.setSelectionRange(0, val.length);
-        }, 150);
-        vibrateDevice();
-    }
-
-    window.closeCopyOverlay = function() {
-        document.getElementById('copyOverlay').classList.remove('show');
-    };
-
-    function autoCopy(data) {
-        const val = getTargetValue(data);
-        if (!val) return;
-        doCopy(val);
-    }
-
-    // 앱 열릴 때 + 새 데이터 올 때 자동 복사
-    async function autoCopyFromLatest() {
-        try {
-            const snap = await firebase.firestore()
-                .collection('calculations')
-                .orderBy('timestamp', 'desc')
-                .limit(1)
-                .get();
-            if (!snap.empty) {
-                const d = snap.docs[0].data();
-                autoCopy(d);
-            }
-        } catch(e) { console.error('자동 복사 실패:', e); }
-    }
-
-    // 앱 시작 시 즉시 실행
-    autoCopyFromLatest();
-
     // = 버튼 길게 누르기 → 팝업
     let equalLongTimer = null;
     let equalLongActive = false;
