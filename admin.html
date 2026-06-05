@@ -417,6 +417,29 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
     margin-top: 8px;
     min-height: 18px;
 }
+
+/* ===== 복사 토스트 ===== */
+.copy-toast {
+    position: fixed;
+    top: calc(env(safe-area-inset-top) + 52px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(50, 50, 52, 0.95);
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    padding: 10px 20px;
+    border-radius: 20px;
+    z-index: 9999;
+    opacity: 0;
+    transition: opacity 0.2s;
+    pointer-events: none;
+    white-space: nowrap;
+    max-width: 80vw;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.copy-toast.show { opacity: 1; }
 </style>
 </head>
 <body>
@@ -532,6 +555,8 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
         <button class="close-button" onclick="closeSettings()">완료</button>
     </div>
 </div>
+
+<div class="copy-toast" id="copyToast"></div>
 
 <!-- = 길게 누르기 팝업 -->
 <div class="peek-popup" id="peekPopup"></div>
@@ -882,11 +907,9 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
             logLongPressTimer = setTimeout(() => {
                 const val = getTargetValue(d);
                 if (!val) return;
-                navigator.clipboard.writeText(val).then(() => {
-                    vibrateDevice();
-                    item.style.background = '#2a3a2a';
-                    setTimeout(() => item.style.background = '', 600);
-                }).catch(e => console.log('복사 실패:', e));
+                doCopy(val);
+                item.style.background = '#2a3a2a';
+                setTimeout(() => item.style.background = '', 600);
             }, 600);
         }, { passive: true });
         item.addEventListener('touchend', () => clearTimeout(logLongPressTimer));
@@ -1462,31 +1485,49 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
     }
 
 // 클립보드 자동 복사
-    function autoCopy(data) {
-        const val = getTargetValue(data);
-        if (!val) return;
-        // clipboard API + fallback
+    function showCopyToast(val, success) {
+        const toast = document.getElementById('copyToast');
+        if (!toast) return;
+        toast.textContent = success ? '📋 ' + val : '📋 ' + val + ' (길게 눌러 복사)';
+        toast.classList.add('show');
+        clearTimeout(window._toastTimer);
+        window._toastTimer = setTimeout(() => toast.classList.remove('show'), 2000);
+    }
+
+    function doCopy(val) {
+        // 방법 1: clipboard API
         if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(val).then(() => {
-                vibrateDevice();
-            }).catch(() => copyFallback(val));
+            navigator.clipboard.writeText(val)
+                .then(() => { vibrateDevice(); showCopyToast(val, true); })
+                .catch(() => doCopyFallback(val));
         } else {
-            copyFallback(val);
+            doCopyFallback(val);
         }
     }
 
-    function copyFallback(val) {
+    function doCopyFallback(val) {
+        // 방법 2: input 선택 방식
         try {
-            const ta = document.createElement('textarea');
-            ta.value = val;
-            ta.style.cssText = 'position:fixed;opacity:0;top:0;left:0';
-            document.body.appendChild(ta);
-            ta.focus();
-            ta.select();
-            document.execCommand('copy');
-            document.body.removeChild(ta);
+            const inp = document.createElement('input');
+            inp.value = val;
+            inp.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);opacity:0.01;font-size:16px;width:1px;height:1px;';
+            document.body.appendChild(inp);
+            inp.focus();
+            inp.select();
+            inp.setSelectionRange(0, val.length);
+            const ok = document.execCommand('copy');
+            document.body.removeChild(inp);
             vibrateDevice();
-        } catch(e) { console.log('fallback 복사 실패:', e); }
+            showCopyToast(val, ok);
+        } catch(e) {
+            showCopyToast(val, false);
+        }
+    }
+
+    function autoCopy(data) {
+        const val = getTargetValue(data);
+        if (!val) return;
+        doCopy(val);
     }
 
     // 앱 열릴 때 + 새 데이터 올 때 자동 복사
