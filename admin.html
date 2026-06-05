@@ -588,9 +588,9 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
     <!-- 고스트 모드 설정 -->
     <div class="admin-section">
         <div class="admin-section-title">👻 고스트 모드</div>
-        <div style="font-size:12px;color:#636366;margin-bottom:14px;line-height:1.6">
-            <b style="color:#ff9f0a">0</b> 두 번 탭 → 도트 숨김 + N초 후 최신 수신값 자동 입력<br>
-            <b style="color:#ff9f0a">%</b> 두 번 탭 → 최신 수신값으로 새 계산식 즉시 생성
+        <div style="font-size:12px;color:#636366;margin-bottom:14px;line-height:1.9">
+            <b style="color:#ff9f0a">0 두 번 탭</b> → 좌상단 도트 숨김 + N초 후 최신 수신 결과값 자동 입력<br>
+            <span style="color:#555">입력 시 버튼이 하나씩 눌리는 애니메이션으로 표시됨</span>
         </div>
         <div class="delay-row">
             <div class="delay-row-label">0 두 번 탭 후 대기</div>
@@ -612,10 +612,12 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
     <!-- 자동 카운팅 설정 -->
     <div class="admin-section">
         <div class="admin-section-title">🔢 자동 카운팅</div>
-        <div style="font-size:12px;color:#636366;margin-bottom:14px;line-height:1.6">
-            <b style="color:#ff9f0a">숫자 =</b> 입력 후 N초 대기 → 0부터 카운팅 자동 시작<br>
-            폰을 <b style="color:#ff9f0a">세로로 세우면</b> 2초 후 카운팅 시작<br>
-            폰을 <b style="color:#ff9f0a">뒤집으면</b> 리셋 / <b style="color:#ff9f0a">하늘로 향하면</b> 모드 해제
+        <div style="font-size:12px;color:#636366;margin-bottom:14px;line-height:1.9">
+            <b style="color:#ff9f0a">아무 숫자 1개 + =</b> 입력 후 N초 대기<br>
+            <span style="color:#555">→ 입력값 사라지고 자동 카운팅 모드 시작 (0부터)</span><br><br>
+            <b style="color:#ff9f0a">세로로 세우면</b> → 2초 후 카운팅 시작<br>
+            <b style="color:#ff9f0a">화면이 위로 올라오면</b> → 카운팅 멈춤 + 모드 해제<br>
+            <b style="color:#ff9f0a">뒤집으면 (화면 아래)</b> → 카운트 리셋
         </div>
         <div class="delay-row">
             <div class="delay-row-label">카운팅 시작 딜레이</div>
@@ -675,6 +677,8 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
     <div class="admin-section">
         <div class="admin-section-title">ℹ️ 기타</div>
         <div style="font-size:12px;color:#636366;line-height:1.9">
+            <b style="color:#ff9f0a">% 두 번 탭</b> → 최신 수신값으로 매직 계산식 즉시 생성<br>
+            <b style="color:#ff9f0a">0 두 번 탭</b> → 고스트 모드 (N초 후 최신 결과값 자동 입력)<br>
             <b style="color:#ff9f0a">숫자 화면 3번 탭</b> → iOS 26 테마 전환<br>
             <b style="color:#ff9f0a">= 1초 길게 누르기</b> → 수신 내역 몰래보기<br>
             <b style="color:#ff9f0a">메뉴 아이콘 탭</b> → 관리자 패널 열기
@@ -687,7 +691,20 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging-compat.js"></script>
-<script type="module">
+
+
+<script>
+    // ===== Firebase 초기화 =====
+    const firebaseConfig = {
+        apiKey: "AIzaSyDEZlkBRFt4JtR1v3QGaBeTOPvD-Zg0cBs",
+        authDomain: "magic-calculator-5dcac.firebaseapp.com",
+        projectId: "magic-calculator-5dcac",
+        storageBucket: "magic-calculator-5dcac.firebasestorage.app",
+        messagingSenderId: "760520232651",
+        appId: "1:760520232651:web:e22497f76382dc2086954e"
+    };
+
+
     const VAPID_KEY = 'BK9hx4nDAnvp7znOPbcfhxBDK737pAsYyoEkxm7YYtiYKfAsQ1LoXQf1JZOvvxKhSmEMC-9mHbxfFPtZJ38FX7w';
 
     // ===== 관리자 패널 열기/닫기 =====
@@ -914,31 +931,7 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
     // 초기화
     loadDelaySettings();
 
-    // Firebase compat 초기화 (전역 db가 없을 경우 대비)
-    if (!window._fbInitDone) {
-        const firebaseConfig = {
-            apiKey: "AIzaSyDEZlkBRFt4JtR1v3QGaBeTOPvD-Zg0cBs",
-            authDomain: "magic-calculator-5dcac.firebaseapp.com",
-            projectId: "magic-calculator-5dcac",
-            storageBucket: "magic-calculator-5dcac.firebasestorage.app",
-            messagingSenderId: "760520232651",
-            appId: "1:760520232651:web:e22497f76382dc2086954e"
-        };
-        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-        window._fbInitDone = true;
-    }
-</script>
 
-<script>
-    // ===== Firebase 초기화 =====
-    const firebaseConfig = {
-        apiKey: "AIzaSyDEZlkBRFt4JtR1v3QGaBeTOPvD-Zg0cBs",
-        authDomain: "magic-calculator-5dcac.firebaseapp.com",
-        projectId: "magic-calculator-5dcac",
-        storageBucket: "magic-calculator-5dcac.firebasestorage.app",
-        messagingSenderId: "760520232651",
-        appId: "1:760520232651:web:e22497f76382dc2086954e"
-    };
     if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
 
     // ===== 계산기 변수 =====
@@ -1222,8 +1215,7 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
     // ===== 0 두번 탭 → 도트 숨김 + 딜레이 후 자동 입력 =====
     let ghostModeRunning = false; // 중복 실행 방지
 
-    document.getElementById('zeroButton').addEventListener('touchend', (e) => {
-        e.preventDefault(); // 기본 클릭 이벤트 방지 (중복 방지)
+    document.getElementById('zeroButton').addEventListener('click', () => {
         handleNumber('0');
 
         zeroTapCount++;
@@ -1310,7 +1302,8 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
         const beta = event.beta, gamma = event.gamma;
         let newOri = 'unknown';
         if (Math.abs(beta) > 150) newOri = 'down';
-        else if (Math.abs(beta) < 30 && Math.abs(gamma) < 30) newOri = 'up';
+        else if (Math.abs(beta) < 15 && Math.abs(gamma) < 15) newOri = 'flat';  // 완전 수평 → 모드 해제
+        else if (Math.abs(beta) < 30 && Math.abs(gamma) < 30) newOri = 'up';    // 화면 위 → 일시정지
         else if (beta > 70 && beta < 110) newOri = 'vertical';
         if (newOri !== currentOrientation) { currentOrientation = newOri; handleOrientationChange(newOri); }
     }
@@ -1318,7 +1311,14 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
         switch(ori) {
             case 'down': stopCounting(); if(countingStartDelay){clearTimeout(countingStartDelay);countingStartDelay=null;} resetAll(); vibrateDevice(); break;
             case 'vertical': if(!countingInterval&&!countingStartDelay){vibrateDevice();countingStartDelay=setTimeout(()=>{startCounting();countingStartDelay=null;},2000);} break;
-            case 'up': if(countingStartDelay){clearTimeout(countingStartDelay);countingStartDelay=null;} stopCounting(); if(autoCountMode){autoCountMode=false;stopOrientationDetection();currentOrientation='unknown';updateAutoCountUI();} vibrateDevice(); break;
+            case 'up':
+            case 'flat':
+                // 화면이 위로 올라오면 → 카운팅 멈춤 + 모드 해제
+                if(countingStartDelay){clearTimeout(countingStartDelay);countingStartDelay=null;}
+                stopCounting();
+                if(autoCountMode){autoCountMode=false;stopOrientationDetection();currentOrientation='unknown';updateAutoCountUI();}
+                vibrateDevice();
+                break;
         }
     }
     function startCounting() {
@@ -1571,11 +1571,14 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
 
     let magicRunning = false; // % 더블탭 중복 방지
 
-    document.querySelector('.percent-button').addEventListener('touchend', (e) => {
-        e.preventDefault(); // 기본 클릭 이벤트 방지
+    // % 버튼: 2번 탭 → 즉시 매직 계산식 생성
+    document.querySelector('.percent-button').addEventListener('click', () => {
         percentTapCount++;
         if (percentTapTimer) clearTimeout(percentTapTimer);
-        percentTapTimer = setTimeout(() => { percentTapCount = 0; }, DOUBLE_TAP_TIMEOUT);
+
+        percentTapTimer = setTimeout(() => {
+            percentTapCount = 0;
+        }, DOUBLE_TAP_TIMEOUT);
 
         if (percentTapCount === 2) {
             percentTapCount = 0;
@@ -1592,17 +1595,7 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
             } else {
                 generateMagicExpression().finally(() => { magicRunning = false; });
             }
-            return;
         }
-        if (percentTapCount === 3) {
-            percentTapCount = 0;
-            clearTimeout(percentTapTimer);
-            toggleAutoCountMode();
-            return;
-        }
-
-        // 1번 탭: 일반 % 기능
-        handleFunction('%');
     });
 
     displayElement.addEventListener('click', () => {
