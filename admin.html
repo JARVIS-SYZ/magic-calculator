@@ -1615,17 +1615,20 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
     function vibrateDevice() { if('vibrate' in navigator) navigator.vibrate(50); }
 
     // ===== 디스플레이 =====
-    // 측정용 span (재사용)
-    const _measureSpan = document.createElement('span');
-    _measureSpan.style.cssText = 'visibility:hidden;position:fixed;top:-9999px;white-space:nowrap;pointer-events:none;';
-    document.body.appendChild(_measureSpan);
+    let _measureSpan = null;
 
     function updateDisplay(value) {
+        // 측정용 span lazy init
+        if (!_measureSpan) {
+            _measureSpan = document.createElement('span');
+            _measureSpan.style.cssText = 'visibility:hidden;position:fixed;top:-9999px;white-space:nowrap;pointer-events:none;';
+            document.body.appendChild(_measureSpan);
+        }
+
         const containerWidth = displayElement.parentElement.offsetWidth - 48;
         let formattedValue = formatDisplayExpression(value);
         displayElement.textContent = formattedValue;
 
-        // 기본 폰트 크기: vw 기반 (clamp(48px, 13vw, 90px))
         const baseFontSize = Math.min(90, Math.max(48, window.innerWidth * 0.13));
 
         _measureSpan.style.fontFamily = getComputedStyle(displayElement).fontFamily;
