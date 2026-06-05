@@ -114,7 +114,7 @@ body.ios26-theme .top-icon { background: #1c1c1e; border: 1px solid #2c2c2e; }
     scrollbar-width: none; -ms-overflow-style: none; direction: ltr;
 }
 .display-text::-webkit-scrollbar { display: none; }
-.buttons { flex-shrink: 0; background: #000; margin-top: auto; }
+.buttons { flex-shrink: 0; background: #000; margin-top: auto; pointer-events: auto; }
 :root { --btn-w: calc((100vw - 58px) / 4); }
 .button-grid {
     display: grid;
@@ -1615,19 +1615,37 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
     function vibrateDevice() { if('vibrate' in navigator) navigator.vibrate(50); }
 
     // ===== 디스플레이 =====
+    // 측정용 span (재사용)
+    const _measureSpan = document.createElement('span');
+    _measureSpan.style.cssText = 'visibility:hidden;position:fixed;top:-9999px;white-space:nowrap;pointer-events:none;';
+    document.body.appendChild(_measureSpan);
+
     function updateDisplay(value) {
         const containerWidth = displayElement.parentElement.offsetWidth - 48;
         let formattedValue = formatDisplayExpression(value);
         displayElement.textContent = formattedValue;
-        const me = document.createElement('span');
-        me.style.cssText = `font-weight:${ios26Mode?'500':'400'};font-family:${getComputedStyle(displayElement).fontFamily};visibility:hidden;position:absolute;white-space:nowrap`;
-        me.textContent = formattedValue;
-        document.body.appendChild(me);
-        let fs = 80; me.style.fontSize = fs + 'px';
-        if (me.offsetWidth > containerWidth) { fs = Math.max(Math.floor(fs*0.6), Math.floor((containerWidth/me.offsetWidth)*fs)); }
-        document.body.removeChild(me);
+
+        // 기본 폰트 크기: vw 기반 (clamp(48px, 13vw, 90px))
+        const baseFontSize = Math.min(90, Math.max(48, window.innerWidth * 0.13));
+
+        _measureSpan.style.fontFamily = getComputedStyle(displayElement).fontFamily;
+        _measureSpan.style.fontWeight = ios26Mode ? '500' : '400';
+        _measureSpan.style.fontSize = baseFontSize + 'px';
+        _measureSpan.textContent = formattedValue;
+
+        let fs = baseFontSize;
+        if (_measureSpan.offsetWidth > containerWidth) {
+            fs = Math.max(
+                Math.floor(baseFontSize * 0.5),
+                Math.floor((containerWidth / _measureSpan.offsetWidth) * baseFontSize)
+            );
+        }
         displayElement.style.fontSize = fs + 'px';
-        setTimeout(() => { if(displayElement.scrollWidth>displayElement.clientWidth) displayElement.scrollLeft=displayElement.scrollWidth-displayElement.clientWidth; }, 0);
+        setTimeout(() => {
+            if (displayElement.scrollWidth > displayElement.clientWidth) {
+                displayElement.scrollLeft = displayElement.scrollWidth - displayElement.clientWidth;
+            }
+        }, 0);
     }
     function updateExpression(text) { expressionDisplay.textContent = text; }
 
