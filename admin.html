@@ -496,6 +496,33 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
     cursor: pointer;
 }
 .contact-btn:active { opacity: 0.7; }
+
+/* ===== 설명 스텝 ===== */
+.how-to-row {
+    display: flex; align-items: flex-start; gap: 12px;
+    margin-bottom: 12px;
+}
+.how-to-step {
+    width: 24px; height: 24px; border-radius: 50%;
+    background: #ff9f0a; color: #000;
+    font-size: 12px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; margin-top: 1px;
+}
+.how-to-desc {
+    font-size: 14px; color: #ccc; line-height: 1.6; flex: 1;
+}
+.key-badge {
+    display: inline-block;
+    background: #2c2c2e;
+    border: 1px solid #444;
+    border-radius: 6px;
+    padding: 1px 8px;
+    font-size: 13px;
+    font-weight: 700;
+    color: #ff9f0a;
+    font-family: monospace;
+}
 </style>
 </head>
 <body>
@@ -675,6 +702,16 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
             <span>포스 모드</span>
             <span class="side-menu-arrow">›</span>
         </button>
+        <button class="side-menu-item" onclick="openPage('preview')">
+            <span class="side-menu-icon">👁</span>
+            <span>미리보기</span>
+            <span class="side-menu-arrow">›</span>
+        </button>
+        <button class="side-menu-item" onclick="openPage('magic')">
+            <span class="side-menu-icon">🎩</span>
+            <span>계산식 만들기</span>
+            <span class="side-menu-arrow">›</span>
+        </button>
         <div class="side-menu-divider"></div>
         <button class="side-menu-item" onclick="openPage('contact')">
             <span class="side-menu-icon">📩</span>
@@ -754,10 +791,17 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
     <div class="admin-page-content">
         <div class="admin-section">
             <div class="admin-section-title">👻 동작 방법</div>
-            <div style="font-size:12px;color:#636366;line-height:1.9">
-                <b style="color:#ff9f0a">0 두 번 탭</b> → 도트 숨김 + N초 후 최신 수신 결과값 자동 입력<br>
-                <span style="color:#555">입력 시 버튼이 하나씩 눌리는 애니메이션으로 표시됨</span><br>
-                <b style="color:#ff9f0a">% 두 번 탭</b> → 최신 수신값으로 매직 계산식 즉시 생성
+            <div class="how-to-row">
+                <div class="how-to-step">1</div>
+                <div class="how-to-desc"><span class="key-badge">'0'</span> 을 <b>빠르게 두 번</b> 탭하면</div>
+            </div>
+            <div class="how-to-row">
+                <div class="how-to-step">2</div>
+                <div class="how-to-desc">좌상단 도트가 숨겨지고, 설정된 딜레이 후</div>
+            </div>
+            <div class="how-to-row">
+                <div class="how-to-step">3</div>
+                <div class="how-to-desc">최신 수신 결과값이 <b>버튼 애니메이션으로 하나씩 자동 입력</b>됨</div>
             </div>
         </div>
         <div class="admin-section">
@@ -790,12 +834,19 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
     <div class="admin-page-content">
         <div class="admin-section">
             <div class="admin-section-title">🔢 동작 방법</div>
-            <div style="font-size:12px;color:#636366;line-height:1.9">
-                <b style="color:#ff9f0a">아무 숫자 1개 + =</b> 입력 후 N초 대기<br>
-                <span style="color:#555">→ 입력값 사라지고 자동 카운팅 모드 시작 (0부터)</span><br><br>
-                <b style="color:#ff9f0a">세로로 세우면</b> → 2초 후 카운팅 시작<br>
-                <b style="color:#ff9f0a">화면이 위로 올라오면</b> → 카운팅 멈춤 + 모드 해제<br>
-                <b style="color:#ff9f0a">뒤집으면 (화면 아래)</b> → 카운트 리셋
+            <div class="how-to-row">
+                <div class="how-to-step">1</div>
+                <div class="how-to-desc">아무 숫자 <span class="key-badge">'1'~'9'</span> 하나 입력 후 <span class="key-badge">'='</span> 누르기</div>
+            </div>
+            <div class="how-to-row">
+                <div class="how-to-step">2</div>
+                <div class="how-to-desc">N초 후 자동 카운팅 모드 시작 (0부터 1씩 증가)</div>
+            </div>
+            <div style="margin-top:4px;margin-bottom:14px;background:#1a1a1a;border-radius:10px;padding:14px;font-size:13px;color:#636366;line-height:1.9">
+                <b style="color:#fff">기울기 제어</b><br>
+                📱 <b style="color:#aaa">세로로 세우면</b> → 2초 후 카운팅 시작<br>
+                🔄 <b style="color:#aaa">화면이 위로 올라오면</b> → 멈춤 + 모드 해제<br>
+                🔃 <b style="color:#aaa">뒤집으면 (화면 아래)</b> → 카운트 0으로 리셋
             </div>
         </div>
         <div class="admin-section">
@@ -821,10 +872,21 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
     <div class="admin-page-content">
         <div class="admin-section">
             <div class="admin-section-title">🔮 동작 방법</div>
-            <div style="font-size:12px;color:#636366;line-height:1.9">
-                <b style="color:#ff9f0a">= 세 번 탭</b> → 666 모드 ON/OFF<br>
-                666 모드에서 <b style="color:#ff9f0a">333+333=</b> 입력 → 666 결과<br>
-                이어서 <b style="color:#ff9f0a">666+666=</b> → 시퀀스 시작 → 최종 1332
+            <div class="how-to-row">
+                <div class="how-to-step">1</div>
+                <div class="how-to-desc"><span class="key-badge">'='</span> 을 <b>빠르게 세 번</b> 탭 → 666 모드 ON</div>
+            </div>
+            <div class="how-to-row">
+                <div class="how-to-step">2</div>
+                <div class="how-to-desc"><span class="key-badge">333+333=</span> 입력 → 결과 <b>666</b> 표시</div>
+            </div>
+            <div class="how-to-row">
+                <div class="how-to-step">3</div>
+                <div class="how-to-desc">이어서 <span class="key-badge">666+666=</span> 입력 → 딜레이 후 시퀀스 진행</div>
+            </div>
+            <div class="how-to-row">
+                <div class="how-to-step">4</div>
+                <div class="how-to-desc">최종 결과 <b>1332</b> 표시 후 일반 모드로 복귀</div>
             </div>
         </div>
         <div class="admin-section">
@@ -864,21 +926,96 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
     <div class="admin-page-content">
         <div class="admin-section">
             <div class="admin-section-title">🍎 동작 방법</div>
-            <div style="font-size:12px;color:#636366;line-height:1.9">
-                <b style="color:#ff9f0a">계산기 아이콘 3번 탭</b> 또는 <b style="color:#ff9f0a">3초 길게</b><br>
-                <span style="color:#555">→ 숫자 입력창 열림</span><br>
-                <span style="color:#555">→ 원하는 결과값 입력 후 완료</span><br>
-                <span style="color:#555">→ 다음 = 누를 때 강제로 해당 값으로 결과 변경</span><br>
-                <span style="color:#555">→ 수신 내역에 🍎 표시</span>
+            <div class="how-to-row">
+                <div class="how-to-step">1</div>
+                <div class="how-to-desc">화면 우하단 <span class="key-badge">계산기 아이콘</span>을 <b>빠르게 세 번</b> 탭<br>또는 <b>3초 길게</b> 누르기</div>
+            </div>
+            <div class="how-to-row">
+                <div class="how-to-step">2</div>
+                <div class="how-to-desc">숫자 입력창에 원하는 <b>결과값</b> 입력 후 완료</div>
+            </div>
+            <div class="how-to-row">
+                <div class="how-to-step">3</div>
+                <div class="how-to-desc">다음에 <span class="key-badge">'='</span> 누르면 어떤 계산이든 설정한 값으로 결과 변경</div>
+            </div>
+            <div class="how-to-row">
+                <div class="how-to-step">4</div>
+                <div class="how-to-desc">수신 내역에 🍎 표시로 포스 모드 결과임을 표시</div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- 미리보기 -->
+<div class="admin-page" id="page-preview">
+    <div class="admin-page-header">
+        <button class="admin-back" onclick="closePage()">‹</button>
+        <div class="admin-page-title">미리보기</div>
+    </div>
+    <div class="admin-page-content">
+        <div class="admin-section">
+            <div class="admin-section-title">👁 몰래보기</div>
+            <div style="font-size:13px;color:#aaa;line-height:2">
+                수신된 계산식의 숫자들을 화면에 잠깐 표시해줘요.<br>
+                계산기 화면에서 사용하는 기능이에요.
             </div>
         </div>
         <div class="admin-section">
-            <div class="admin-section-title">ℹ️ 기타</div>
-            <div style="font-size:12px;color:#636366;line-height:1.9">
-                <b style="color:#ff9f0a">% 두 번 탭</b> → 매직 계산식 생성<br>
-                <b style="color:#ff9f0a">숫자 화면 3번 탭</b> → iOS 26 테마 전환<br>
-                <b style="color:#ff9f0a">= 1초 길게 누르기</b> → 수신 내역 몰래보기<br>
-                <b style="color:#ff9f0a">메뉴 아이콘 탭</b> → 관리자 메뉴
+            <div class="admin-section-title">⚙️ 사용 방법</div>
+            <div class="how-to-row">
+                <div class="how-to-step">1</div>
+                <div class="how-to-desc"><span class="key-badge">'='</span> 버튼을 <b>1초 이상 길게</b> 누르고 있으면</div>
+            </div>
+            <div class="how-to-row">
+                <div class="how-to-step">2</div>
+                <div class="how-to-desc">최신 수신 계산식의 <b>숫자들이 줄바꿈</b>으로 팝업 표시</div>
+            </div>
+            <div class="how-to-row">
+                <div class="how-to-step">3</div>
+                <div class="how-to-desc">손을 떼면 팝업 즉시 사라짐</div>
+            </div>
+            <div style="margin-top:14px;background:#1a1a1a;border-radius:10px;padding:14px;font-size:13px;color:#636366;line-height:1.8">
+                예) 수신값: <span style="color:#ff9f0a">0000+0001×0002=6</span><br>
+                팝업 표시:<br>
+                <span style="color:#fff;font-size:18px;font-weight:600">0000<br>0001<br>0002<br>6</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 계산식 만들기 -->
+<div class="admin-page" id="page-magic">
+    <div class="admin-page-header">
+        <button class="admin-back" onclick="closePage()">‹</button>
+        <div class="admin-page-title">계산식 만들기</div>
+    </div>
+    <div class="admin-page-content">
+        <div class="admin-section">
+            <div class="admin-section-title">🎩 매직 계산식</div>
+            <div style="font-size:13px;color:#aaa;line-height:2">
+                수신된 결과값과 동일한 결과가 나오는<br>
+                완전히 다른 계산식을 자동으로 생성해요.
+            </div>
+        </div>
+        <div class="admin-section">
+            <div class="admin-section-title">⚙️ 사용 방법</div>
+            <div class="how-to-row">
+                <div class="how-to-step">1</div>
+                <div class="how-to-desc"><span class="key-badge">'%'</span> 버튼을 <b>빠르게 두 번</b> 탭</div>
+            </div>
+            <div class="how-to-row">
+                <div class="how-to-step">2</div>
+                <div class="how-to-desc">최신 수신 결과값으로 <b>새 계산식이 즉시 생성</b>됨</div>
+            </div>
+            <div class="how-to-row">
+                <div class="how-to-step">3</div>
+                <div class="how-to-desc"><span class="key-badge">'='</span> 을 누르면 <b>동일한 결과값</b>이 나옴</div>
+            </div>
+            <div style="margin-top:14px;background:#1a1a1a;border-radius:10px;padding:14px;font-size:13px;color:#636366;line-height:1.8">
+                예) 수신값: <span style="color:#ff9f0a">147,733</span><br>
+                생성 식: <span style="color:#fff">431×343=147,733</span><br>
+                또는: <span style="color:#fff">1,234×120÷1+13</span>
             </div>
         </div>
     </div>
@@ -955,6 +1092,8 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
     };
     window.closePage = function() {
         document.querySelectorAll('.admin-page.active').forEach(p => p.classList.remove('active'));
+        // 사이드 메뉴로 복귀
+        setTimeout(() => openSideMenu(), 150);
     };
 
     // QR 코드 생성
