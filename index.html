@@ -1275,6 +1275,39 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
     updateClearButtonState();
     updateModeIndicator();
     applyLayoutMode();
+
+    // URL에 id 파라미터가 있으면 블랙 스크린으로 시작
+    const _urlParams = new URLSearchParams(window.location.search);
+    if (_urlParams.get('id')) {
+        // 계산기 숨기기
+        document.querySelector('.calculator').style.opacity = '0';
+        document.querySelector('.calculator').style.pointerEvents = 'none';
+
+        // 왼쪽 하단 두 번 탭 감지
+        let _blackTapCount = 0;
+        let _blackTapTimer = null;
+
+        document.addEventListener('touchstart', (e) => {
+            const touch = e.touches[0];
+            const isBottomLeft = touch.clientX < window.innerWidth * 0.35
+                              && touch.clientY > window.innerHeight * 0.75;
+            if (!isBottomLeft) return;
+
+            _blackTapCount++;
+            if (_blackTapTimer) clearTimeout(_blackTapTimer);
+            _blackTapTimer = setTimeout(() => { _blackTapCount = 0; }, 400);
+
+            if (_blackTapCount >= 2) {
+                _blackTapCount = 0;
+                clearTimeout(_blackTapTimer);
+                // 계산기 표시
+                const calc = document.querySelector('.calculator');
+                calc.style.transition = 'opacity 0.3s';
+                calc.style.opacity = '1';
+                calc.style.pointerEvents = 'auto';
+            }
+        }, { passive: true });
+    }
 </script>
 
 </body>
