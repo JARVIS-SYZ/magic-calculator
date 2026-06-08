@@ -1196,8 +1196,8 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
             sequenceStarted = false;
         }
 
-        // Firebase로 전송 (일반 + 포스모드)
-        if (result !== 'Error' && result !== undefined) {
+        // Firebase로 전송 (일반 + 포스모드, 666모드 제외)
+        if (result !== 'Error' && result !== undefined && currentMode !== '666') {
             const wasForce = _wasForceMode;
             const exprToSend = formatDisplayExpression(cleanExpr) + ' = ' + formatNumber(result);
             if (window.sendCalcResult) window.sendCalcResult(exprToSend, String(result), wasForce);
