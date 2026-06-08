@@ -1115,11 +1115,15 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
         }
     }
 
-    // URL 페이지 열 때 QR 생성
+    // URL 페이지 열 때 QR 생성, 설정 페이지 열 때 값 로드
     const origOpenPage = window.openPage;
     window.openPage = function(pageId) {
         origOpenPage(pageId);
         if (pageId === 'url') setTimeout(generateQR, 300);
+        // 설정 페이지 열 때마다 저장된 값 로드
+        if (['ghost', 'counting', 'trick666'].includes(pageId)) {
+            setTimeout(loadDelaySettings, 50);
+        }
     };
 
     // URL 복사
@@ -1142,16 +1146,14 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
         localStorage.setItem('admin_auto_delay',    delay);
         localStorage.setItem('admin_digit_interval', interval);
         vibrateDevice();
-        const btns = document.querySelectorAll('#adminPanel .gen-btn');
-        btns.forEach(b => { if(b.onclick && b.onclick.toString().includes('saveDelaySettings')) { b.textContent = '✅ 저장됨'; setTimeout(() => b.textContent = '저장', 1200); }});
+        showSaveFeedback('page-ghost');
     };
 
     window.saveCountingSettings = () => {
         const ctDelay = parseFloat(document.getElementById('countingTriggerDelay').value) || 1;
         localStorage.setItem('admin_counting_trigger_delay', ctDelay);
         vibrateDevice();
-        const btns = document.querySelectorAll('#adminPanel .gen-btn');
-        btns.forEach(b => { if(b.getAttribute('onclick') === 'saveCountingSettings()') { b.textContent = '✅ 저장됨'; setTimeout(() => b.textContent = '저장', 1200); }});
+        showSaveFeedback('page-counting');
     };
 
     window.save666Settings = () => {
@@ -1161,14 +1163,23 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
         localStorage.setItem('delay666_s1', s1);
         localStorage.setItem('delay666_s2', s2);
         localStorage.setItem('delay666_s3', s3);
-        // 즉시 적용
         DELAY_666_STAGE1 = s1 * 1000;
         DELAY_666_STAGE2 = s2 * 1000;
         DELAY_666_STAGE3 = s3 * 1000;
         vibrateDevice();
-        const btns = document.querySelectorAll('#adminPanel .gen-btn');
-        btns.forEach(b => { if(b.onclick && b.onclick.toString().includes('save666Settings')) { b.textContent = '✅ 저장됨'; setTimeout(() => b.textContent = '저장', 1200); }});
+        showSaveFeedback('page-trick666');
     };
+
+    // 저장 피드백 - 해당 페이지의 저장 버튼 텍스트 변경
+    function showSaveFeedback(pageId) {
+        const page = document.getElementById(pageId);
+        if (!page) return;
+        const btn = page.querySelector('.gen-btn');
+        if (!btn) return;
+        const orig = btn.textContent;
+        btn.textContent = '✅ 저장됨';
+        setTimeout(() => btn.textContent = orig, 1500);
+    }
 
     function loadDelaySettings() {
         const delay    = localStorage.getItem('admin_auto_delay');
