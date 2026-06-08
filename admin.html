@@ -874,7 +874,7 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
             <div class="admin-section-title">🔮 동작 방법</div>
             <div class="how-to-row">
                 <div class="how-to-step">1</div>
-                <div class="how-to-desc"><span class="key-badge">'='</span> 을 <b>빠르게 세 번</b> 탭 → 666 모드 ON</div>
+                <div class="how-to-desc"><span class="key-badge">'='</span> 을 <b>빠르게 세 번</b> 탭하면 666 모드 켜짐</div>
             </div>
             <div class="how-to-row">
                 <div class="how-to-step">2</div>
@@ -882,11 +882,21 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
             </div>
             <div class="how-to-row">
                 <div class="how-to-step">3</div>
-                <div class="how-to-desc">이어서 <span class="key-badge">666+666=</span> 입력 → 딜레이 후 시퀀스 진행</div>
+                <div class="how-to-desc">이어서 <span class="key-badge">666+666</span> 입력 → 잠시 후 파란 점 등장<br>
+                <span style="color:#636366;font-size:12px">점이 사라지면 1초 후 계산식이 999+999로 바뀜</span></div>
             </div>
             <div class="how-to-row">
                 <div class="how-to-step">4</div>
-                <div class="how-to-desc">최종 결과 <b>1332</b> 표시 후 일반 모드로 복귀</div>
+                <div class="how-to-desc"><span class="key-badge">999+999=</span> 누르면 → 잠시 후 파란 점 등장<br>
+                <span style="color:#636366;font-size:12px">점이 사라지면 1초 후 식이 666+666=으로 바뀜</span></div>
+            </div>
+            <div class="how-to-row">
+                <div class="how-to-step">5</div>
+                <div class="how-to-desc">최종 결과 <b>1332</b> 표시 후 일반 모드로 자동 복귀</div>
+            </div>
+            <div style="margin-top:4px;background:#1a1a1a;border-radius:10px;padding:14px;font-size:12px;color:#636366;line-height:1.8">
+                💡 파란 점은 각 단계 시작 1초 후 나타나고,<br>
+                다음 단계 전환 1초 전에 사라져요.
             </div>
         </div>
         <div class="admin-section">
@@ -1401,9 +1411,9 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
     let autoInputTimer = null;
 
     const DEFAULT_DELAY_666_STAGE1 = 5000, DEFAULT_DELAY_666_STAGE2 = 10000, DEFAULT_DELAY_666_STAGE3 = 5000;
-    const DEFAULT_DOT_STAGE1_APPEAR = 0, DEFAULT_DOT_STAGE1_DISAPPEAR_BEFORE = 2000;
-    const DEFAULT_DOT_STAGE2_APPEAR = 3000, DEFAULT_DOT_STAGE2_DISAPPEAR_BEFORE = 2000;
-    const DEFAULT_DOT_STAGE3_APPEAR = 3000, DEFAULT_DOT_STAGE3_DISAPPEAR_BEFORE = 2000;
+    const DEFAULT_DOT_STAGE1_APPEAR = 1000, DEFAULT_DOT_STAGE1_DISAPPEAR_BEFORE = 1000;
+    const DEFAULT_DOT_STAGE2_APPEAR = 1000, DEFAULT_DOT_STAGE2_DISAPPEAR_BEFORE = 1000;
+    const DEFAULT_DOT_STAGE3_APPEAR = 1000, DEFAULT_DOT_STAGE3_DISAPPEAR_BEFORE = 1000;
 
     let DELAY_666_STAGE1 = DEFAULT_DELAY_666_STAGE1, DELAY_666_STAGE2 = DEFAULT_DELAY_666_STAGE2, DELAY_666_STAGE3 = DEFAULT_DELAY_666_STAGE3;
     let DOT_STAGE1_APPEAR = DEFAULT_DOT_STAGE1_APPEAR, DOT_STAGE1_DISAPPEAR_BEFORE = DEFAULT_DOT_STAGE1_DISAPPEAR_BEFORE;
