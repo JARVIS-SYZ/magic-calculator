@@ -108,7 +108,7 @@ body.ios26-theme .top-icon { background: #1c1c1e; border: 1px solid #2c2c2e; }
 }
 .expression-text.visible { opacity: 1; }
 .display-text {
-    font-size: clamp(48px, 13vw, 90px); font-weight: 400;
+    font-size: 80px; font-weight: 400;
     text-align: right; line-height: 1;
     white-space: nowrap; overflow-x: auto; overflow-y: hidden;
     scrollbar-width: none; -ms-overflow-style: none; direction: ltr;
@@ -679,22 +679,8 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
     </div>
 </div>
 
-        </div>
-
 <!-- = 길게 누르기 팝업 -->
 <div class="peek-popup" id="peekPopup"></div>
-
-<!-- 기존 포스 모드 설정 모달 -->
-<div class="settings-modal" id="settingsModal">
-    <div class="settings-content">
-        <div class="settings-title">설정</div>
-        <div class="setting-item">
-            <div class="setting-label">포스 모드 숫자</div>
-            <input type="number" class="force-input" id="forceNumberInput" placeholder="숫자 입력">
-        </div>
-        <button class="close-button" onclick="closeSettings()">완료</button>
-    </div>
-</div>
 
 <!-- 관리자 메뉴 오버레이 -->
 <div class="menu-overlay" id="menuOverlay" onclick="closeMenuOverlay()"></div>
