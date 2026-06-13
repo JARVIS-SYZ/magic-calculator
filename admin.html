@@ -560,7 +560,7 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
 <div class="auth-screen" id="authScreen">
     <div class="auth-title">🔐 관리자 인증</div>
     <div class="auth-sub">발급받은 6자리 코드를<br>입력해주세요</div>
-    <input class="auth-input" id="authInput" type="number" placeholder="000000"
+    <input class="auth-input" id="authInput" type="text" placeholder="000000"
            maxlength="6" inputmode="numeric" autocomplete="off">
     <div class="auth-error" id="authError"></div>
     <button class="auth-btn" onclick="doAuth()">확인</button>
@@ -1142,15 +1142,16 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
     }
 
     async function doAuth() {
-        const code = document.getElementById('authInput').value.trim();
+        const code = document.getElementById('authInput').value.trim().replace(/\D/g, '');
         const errEl = document.getElementById('authError');
         errEl.textContent = '';
 
         if (code.length !== 6) {
-            errEl.textContent = '6자리 코드를 입력해주세요';
+            errEl.textContent = '6자리 코드를 입력해주세요 (' + code.length + '자리 입력됨)';
             return;
         }
 
+        errEl.textContent = '확인 중...';
         try {
             const codeDoc = await db_auth.collection('admin_codes').doc(code).get();
             if (!codeDoc.exists) {
@@ -1163,7 +1164,6 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
                 return;
             }
 
-            // 코드 사용 처리 + 세션 등록
             const deviceId = getDeviceId();
             const batch = db_auth.batch();
             batch.update(db_auth.collection('admin_codes').doc(code), { used: true });
@@ -1178,7 +1178,8 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
             currentAdminId = codeData.adminId;
             showAdminApp();
         } catch(e) {
-            errEl.textContent = '오류가 발생했어요: ' + e.message;
+            console.error('인증 오류:', e);
+            errEl.textContent = '오류: ' + e.message;
         }
     }
 
@@ -2331,7 +2332,6 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
         }, { passive: true });
     });
 
-            }); // onSnapshot 끝
     } // startDataSync 끝
     startDataSync();
 
