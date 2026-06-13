@@ -2104,23 +2104,12 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
         let formattedValue = formatDisplayExpression(value);
         displayElement.textContent = formattedValue;
 
-        // containerWidth: parentElement 또는 window 기준
-        const parent = displayElement.parentElement;
-        const containerWidth = (parent && parent.offsetWidth > 0)
-            ? parent.offsetWidth - 48
-            : window.innerWidth - 48;
-
-        const baseFontSize = 80;
-        const me = document.createElement('span');
-        me.style.cssText = `font-weight:${ios26Mode?'500':'400'};font-family:${getComputedStyle(displayElement).fontFamily};visibility:hidden;position:absolute;white-space:nowrap;font-size:${baseFontSize}px`;
-        me.textContent = formattedValue;
-        document.body.appendChild(me);
-
-        let fs = baseFontSize;
-        if (containerWidth > 0 && me.offsetWidth > containerWidth) {
-            fs = Math.max(48, Math.floor((containerWidth / me.offsetWidth) * baseFontSize));
-        }
-        document.body.removeChild(me);
+        // 글자 수에 따라 폰트 크기 조정
+        const len = formattedValue.length;
+        let fs = 80;
+        if (len > 12) fs = 56;
+        else if (len > 9) fs = 64;
+        else if (len > 7) fs = 72;
         displayElement.style.fontSize = fs + 'px';
 
         setTimeout(() => {
@@ -2340,6 +2329,7 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
     updateClearButtonState();
     updateModeIndicator();
     applyLayoutMode();
+
 </script>
 </body>
 </html>
