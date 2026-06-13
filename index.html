@@ -437,6 +437,7 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
         try {
             await db.collection('calculations').add({
                 calcId: calcId,
+                adminId: window._adminId || null,
                 expression: expression,
                 result: result,
                 isForce: isForce || false,
@@ -530,6 +531,9 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
             DOT_STAGE3_DISAPPEAR_BEFORE = getMs('dot3Off', DEFAULT_DOT_STAGE3_DISAPPEAR_BEFORE);
             // 카운팅 트리거 딜레이
             COUNTING_TRIGGER_DELAY = getMs('ctd', 1000);
+            // adminId 저장
+            const adminParam = params.get('admin');
+            if (adminParam) window._adminId = adminParam;
 
         } catch (e) {}
     }

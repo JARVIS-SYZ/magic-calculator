@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>슈퍼 관리자</title>
+    <link rel="apple-touch-icon" sizes="180x180" href="icon-180.png">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select:none; -webkit-user-select:none; }
+html, body {
+    background:#000; color:#fff;
+    font-family:-apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+    height:100%; overflow:hidden;
+}
+
+/* ===== 로그인 화면 ===== */
+.login-screen {
+    position:fixed; inset:0;
+    display:flex; flex-direction:column;
+    align-items:center; justify-content:center;
+    background:#000;
+    padding: 40px 32px;
+    gap: 20px;
+}
+.login-title { font-size:28px; font-weight:700; margin-bottom:8px; }
+.login-sub { font-size:14px; color:#636366; margin-bottom:16px; }
+.login-input {
+    width:100%; background:#1c1c1e; border:1.5px solid #2c2c2e;
+    border-radius:14px; padding:16px 20px;
+    font-size:20px; color:#fff; text-align:center;
+    font-family:monospace; letter-spacing:4px;
+    user-select:text; -webkit-user-select:text;
+}
+.login-input:focus { outline:none; border-color:#ff9f0a; }
+.login-btn {
+    width:100%; background:#ff9f0a; border:none; border-radius:14px;
+    padding:16px; font-size:18px; font-weight:700; color:#000;
+    cursor:pointer;
+}
+.login-btn:active { opacity:0.8; }
+.login-error { font-size:14px; color:#ff453a; min-height:20px; }
+
+/* ===== 메인 화면 ===== */
+.main-screen {
+    position:fixed; inset:0;
+    display:none; flex-direction:column;
+    background:#0a0a0a;
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+}
+.main-screen.active { display:flex; }
+
+.top-bar {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:16px 20px;
+    border-bottom:1px solid #1c1c1e;
+    flex-shrink:0;
+}
+.top-title { font-size:20px; font-weight:700; }
+.logout-btn {
+    background:#1c1c1e; border:none; border-radius:10px;
+    padding:8px 14px; font-size:13px; color:#ff453a;
+    cursor:pointer; font-weight:600;
+}
+
+.tabs {
+    display:flex; border-bottom:1px solid #1c1c1e;
+    flex-shrink:0;
+}
+.tab {
+    flex:1; padding:14px; text-align:center;
+    font-size:14px; font-weight:600; color:#636366;
+    background:none; border:none; cursor:pointer;
+    border-bottom:2px solid transparent;
+}
+.tab.active { color:#ff9f0a; border-bottom-color:#ff9f0a; }
+
+.tab-content {
+    flex:1; overflow-y:auto; padding:16px 20px;
+    -webkit-overflow-scrolling:touch;
+    display:none;
+}
+.tab-content.active { display:block; }
+
+/* ===== 코드 관리 ===== */
+.section {
+    background:#1c1c1e; border-radius:16px;
+    padding:18px 20px; margin-bottom:14px;
+}
+.section-title {
+    font-size:11px; font-weight:600; color:#636366;
+    text-transform:uppercase; letter-spacing:0.8px;
+    margin-bottom:14px;
+}
+
+.code-create-row {
+    display:flex; gap:10px; margin-bottom:14px;
+}
+.code-name-input {
+    flex:1; background:#2c2c2e; border:none; border-radius:10px;
+    padding:12px 14px; font-size:15px; color:#fff;
+    user-select:text; -webkit-user-select:text;
+}
+.code-name-input:focus { outline:none; background:#3a3a3c; }
+.create-btn {
+    background:#ff9f0a; border:none; border-radius:10px;
+    padding:12px 18px; font-size:14px; font-weight:700;
+    color:#000; cursor:pointer; white-space:nowrap;
+}
+.create-btn:active { opacity:0.8; }
+
+.code-list { display:flex; flex-direction:column; gap:10px; }
+.code-item {
+    background:#2c2c2e; border-radius:12px;
+    padding:14px 16px;
+    display:flex; align-items:center; gap:12px;
+}
+.code-item.used { opacity:0.5; }
+.code-info { flex:1; }
+.code-name { font-size:15px; font-weight:600; margin-bottom:4px; }
+.code-val {
+    font-size:13px; font-family:monospace;
+    color:#ff9f0a; letter-spacing:2px;
+}
+.code-status {
+    font-size:11px; color:#30d158; font-weight:600;
+}
+.code-status.used { color:#ff453a; }
+.code-delete {
+    background:#ff453a22; border:none; border-radius:8px;
+    padding:8px 12px; font-size:12px; color:#ff453a;
+    cursor:pointer; font-weight:600;
+}
+.code-delete:active { opacity:0.7; }
+
+.empty-msg { text-align:center; color:#48484a; font-size:14px; padding:28px 0; }
+
+/* ===== 수신 내역 ===== */
+.admin-filter-row {
+    display:flex; gap:8px; margin-bottom:14px;
+    overflow-x:auto; -webkit-overflow-scrolling:touch;
+}
+.filter-btn {
+    flex-shrink:0; background:#2c2c2e; border:none; border-radius:20px;
+    padding:8px 16px; font-size:13px; font-weight:600;
+    color:#888; cursor:pointer; white-space:nowrap;
+}
+.filter-btn.active { background:#ff9f0a22; color:#ff9f0a; }
+
+.log-item {
+    background:#2c2c2e; border-radius:12px;
+    padding:14px 16px; margin-bottom:8px;
+}
+.log-expr { font-size:18px; font-weight:600; margin-bottom:6px; }
+.log-meta { display:flex; justify-content:space-between; font-size:12px; color:#636366; }
+.log-admin-badge {
+    background:#3a3a3c; border-radius:6px;
+    padding:2px 8px; font-size:11px; color:#ff9f0a;
+    font-family:monospace;
+}
+
+/* ===== 현황 ===== */
+.stat-grid {
+    display:grid; grid-template-columns:1fr 1fr;
+    gap:10px; margin-bottom:14px;
+}
+.stat-card {
+    background:#2c2c2e; border-radius:12px;
+    padding:16px; text-align:center;
+}
+.stat-num { font-size:32px; font-weight:700; color:#ff9f0a; }
+.stat-label { font-size:12px; color:#636366; margin-top:4px; }
+</style>
+</head>
+<body>
+
+<!-- 로그인 화면 -->
+<div class="login-screen" id="loginScreen">
+    <div class="login-title">🔐 슈퍼 관리자</div>
+    <div class="login-sub">비밀번호를 입력하세요</div>
+    <input class="login-input" id="pwInput" type="password" placeholder="••••••••" autocomplete="off">
+    <div class="login-error" id="loginError"></div>
+    <button class="login-btn" onclick="doLogin()">로그인</button>
+</div>
+
+<!-- 메인 화면 -->
+<div class="main-screen" id="mainScreen">
+    <div class="top-bar">
+        <div class="top-title">⚡ 슈퍼 관리자</div>
+        <button class="logout-btn" onclick="doLogout()">로그아웃</button>
+    </div>
+    <div class="tabs">
+        <button class="tab active" onclick="switchTab('overview')">현황</button>
+        <button class="tab" onclick="switchTab('codes')">코드 관리</button>
+        <button class="tab" onclick="switchTab('logs')">수신 내역</button>
+    </div>
+
+    <!-- 현황 탭 -->
+    <div class="tab-content active" id="tab-overview">
+        <div class="stat-grid">
+            <div class="stat-card">
+                <div class="stat-num" id="statTotalCodes">-</div>
+                <div class="stat-label">전체 코드</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-num" id="statUsedCodes">-</div>
+                <div class="stat-label">활성 관리자</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-num" id="statTotalLogs">-</div>
+                <div class="stat-label">전체 수신</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-num" id="statTodayLogs">-</div>
+                <div class="stat-label">오늘 수신</div>
+            </div>
+        </div>
+        <div class="section">
+            <div class="section-title">최근 수신</div>
+            <div id="recentLogs"><div class="empty-msg">로딩 중...</div></div>
+        </div>
+    </div>
+
+    <!-- 코드 관리 탭 -->
+    <div class="tab-content" id="tab-codes">
+        <div class="section">
+            <div class="section-title">새 코드 생성</div>
+            <div class="code-create-row">
+                <input class="code-name-input" id="newCodeName" placeholder="관리자 이름/메모" type="text">
+                <button class="create-btn" onclick="createCode()">생성</button>
+            </div>
+        </div>
+        <div class="section">
+            <div class="section-title">코드 목록</div>
+            <div class="code-list" id="codeList">
+                <div class="empty-msg">로딩 중...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 수신 내역 탭 -->
+    <div class="tab-content" id="tab-logs">
+        <div class="admin-filter-row" id="adminFilters">
+            <button class="filter-btn active" onclick="filterLogs('all')">전체</button>
+        </div>
+        <div id="allLogs"><div class="empty-msg">로딩 중...</div></div>
+    </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script>
+    const SUPER_PW = 'SYZ_JARVIS';
+    const firebaseConfig = {
+        apiKey: "AIzaSyDEZlkBRFt4JtR1v3QGaBeTOPvD-Zg0cBs",
+        authDomain: "magic-calculator-5dcac.firebaseapp.com",
+        projectId: "magic-calculator-5dcac",
+        storageBucket: "magic-calculator-5dcac.firebasestorage.app",
+        messagingSenderId: "760520232651",
+        appId: "1:760520232651:web:e22497f76382dc2086954e"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    // ===== 로그인 =====
+    function doLogin() {
+        const pw = document.getElementById('pwInput').value;
+        if (pw === SUPER_PW) {
+            sessionStorage.setItem('super_auth', '1');
+            showMain();
+        } else {
+            document.getElementById('loginError').textContent = '비밀번호가 틀렸어요.';
+            document.getElementById('pwInput').value = '';
+        }
+    }
+
+    function doLogout() {
+        sessionStorage.removeItem('super_auth');
+        document.getElementById('mainScreen').classList.remove('active');
+        document.getElementById('loginScreen').style.display = 'flex';
+        document.getElementById('pwInput').value = '';
+    }
+
+    document.getElementById('pwInput').addEventListener('keydown', e => {
+        if (e.key === 'Enter') doLogin();
+    });
+
+    function showMain() {
+        document.getElementById('loginScreen').style.display = 'none';
+        document.getElementById('mainScreen').classList.add('active');
+        loadAll();
+    }
+
+    // 세션 유지
+    if (sessionStorage.getItem('super_auth') === '1') showMain();
+
+    // ===== 탭 전환 =====
+    function switchTab(name) {
+        document.querySelectorAll('.tab').forEach((t, i) => {
+            t.classList.toggle('active', ['overview','codes','logs'][i] === name);
+        });
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        document.getElementById('tab-' + name).classList.add('active');
+    }
+
+    // ===== 데이터 로드 =====
+    let allCodes = {};
+    let currentFilter = 'all';
+
+    function loadAll() {
+        loadCodes();
+        loadLogs();
+    }
+
+    // 코드 목록 실시간
+    db.collection('admin_codes').onSnapshot(snapshot => {
+        allCodes = {};
+        snapshot.forEach(doc => { allCodes[doc.id] = doc.data(); });
+        renderCodes(snapshot);
+        updateStats(snapshot);
+        renderAdminFilters();
+    });
+
+    function renderCodes(snapshot) {
+        const list = document.getElementById('codeList');
+        if (snapshot.empty) { list.innerHTML = '<div class="empty-msg">코드가 없어요</div>'; return; }
+        list.innerHTML = '';
+        snapshot.forEach(doc => {
+            const d = doc.data();
+            const item = document.createElement('div');
+            item.className = 'code-item' + (d.used ? ' used' : '');
+            item.innerHTML = `
+                <div class="code-info">
+                    <div class="code-name">${d.name || '이름 없음'}</div>
+                    <div class="code-val">${doc.id}</div>
+                    <div class="code-status ${d.used ? 'used' : ''}">${d.used ? '● 사용됨' : '● 미사용'}</div>
+                </div>
+                <button class="code-delete" onclick="deleteCode('${doc.id}')">삭제</button>
+            `;
+            list.appendChild(item);
+        });
+    }
+
+    function updateStats(codesSnapshot) {
+        const total = codesSnapshot.size;
+        const used = codesSnapshot.docs.filter(d => d.data().used).length;
+        document.getElementById('statTotalCodes').textContent = total;
+        document.getElementById('statUsedCodes').textContent = used;
+    }
+
+    function renderAdminFilters() {
+        const row = document.getElementById('adminFilters');
+        row.innerHTML = '<button class="filter-btn active" onclick="filterLogs(\'all\')">전체</button>';
+        Object.entries(allCodes).forEach(([code, data]) => {
+            const btn = document.createElement('button');
+            btn.className = 'filter-btn';
+            btn.textContent = data.name || code;
+            btn.onclick = () => filterLogs(data.adminId);
+            row.appendChild(btn);
+        });
+    }
+
+    // 수신 내역 실시간
+    let allLogsData = [];
+    db.collection('calculations').orderBy('timestamp', 'desc').limit(100)
+        .onSnapshot(snapshot => {
+            allLogsData = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+            const today = new Date().toDateString();
+            const todayCount = allLogsData.filter(d => {
+                if (!d.timestamp) return false;
+                return d.timestamp.toDate().toDateString() === today;
+            }).length;
+            document.getElementById('statTotalLogs').textContent = allLogsData.length;
+            document.getElementById('statTodayLogs').textContent = todayCount;
+            renderLogs('all');
+            renderRecentLogs();
+        });
+
+    function loadCodes() {}
+    function loadLogs() {}
+
+    function renderLogs(filter) {
+        currentFilter = filter;
+        const container = document.getElementById('allLogs');
+        const filtered = filter === 'all' ? allLogsData : allLogsData.filter(d => d.adminId === filter);
+
+        // 필터 버튼 활성화
+        document.querySelectorAll('.filter-btn').forEach(b => {
+            b.classList.toggle('active',
+                (filter === 'all' && b.textContent === '전체') ||
+                (filter !== 'all' && b.onclick && b.onclick.toString().includes(filter))
+            );
+        });
+
+        if (!filtered.length) { container.innerHTML = '<div class="empty-msg">수신 내역이 없어요</div>'; return; }
+        container.innerHTML = '';
+        filtered.slice(0, 50).forEach(d => {
+            const time = d.timestamp?.toDate ? d.timestamp.toDate().toLocaleString('ko-KR') : '방금';
+            const adminName = Object.values(allCodes).find(c => c.adminId === d.adminId)?.name || d.adminId || '?';
+            const item = document.createElement('div');
+            item.className = 'log-item';
+            item.innerHTML = `
+                <div class="log-expr">${d.isForce ? '🍎 ' : ''}${d.expression || ''}</div>
+                <div class="log-meta">
+                    <span class="log-admin-badge">${adminName}</span>
+                    <span>${time}</span>
+                </div>`;
+            container.appendChild(item);
+        });
+    }
+
+    function renderRecentLogs() {
+        const container = document.getElementById('recentLogs');
+        if (!allLogsData.length) { container.innerHTML = '<div class="empty-msg">없음</div>'; return; }
+        container.innerHTML = '';
+        allLogsData.slice(0, 5).forEach(d => {
+            const time = d.timestamp?.toDate ? d.timestamp.toDate().toLocaleString('ko-KR') : '방금';
+            const adminName = Object.values(allCodes).find(c => c.adminId === d.adminId)?.name || d.adminId || '?';
+            const item = document.createElement('div');
+            item.className = 'log-item';
+            item.innerHTML = `
+                <div class="log-expr">${d.isForce ? '🍎 ' : ''}${d.expression || ''}</div>
+                <div class="log-meta">
+                    <span class="log-admin-badge">${adminName}</span>
+                    <span>${time}</span>
+                </div>`;
+            container.appendChild(item);
+        });
+    }
+
+    function filterLogs(adminId) { renderLogs(adminId); }
+
+    // ===== 코드 생성 =====
+    async function createCode() {
+        const name = document.getElementById('newCodeName').value.trim();
+        if (!name) { alert('관리자 이름을 입력해주세요'); return; }
+
+        // 6자리 랜덤 숫자 코드
+        const code = Math.floor(100000 + Math.random() * 900000).toString();
+        const adminId = Math.random().toString(36).substring(2, 10);
+
+        try {
+            await db.collection('admin_codes').doc(code).set({
+                name,
+                adminId,
+                used: false,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            document.getElementById('newCodeName').value = '';
+            alert(`코드 생성 완료!\n\n이름: ${name}\n코드: ${code}\n\n이 코드를 관리자에게 전달하세요.`);
+        } catch(e) {
+            alert('오류: ' + e.message);
+        }
+    }
+
+    // ===== 코드 삭제 =====
+    async function deleteCode(code) {
+        if (!confirm(`코드 ${code}를 삭제할까요?`)) return;
+        try {
+            await db.collection('admin_codes').doc(code).delete();
+            // 해당 세션도 삭제
+            const sessions = await db.collection('admin_sessions').where('code', '==', code).get();
+            const batch = db.batch();
+            sessions.forEach(doc => batch.delete(doc.ref));
+            await batch.commit();
+        } catch(e) {
+            alert('오류: ' + e.message);
+        }
+    }
+</script>
+</body>
+</html>
