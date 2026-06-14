@@ -1532,283 +1532,6 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
 
     let delayTimers = [];
 
-    // onclick 핸들러에서 호출되므로 전역(window)에 등록 (함수 호이스팅 활용)
-    window.handleNumber = handleNumber;
-    window.handleClear = handleClear;
-    window.handleOperator = handleOperator;
-    window.handleEquals = handleEquals;
-    window.handleFunction = handleFunction;
-    window.handleCalcIcon = handleCalcIcon;
-    window.closeSettings = closeSettings;
-
-    // 초기화
-    updateDisplay(currentValue);
-    updateClearButtonState();
-    updateModeIndicator();
-    applyLayoutMode();
-
-        // adminId가 없으면 잠시 대기
-        let waited = 0;
-        while (!currentAdminId && waited < 5000) {
-            await new Promise(r => setTimeout(r, 200));
-            waited += 200;
-        }
-        if (!currentAdminId) return;
-
-        db2.collection('calculations')
-            .where('adminId', '==', currentAdminId)
-            .orderBy('timestamp', 'desc').limit(20)
-            .onSnapshot({ includeMetadataChanges: false }, snapshot => {
-            if (snapshot.empty) {
-                document.getElementById('logList').innerHTML = '<div class="empty-msg">아직 수신된 내역이 없어요</div>';
-                isFirstLoad = false;
-                return;
-            }
-
-            if (isFirstLoad) {
-                document.getElementById('logList').innerHTML = '';
-                snapshot.docs.forEach(doc => {
-                    const d = doc.data();
-                    const list = document.getElementById('logList');
-                    const time = d.timestamp?.toDate
-                        ? d.timestamp.toDate().toLocaleString('ko-KR') : '방금';
-                    const item = document.createElement('div');
-                    item.className = 'log-item' + (d.isForce ? ' force-item' : '');
-                    item.innerHTML = `
-                        <div class="log-expr">${d.isForce ? '🍎 ' : ''}${d.expression}</div>
-                        <div class="log-meta">
-                            <span class="log-id">${d.calcId || ''}</span>
-                            <span>${time}</span>
-                        </div>`;
-                    list.appendChild(item);
-                });
-                if (!snapshot.empty) {
-                    const latestData = snapshot.docs[0].data();
-                    window.pendingResult = latestData.result || null;
-                    cachedLatestData = latestData;  // 캐시 저장
-                    console.log('최근 결과값 로드:', window.pendingResult);
-                }
-                dataReady = true;  // 데이터 준비 완료
-                isFirstLoad = false;
-            } else {
-                snapshot.docChanges().forEach(change => {
-                    if (change.type === 'added' && !snapshot.metadata.hasPendingWrites) {
-                        const d = change.doc.data();
-                        addLogItem(d, true);
-                        window.pendingResult = d.result || null;
-                        cachedLatestData = d;  // 캐시 갱신
-                        console.log('새 결과값 수신:', window.pendingResult);                        if ('vibrate' in navigator) navigator.vibrate([200, 80, 200]);
-                    }
-                });
-            }
-
-            const count = snapshot.size;
-            document.getElementById('countBadge').textContent = count >= 3 ? '3+' : count;
-            document.getElementById('countBadge').style.display = 'inline-block';
-        });
-
-    // 초기화
-    loadDelaySettings();
-
-    function loadDelayConfigFromURL() {
-        try {
-            const params = new URLSearchParams(window.location.search);
-            const getMs = (key, def) => { const v = params.get(key); if (!v) return def; const n = parseFloat(v); return isNaN(n) ? def : n * 1000; };
-            DELAY_666_STAGE1 = getMs('d1', DEFAULT_DELAY_666_STAGE1);
-            DELAY_666_STAGE2 = getMs('d2', DEFAULT_DELAY_666_STAGE2);
-            DELAY_666_STAGE3 = getMs('d3', getMs('gap', DEFAULT_DELAY_666_STAGE3));
-            DOT_STAGE1_APPEAR = getMs('dot1On', DEFAULT_DOT_STAGE1_APPEAR);
-            DOT_STAGE1_DISAPPEAR_BEFORE = getMs('dot1Off', DEFAULT_DOT_STAGE1_DISAPPEAR_BEFORE);
-            DOT_STAGE2_APPEAR = getMs('dot2On', DEFAULT_DOT_STAGE2_APPEAR);
-            DOT_STAGE2_DISAPPEAR_BEFORE = getMs('dot2Off', DEFAULT_DOT_STAGE2_DISAPPEAR_BEFORE);
-            DOT_STAGE3_APPEAR = getMs('dot3On', DEFAULT_DOT_STAGE3_APPEAR);
-            DOT_STAGE3_DISAPPEAR_BEFORE = getMs('dot3Off', DEFAULT_DOT_STAGE3_DISAPPEAR_BEFORE);
-        } catch(e) {}
-    }
-    function clearAllDelayTimers() { delayTimers.forEach(id => clearTimeout(id)); delayTimers = []; hideDelayDot(); }
-    function showDelayDot() { delayDots.forEach(dot => dot.style.opacity = '1'); }
-    function hideDelayDot() { delayDots.forEach(dot => dot.style.opacity = '0'); }
-    function runDelayWithDot(totalMs, dotAppearOffsetMs, dotDisappearBeforeEndMs, onComplete) {
-        clearAllDelayTimers();
-        if (totalMs <= 0) { onComplete && onComplete(); return; }
-        const appearId   = setTimeout(showDelayDot, Math.max(0, dotAppearOffsetMs));
-        const disappearId = setTimeout(hideDelayDot, Math.max(0, totalMs - dotDisappearBeforeEndMs));
-        const completeId  = setTimeout(() => {
-            hideDelayDot();
-            delayTimers = delayTimers.filter(id => id !== appearId && id !== disappearId && id !== completeId);
-            onComplete && onComplete();
-        }, totalMs);
-        delayTimers.push(appearId, disappearId, completeId);
-    }
-
-    // ===== 자동 입력 (결과값 버튼 애니메이션) =====
-
-    // ===== % 두번 탭: 매직 계산식 생성 =====
-    async function generateMagicExpression() {
-        let target = null;
-        try {
-            if (cachedLatestData) {
-                const raw = cachedLatestData.result;
-                target = parseInt(String(raw).replace(/,/g, ''));
-            } else {
-                const snap = await _calcRef.get();
-                if (!snap.empty) {
-                    const raw = snap.docs[0].data().result;
-                    target = parseInt(String(raw).replace(/,/g, ''));
-                }
-            }
-        } catch(e) {
-            console.error('최신값 가져오기 실패:', e);
-            return;
-        }
-
-        console.log('매직 타겟:', target);
-        if (!target || isNaN(target) || target <= 0) return;
-
-        const expr = makeMagicExpr(target);
-        console.log('생성된 식:', expr);
-        if (!expr) { console.warn('식 생성 실패'); return; }
-
-        // 계산기에 식 표시 (fullExpression은 계산 가능한 형태로)
-        resetAll();
-        fullExpression = expr.raw;      // 계산용: "37×18÷2+5"
-        currentValue = '0';
-        updateDisplay(expr.display);    // 표시용: "37×18÷2+5"
-        expressionDisplay.classList.remove('visible');
-        shouldResetDisplay = false;
-        updateClearButtonState();
-    }
-
-    function makeMagicExpr(target) {
-        function fmt(n) {
-            return String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-        }
-
-        // A 범위를 target 크기에 맞게 동적 조정
-        const maxA = Math.min(99999, Math.floor(Math.sqrt(target * 10)) + 1);
-
-        const candidates = [];
-
-        for (let C = 2; C <= 9 && candidates.length < 3; C++) {
-            for (let Dsign = 0; Dsign < 2 && candidates.length < 3; Dsign++) {
-                const op = Dsign === 0 ? '+' : '−';
-                const Dmin = Math.max(11, Math.floor(target * 0.00001));
-                const Dmax = Math.min(Math.floor(target * 0.05), 999999);
-                if (Dmin > Dmax) continue;
-
-                for (let di = 0; di < 10 && candidates.length < 3; di++) {
-                    const D = Dmin + Math.floor(Math.random() * (Dmax - Dmin + 1));
-                    const mid = op === '+' ? target - D : target + D;
-                    if (mid <= 0) continue;
-
-                    const AB = mid * C;
-                    const AMax = Math.min(maxA, Math.floor(Math.sqrt(AB)) + 1);
-                    if (AMax < 11) continue;
-
-                    for (let A = 11; A <= AMax; A++) {
-                        if (AB % A !== 0) continue;
-                        const B = AB / A;
-                        if (B < 11) continue;
-
-                        const check = A * B / C + (op === '+' ? D : -D);
-                        if (Math.abs(check - target) > 0.001) continue;
-
-                        candidates.push({
-                            raw: `${A}×${B}÷${C}${op}${D}`,
-                            display: `${fmt(A)}×${fmt(B)}÷${fmt(C)}${op}${fmt(D)}`
-                        });
-                        break;
-                    }
-                }
-            }
-        }
-
-        if (candidates.length > 0) {
-            return candidates[Math.floor(Math.random() * candidates.length)];
-        }
-
-        // 폴백: A × B + D
-        for (let di = 0; di < 200; di++) {
-            const op = Math.random() > 0.5 ? '+' : '−';
-            const Dmax = Math.min(Math.floor(target * 0.05), 99999);
-            const D = Math.max(11, Math.floor(Math.random() * Dmax));
-            const AB = op === '+' ? target - D : target + D;
-            if (AB <= 100) continue;
-
-            const AMax = Math.min(maxA, Math.floor(Math.sqrt(AB)) + 1);
-            for (let A = 11; A <= AMax; A++) {
-                if (AB % A !== 0) continue;
-                const B = AB / A;
-                if (B < 11) continue;
-                return {
-                    raw: `${A}×${B}${op}${D}`,
-                    display: `${fmt(A)}×${fmt(B)}${op}${fmt(D)}`
-                };
-            }
-        }
-
-        return null;
-    }
-
-
-
-    // Firestore 쿼리 캐시 (첫 실행 렉 방지)
-    const _calcRef = firebase.firestore()
-        .collection('calculations')
-        .orderBy('timestamp', 'desc')
-        .limit(1);
-
-    async function triggerAutoInput() {
-        let result = null;
-        try {
-            if (cachedLatestData) {
-                result = cachedLatestData.result || null;
-            } else {
-                const snap = await _calcRef.get();
-                if (!snap.empty) result = snap.docs[0].data().result || null;
-            }
-        } catch(e) {
-            console.error('최신값 가져오기 실패:', e);
-            return;
-        }
-
-        if (!result) return;
-
-        const digits = String(result).replace(/[^0-9.]/g, '');
-        if (!digits) return;
-
-        const intervalMs = (parseFloat(localStorage.getItem('admin_digit_interval')) || 0.3) * 1000;
-
-        // 계산기 초기화
-        resetAll();
-
-        // 버튼 찾기 헬퍼
-        function findBtn(ch) {
-            let found = null;
-            document.querySelectorAll('.button').forEach(btn => {
-                const c = btn.querySelector('.button-content');
-                if (c && c.textContent.trim() === ch) found = btn;
-            });
-            return found;
-        }
-
-        // 각 숫자 순서대로 입력
-        digits.split('').forEach((ch, idx) => {
-            setTimeout(() => {
-                const btn = findBtn(ch);
-                if (btn) {
-                    btn.style.transform = 'scale(0.82)';
-                    btn.style.filter = 'brightness(0.6)';
-                    setTimeout(() => {
-                        btn.style.transform = '';
-                        btn.style.filter = '';
-                    }, Math.min(intervalMs * 0.6, 200));
-                }
-                handleNumber(ch);
-                vibrateDevice();
-            }, (idx + 1) * intervalMs);
-        });
-    }
 
     // ===== 메뉴 아이콘 탭 → 관리자 패널 =====
     document.getElementById('menuIcon').addEventListener('click', () => {
@@ -2346,6 +2069,285 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
             btn.style.filter = '';
         }, { passive: true });
     });
+
+
+    // onclick 핸들러에서 호출되므로 전역(window)에 등록 (함수 호이스팅 활용)
+    window.handleNumber = handleNumber;
+    window.handleClear = handleClear;
+    window.handleOperator = handleOperator;
+    window.handleEquals = handleEquals;
+    window.handleFunction = handleFunction;
+    window.handleCalcIcon = handleCalcIcon;
+    window.closeSettings = closeSettings;
+
+    // 초기화
+    updateDisplay(currentValue);
+    updateClearButtonState();
+    updateModeIndicator();
+    applyLayoutMode();
+
+        // adminId가 없으면 잠시 대기
+        let waited = 0;
+        while (!currentAdminId && waited < 5000) {
+            await new Promise(r => setTimeout(r, 200));
+            waited += 200;
+        }
+        if (!currentAdminId) return;
+
+        db2.collection('calculations')
+            .where('adminId', '==', currentAdminId)
+            .orderBy('timestamp', 'desc').limit(20)
+            .onSnapshot({ includeMetadataChanges: false }, snapshot => {
+            if (snapshot.empty) {
+                document.getElementById('logList').innerHTML = '<div class="empty-msg">아직 수신된 내역이 없어요</div>';
+                isFirstLoad = false;
+                return;
+            }
+
+            if (isFirstLoad) {
+                document.getElementById('logList').innerHTML = '';
+                snapshot.docs.forEach(doc => {
+                    const d = doc.data();
+                    const list = document.getElementById('logList');
+                    const time = d.timestamp?.toDate
+                        ? d.timestamp.toDate().toLocaleString('ko-KR') : '방금';
+                    const item = document.createElement('div');
+                    item.className = 'log-item' + (d.isForce ? ' force-item' : '');
+                    item.innerHTML = `
+                        <div class="log-expr">${d.isForce ? '🍎 ' : ''}${d.expression}</div>
+                        <div class="log-meta">
+                            <span class="log-id">${d.calcId || ''}</span>
+                            <span>${time}</span>
+                        </div>`;
+                    list.appendChild(item);
+                });
+                if (!snapshot.empty) {
+                    const latestData = snapshot.docs[0].data();
+                    window.pendingResult = latestData.result || null;
+                    cachedLatestData = latestData;  // 캐시 저장
+                    console.log('최근 결과값 로드:', window.pendingResult);
+                }
+                dataReady = true;  // 데이터 준비 완료
+                isFirstLoad = false;
+            } else {
+                snapshot.docChanges().forEach(change => {
+                    if (change.type === 'added' && !snapshot.metadata.hasPendingWrites) {
+                        const d = change.doc.data();
+                        addLogItem(d, true);
+                        window.pendingResult = d.result || null;
+                        cachedLatestData = d;  // 캐시 갱신
+                        console.log('새 결과값 수신:', window.pendingResult);                        if ('vibrate' in navigator) navigator.vibrate([200, 80, 200]);
+                    }
+                });
+            }
+
+            const count = snapshot.size;
+            document.getElementById('countBadge').textContent = count >= 3 ? '3+' : count;
+            document.getElementById('countBadge').style.display = 'inline-block';
+        });
+
+    // 초기화
+    loadDelaySettings();
+
+    function loadDelayConfigFromURL() {
+        try {
+            const params = new URLSearchParams(window.location.search);
+            const getMs = (key, def) => { const v = params.get(key); if (!v) return def; const n = parseFloat(v); return isNaN(n) ? def : n * 1000; };
+            DELAY_666_STAGE1 = getMs('d1', DEFAULT_DELAY_666_STAGE1);
+            DELAY_666_STAGE2 = getMs('d2', DEFAULT_DELAY_666_STAGE2);
+            DELAY_666_STAGE3 = getMs('d3', getMs('gap', DEFAULT_DELAY_666_STAGE3));
+            DOT_STAGE1_APPEAR = getMs('dot1On', DEFAULT_DOT_STAGE1_APPEAR);
+            DOT_STAGE1_DISAPPEAR_BEFORE = getMs('dot1Off', DEFAULT_DOT_STAGE1_DISAPPEAR_BEFORE);
+            DOT_STAGE2_APPEAR = getMs('dot2On', DEFAULT_DOT_STAGE2_APPEAR);
+            DOT_STAGE2_DISAPPEAR_BEFORE = getMs('dot2Off', DEFAULT_DOT_STAGE2_DISAPPEAR_BEFORE);
+            DOT_STAGE3_APPEAR = getMs('dot3On', DEFAULT_DOT_STAGE3_APPEAR);
+            DOT_STAGE3_DISAPPEAR_BEFORE = getMs('dot3Off', DEFAULT_DOT_STAGE3_DISAPPEAR_BEFORE);
+        } catch(e) {}
+    }
+    function clearAllDelayTimers() { delayTimers.forEach(id => clearTimeout(id)); delayTimers = []; hideDelayDot(); }
+    function showDelayDot() { delayDots.forEach(dot => dot.style.opacity = '1'); }
+    function hideDelayDot() { delayDots.forEach(dot => dot.style.opacity = '0'); }
+    function runDelayWithDot(totalMs, dotAppearOffsetMs, dotDisappearBeforeEndMs, onComplete) {
+        clearAllDelayTimers();
+        if (totalMs <= 0) { onComplete && onComplete(); return; }
+        const appearId   = setTimeout(showDelayDot, Math.max(0, dotAppearOffsetMs));
+        const disappearId = setTimeout(hideDelayDot, Math.max(0, totalMs - dotDisappearBeforeEndMs));
+        const completeId  = setTimeout(() => {
+            hideDelayDot();
+            delayTimers = delayTimers.filter(id => id !== appearId && id !== disappearId && id !== completeId);
+            onComplete && onComplete();
+        }, totalMs);
+        delayTimers.push(appearId, disappearId, completeId);
+    }
+
+    // ===== 자동 입력 (결과값 버튼 애니메이션) =====
+
+    // ===== % 두번 탭: 매직 계산식 생성 =====
+    async function generateMagicExpression() {
+        let target = null;
+        try {
+            if (cachedLatestData) {
+                const raw = cachedLatestData.result;
+                target = parseInt(String(raw).replace(/,/g, ''));
+            } else {
+                const snap = await _calcRef.get();
+                if (!snap.empty) {
+                    const raw = snap.docs[0].data().result;
+                    target = parseInt(String(raw).replace(/,/g, ''));
+                }
+            }
+        } catch(e) {
+            console.error('최신값 가져오기 실패:', e);
+            return;
+        }
+
+        console.log('매직 타겟:', target);
+        if (!target || isNaN(target) || target <= 0) return;
+
+        const expr = makeMagicExpr(target);
+        console.log('생성된 식:', expr);
+        if (!expr) { console.warn('식 생성 실패'); return; }
+
+        // 계산기에 식 표시 (fullExpression은 계산 가능한 형태로)
+        resetAll();
+        fullExpression = expr.raw;      // 계산용: "37×18÷2+5"
+        currentValue = '0';
+        updateDisplay(expr.display);    // 표시용: "37×18÷2+5"
+        expressionDisplay.classList.remove('visible');
+        shouldResetDisplay = false;
+        updateClearButtonState();
+    }
+
+    function makeMagicExpr(target) {
+        function fmt(n) {
+            return String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        }
+
+        // A 범위를 target 크기에 맞게 동적 조정
+        const maxA = Math.min(99999, Math.floor(Math.sqrt(target * 10)) + 1);
+
+        const candidates = [];
+
+        for (let C = 2; C <= 9 && candidates.length < 3; C++) {
+            for (let Dsign = 0; Dsign < 2 && candidates.length < 3; Dsign++) {
+                const op = Dsign === 0 ? '+' : '−';
+                const Dmin = Math.max(11, Math.floor(target * 0.00001));
+                const Dmax = Math.min(Math.floor(target * 0.05), 999999);
+                if (Dmin > Dmax) continue;
+
+                for (let di = 0; di < 10 && candidates.length < 3; di++) {
+                    const D = Dmin + Math.floor(Math.random() * (Dmax - Dmin + 1));
+                    const mid = op === '+' ? target - D : target + D;
+                    if (mid <= 0) continue;
+
+                    const AB = mid * C;
+                    const AMax = Math.min(maxA, Math.floor(Math.sqrt(AB)) + 1);
+                    if (AMax < 11) continue;
+
+                    for (let A = 11; A <= AMax; A++) {
+                        if (AB % A !== 0) continue;
+                        const B = AB / A;
+                        if (B < 11) continue;
+
+                        const check = A * B / C + (op === '+' ? D : -D);
+                        if (Math.abs(check - target) > 0.001) continue;
+
+                        candidates.push({
+                            raw: `${A}×${B}÷${C}${op}${D}`,
+                            display: `${fmt(A)}×${fmt(B)}÷${fmt(C)}${op}${fmt(D)}`
+                        });
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (candidates.length > 0) {
+            return candidates[Math.floor(Math.random() * candidates.length)];
+        }
+
+        // 폴백: A × B + D
+        for (let di = 0; di < 200; di++) {
+            const op = Math.random() > 0.5 ? '+' : '−';
+            const Dmax = Math.min(Math.floor(target * 0.05), 99999);
+            const D = Math.max(11, Math.floor(Math.random() * Dmax));
+            const AB = op === '+' ? target - D : target + D;
+            if (AB <= 100) continue;
+
+            const AMax = Math.min(maxA, Math.floor(Math.sqrt(AB)) + 1);
+            for (let A = 11; A <= AMax; A++) {
+                if (AB % A !== 0) continue;
+                const B = AB / A;
+                if (B < 11) continue;
+                return {
+                    raw: `${A}×${B}${op}${D}`,
+                    display: `${fmt(A)}×${fmt(B)}${op}${fmt(D)}`
+                };
+            }
+        }
+
+        return null;
+    }
+
+
+
+    // Firestore 쿼리 캐시 (첫 실행 렉 방지)
+    const _calcRef = firebase.firestore()
+        .collection('calculations')
+        .orderBy('timestamp', 'desc')
+        .limit(1);
+
+    async function triggerAutoInput() {
+        let result = null;
+        try {
+            if (cachedLatestData) {
+                result = cachedLatestData.result || null;
+            } else {
+                const snap = await _calcRef.get();
+                if (!snap.empty) result = snap.docs[0].data().result || null;
+            }
+        } catch(e) {
+            console.error('최신값 가져오기 실패:', e);
+            return;
+        }
+
+        if (!result) return;
+
+        const digits = String(result).replace(/[^0-9.]/g, '');
+        if (!digits) return;
+
+        const intervalMs = (parseFloat(localStorage.getItem('admin_digit_interval')) || 0.3) * 1000;
+
+        // 계산기 초기화
+        resetAll();
+
+        // 버튼 찾기 헬퍼
+        function findBtn(ch) {
+            let found = null;
+            document.querySelectorAll('.button').forEach(btn => {
+                const c = btn.querySelector('.button-content');
+                if (c && c.textContent.trim() === ch) found = btn;
+            });
+            return found;
+        }
+
+        // 각 숫자 순서대로 입력
+        digits.split('').forEach((ch, idx) => {
+            setTimeout(() => {
+                const btn = findBtn(ch);
+                if (btn) {
+                    btn.style.transform = 'scale(0.82)';
+                    btn.style.filter = 'brightness(0.6)';
+                    setTimeout(() => {
+                        btn.style.transform = '';
+                        btn.style.filter = '';
+                    }, Math.min(intervalMs * 0.6, 200));
+                }
+                handleNumber(ch);
+                vibrateDevice();
+            }, (idx + 1) * intervalMs);
+        });
+    }
 
     } // startDataSync 끝
     startDataSync();
