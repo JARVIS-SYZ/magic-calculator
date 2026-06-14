@@ -1145,14 +1145,13 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
                 return;
             }
             const codeData = codeDoc.data();
-            if (codeData.used) {
-                errEl.textContent = '이미 사용된 코드예요';
-                return;
-            }
+            // used 코드도 재인증 허용 (웹→웹앱 전환 시 localStorage 분리 대응)
 
             const deviceId = getDeviceId();
             const batch = db_auth.batch();
-            batch.update(db_auth.collection('admin_codes').doc(code), { used: true });
+            if (!codeData.used) {
+                batch.update(db_auth.collection('admin_codes').doc(code), { used: true });
+            }
             batch.set(db_auth.collection('admin_sessions').doc(deviceId), {
                 adminId: codeData.adminId,
                 code: code,
