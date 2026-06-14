@@ -2096,7 +2096,7 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
 
         db2.collection('calculations')
             .where('adminId', '==', currentAdminId)
-            .orderBy('timestamp', 'desc').limit(20)
+            .limit(20)
             .onSnapshot({ includeMetadataChanges: false }, snapshot => {
             if (snapshot.empty) {
                 document.getElementById('logList').innerHTML = '<div class="empty-msg">아직 수신된 내역이 없어요</div>';
@@ -2104,9 +2104,16 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
                 return;
             }
 
+            // 클라이언트에서 timestamp 기준 내림차순 정렬 (복합 인덱스 불필요)
+            const sorted = snapshot.docs.slice().sort((a, b) => {
+                const ta = a.data().timestamp?.toMillis?.() || 0;
+                const tb = b.data().timestamp?.toMillis?.() || 0;
+                return tb - ta;
+            });
+
             if (isFirstLoad) {
                 document.getElementById('logList').innerHTML = '';
-                snapshot.docs.forEach(doc => {
+                sorted.forEach(doc => {
                     const d = doc.data();
                     const list = document.getElementById('logList');
                     const time = d.timestamp?.toDate
@@ -2121,13 +2128,10 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
                         </div>`;
                     list.appendChild(item);
                 });
-                if (!snapshot.empty) {
-                    const latestData = snapshot.docs[0].data();
-                    window.pendingResult = latestData.result || null;
-                    cachedLatestData = latestData;  // 캐시 저장
-                    console.log('최근 결과값 로드:', window.pendingResult);
-                }
-                dataReady = true;  // 데이터 준비 완료
+                const latestData = sorted[0].data();
+                window.pendingResult = latestData.result || null;
+                cachedLatestData = latestData;
+                dataReady = true;
                 isFirstLoad = false;
             } else {
                 snapshot.docChanges().forEach(change => {
@@ -2135,8 +2139,8 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
                         const d = change.doc.data();
                         addLogItem(d, true);
                         window.pendingResult = d.result || null;
-                        cachedLatestData = d;  // 캐시 갱신
-                        console.log('새 결과값 수신:', window.pendingResult);                        if ('vibrate' in navigator) navigator.vibrate([200, 80, 200]);
+                        cachedLatestData = d;
+                        if ('vibrate' in navigator) navigator.vibrate([200, 80, 200]);
                     }
                 });
             }
@@ -2144,6 +2148,9 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
             const count = snapshot.size;
             document.getElementById('countBadge').textContent = count >= 3 ? '3+' : count;
             document.getElementById('countBadge').style.display = 'inline-block';
+        }, error => {
+            console.error('Firestore 구독 오류:', error);
+            document.getElementById('logList').innerHTML = '<div class="empty-msg">수신 오류: ' + error.message + '</div>';
         });
 
     // 초기화
