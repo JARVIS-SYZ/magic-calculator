@@ -1501,6 +1501,7 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
     let zeroTapCount = 0, zeroTapTimer = null;
     let dotsHidden = false;
     let autoInputTimer = null;
+    let ghostModeRunning = false;
 
     const DEFAULT_DELAY_666_STAGE1 = 5000, DEFAULT_DELAY_666_STAGE2 = 10000, DEFAULT_DELAY_666_STAGE3 = 5000;
     const DEFAULT_DOT_STAGE1_APPEAR = 1000, DEFAULT_DOT_STAGE1_DISAPPEAR_BEFORE = 1000;
@@ -1546,6 +1547,8 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
     updateClearButtonState();
     updateModeIndicator();
     applyLayoutMode();
+
+    initEventListeners();
 
         // adminId가 없으면 잠시 대기
         let waited = 0;
@@ -1810,6 +1813,8 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
         });
     }
 
+    function initEventListeners() {
+
     // ===== 메뉴 아이콘 탭 → 관리자 패널 =====
     document.getElementById('menuIcon').addEventListener('click', () => {
         menuTapCount++;
@@ -1823,7 +1828,6 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
     });
 
     // ===== 0 두번 탭 → 도트 숨김 + 딜레이 후 자동 입력 =====
-    let ghostModeRunning = false; // 중복 실행 방지
 
     document.getElementById('zeroButton').addEventListener('click', () => {
         handleNumber('0');
@@ -2346,6 +2350,8 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
             btn.style.filter = '';
         }, { passive: true });
     });
+
+    } // initEventListeners 끝
 
     } // startDataSync 끝
     startDataSync();
