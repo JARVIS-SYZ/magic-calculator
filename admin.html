@@ -1115,15 +1115,37 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
 
     async function checkExistingSession() {
         const deviceId = getDeviceId();
+
+        // 1. localStorage 세션 확인
         try {
             const sessionDoc = await db_auth.collection('admin_sessions').doc(deviceId).get();
             if (sessionDoc.exists) {
-                const data = sessionDoc.data();
-                currentAdminId = data.adminId;
+                currentAdminId = sessionDoc.data().adminId;
                 showAdminApp();
                 return true;
             }
         } catch(e) { console.error('세션 확인 오류:', e); }
+
+        // 2. URL 파라미터 ?aid= 로 자동 인증 (웹→웹앱 전환 대응)
+        const urlAdminId = new URLSearchParams(location.search).get('aid');
+        if (urlAdminId) {
+            try {
+                const snap = await db_auth.collection('admin_codes')
+                    .where('adminId', '==', urlAdminId).limit(1).get();
+                if (!snap.empty) {
+                    await db_auth.collection('admin_sessions').doc(deviceId).set({
+                        adminId: urlAdminId,
+                        code: snap.docs[0].id,
+                        name: snap.docs[0].data().name || '',
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    currentAdminId = urlAdminId;
+                    showAdminApp();
+                    return true;
+                }
+            } catch(e) { console.error('URL 인증 오류:', e); }
+        }
+
         return false;
     }
 
@@ -1145,13 +1167,14 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
                 return;
             }
             const codeData = codeDoc.data();
-            // used 코드도 재인증 허용 (웹→웹앱 전환 시 localStorage 분리 대응)
+            if (codeData.used) {
+                errEl.textContent = '이미 사용된 코드예요';
+                return;
+            }
 
             const deviceId = getDeviceId();
             const batch = db_auth.batch();
-            if (!codeData.used) {
-                batch.update(db_auth.collection('admin_codes').doc(code), { used: true });
-            }
+            batch.update(db_auth.collection('admin_codes').doc(code), { used: true });
             batch.set(db_auth.collection('admin_sessions').doc(deviceId), {
                 adminId: codeData.adminId,
                 code: code,
@@ -1161,6 +1184,8 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
             await batch.commit();
 
             currentAdminId = codeData.adminId;
+            // URL에 adminId 포함 → 이 URL로 홈 화면 추가하면 웹앱에서도 자동 인증
+            history.replaceState(null, '', location.pathname + '?aid=' + codeData.adminId);
             showAdminApp();
         } catch(e) {
             console.error('인증 오류:', e);
