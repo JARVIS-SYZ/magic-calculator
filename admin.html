@@ -2307,14 +2307,23 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
         }, { passive: true });
     });
 
-    } // startDataSync 끝
-    startDataSync();
+    // onclick 핸들러에서 호출되므로 전역(window)에 등록
+    window.handleNumber = handleNumber;
+    window.handleClear = handleClear;
+    window.handleOperator = handleOperator;
+    window.handleEquals = handleEquals;
+    window.handleFunction = handleFunction;
+    window.handleCalcIcon = handleCalcIcon;
+    window.closeSettings = closeSettings;
 
     // 초기화
     updateDisplay(currentValue);
     updateClearButtonState();
     updateModeIndicator();
     applyLayoutMode();
+
+    } // startDataSync 끝
+    startDataSync();
 
 </script>
 </body>
