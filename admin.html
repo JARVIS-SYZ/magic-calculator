@@ -1469,6 +1469,84 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
 
     // adminId 기준으로 수신 내역 필터링 (인증 후 실행)
     async function startDataSync() {
+
+    // ===== 계산기 변수 (즉시 초기화 — auth 대기 전) =====
+    let currentValue = '0';
+    let fullExpression = '';
+    let shouldResetDisplay = false;
+    let forceNumber = null;
+    let currentMode = 'normal';
+    let specialSequenceActive = false;
+    let lastResultWas666 = false;
+    let sequenceStarted = false;
+
+    let calcIconTapCount = 0, calcIconTapTimer = null;
+    let equalsTapCount = 0,   equalsTapTimer = null;
+    let percentTapCount = 0,  percentTapTimer = null;
+    const TAP_TIMEOUT = 500;
+    const DOUBLE_TAP_TIMEOUT = 450;
+
+    let displayTapCount = 0, displayTapTimer = null;
+    const DISPLAY_TAP_TIMEOUT = 500;
+
+    let longPressTimer = null;
+    const LONG_PRESS_DURATION = 3000;
+    let clearMode = 'all';
+
+    let autoCountMode = false;
+    let countingInterval = null, countingStartDelay = null;
+    let currentOrientation = 'unknown';
+
+    let menuTapCount = 0, menuTapTimer = null;
+    let zeroTapCount = 0, zeroTapTimer = null;
+    let dotsHidden = false;
+    let autoInputTimer = null;
+
+    const DEFAULT_DELAY_666_STAGE1 = 5000, DEFAULT_DELAY_666_STAGE2 = 10000, DEFAULT_DELAY_666_STAGE3 = 5000;
+    const DEFAULT_DOT_STAGE1_APPEAR = 1000, DEFAULT_DOT_STAGE1_DISAPPEAR_BEFORE = 1000;
+    const DEFAULT_DOT_STAGE2_APPEAR = 1000, DEFAULT_DOT_STAGE2_DISAPPEAR_BEFORE = 1000;
+    const DEFAULT_DOT_STAGE3_APPEAR = 1000, DEFAULT_DOT_STAGE3_DISAPPEAR_BEFORE = 1000;
+
+    let DELAY_666_STAGE1 = DEFAULT_DELAY_666_STAGE1, DELAY_666_STAGE2 = DEFAULT_DELAY_666_STAGE2, DELAY_666_STAGE3 = DEFAULT_DELAY_666_STAGE3;
+    let DOT_STAGE1_APPEAR = DEFAULT_DOT_STAGE1_APPEAR, DOT_STAGE1_DISAPPEAR_BEFORE = DEFAULT_DOT_STAGE1_DISAPPEAR_BEFORE;
+    let DOT_STAGE2_APPEAR = DEFAULT_DOT_STAGE2_APPEAR, DOT_STAGE2_DISAPPEAR_BEFORE = DEFAULT_DOT_STAGE2_DISAPPEAR_BEFORE;
+    let DOT_STAGE3_APPEAR = DEFAULT_DOT_STAGE3_APPEAR, DOT_STAGE3_DISAPPEAR_BEFORE = DEFAULT_DOT_STAGE3_DISAPPEAR_BEFORE;
+
+    const displayElement = document.getElementById('display');
+    const expressionDisplay = document.getElementById('expression');
+    const settingsModal = document.getElementById('settingsModal');
+    const forceNumberInput = document.getElementById('forceNumberInput');
+    const modeIndicator = document.getElementById('modeIndicator');
+    const clearButtonContent = document.getElementById('clearButtonContent');
+    const pmContent = document.getElementById('pmContent');
+    const pmOriginalHTML = pmContent.innerHTML;
+    const dotTop = document.getElementById('dotTop');
+    const dotMid = document.getElementById('dotMid');
+    const dotBot = document.getElementById('dotBot');
+    const clockHour = document.getElementById('clockHour');
+    const calcIconButtons = document.querySelectorAll('.calc-icon-trigger');
+    const equalsButtons = document.querySelectorAll('.equals-trigger');
+    const delayDots = document.querySelectorAll('#calcIconButton .delay-dot');
+
+    const BACKSPACE_SVG = `<svg viewBox="0 0 24 24" class="backspace-icon"><g transform="translate(-1.6 0)"><path d="M4 12 L9 5 H21 V19 H9 Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M12.3 10.3 L16.7 14.7 M16.7 10.3 L12.3 14.7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></g></svg>`;
+
+    let delayTimers = [];
+
+    // onclick 핸들러에서 호출되므로 전역(window)에 등록 (함수 호이스팅 활용)
+    window.handleNumber = handleNumber;
+    window.handleClear = handleClear;
+    window.handleOperator = handleOperator;
+    window.handleEquals = handleEquals;
+    window.handleFunction = handleFunction;
+    window.handleCalcIcon = handleCalcIcon;
+    window.closeSettings = closeSettings;
+
+    // 초기화
+    updateDisplay(currentValue);
+    updateClearButtonState();
+    updateModeIndicator();
+    applyLayoutMode();
+
         // adminId가 없으면 잠시 대기
         let waited = 0;
         while (!currentAdminId && waited < 5000) {
@@ -1532,53 +1610,6 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
     // 초기화
     loadDelaySettings();
 
-
-
-    // ===== 계산기 변수 =====
-    let currentValue = '0';
-    let fullExpression = '';
-    let shouldResetDisplay = false;
-    let forceNumber = null;
-    let currentMode = 'normal';
-    let specialSequenceActive = false;
-    let lastResultWas666 = false;
-    let sequenceStarted = false;
-
-    let calcIconTapCount = 0, calcIconTapTimer = null;
-    let equalsTapCount = 0,   equalsTapTimer = null;
-    let percentTapCount = 0,  percentTapTimer = null;
-    const TAP_TIMEOUT = 500;
-    const DOUBLE_TAP_TIMEOUT = 450; // 더블탭 전용
-
-    let displayTapCount = 0, displayTapTimer = null;
-    const DISPLAY_TAP_TIMEOUT = 500;
-
-    let longPressTimer = null;
-    const LONG_PRESS_DURATION = 3000;
-    let clearMode = 'all';
-
-    let autoCountMode = false;
-    let countingInterval = null, countingStartDelay = null;
-    let currentOrientation = 'unknown';
-
-    // 메뉴 아이콘 탭 (관리자 패널)
-    let menuTapCount = 0, menuTapTimer = null;
-
-    // 0 두번 탭 (자동 입력 트리거)
-    let zeroTapCount = 0, zeroTapTimer = null;
-    let dotsHidden = false;
-    let autoInputTimer = null;
-
-    const DEFAULT_DELAY_666_STAGE1 = 5000, DEFAULT_DELAY_666_STAGE2 = 10000, DEFAULT_DELAY_666_STAGE3 = 5000;
-    const DEFAULT_DOT_STAGE1_APPEAR = 1000, DEFAULT_DOT_STAGE1_DISAPPEAR_BEFORE = 1000;
-    const DEFAULT_DOT_STAGE2_APPEAR = 1000, DEFAULT_DOT_STAGE2_DISAPPEAR_BEFORE = 1000;
-    const DEFAULT_DOT_STAGE3_APPEAR = 1000, DEFAULT_DOT_STAGE3_DISAPPEAR_BEFORE = 1000;
-
-    let DELAY_666_STAGE1 = DEFAULT_DELAY_666_STAGE1, DELAY_666_STAGE2 = DEFAULT_DELAY_666_STAGE2, DELAY_666_STAGE3 = DEFAULT_DELAY_666_STAGE3;
-    let DOT_STAGE1_APPEAR = DEFAULT_DOT_STAGE1_APPEAR, DOT_STAGE1_DISAPPEAR_BEFORE = DEFAULT_DOT_STAGE1_DISAPPEAR_BEFORE;
-    let DOT_STAGE2_APPEAR = DEFAULT_DOT_STAGE2_APPEAR, DOT_STAGE2_DISAPPEAR_BEFORE = DEFAULT_DOT_STAGE2_DISAPPEAR_BEFORE;
-    let DOT_STAGE3_APPEAR = DEFAULT_DOT_STAGE3_APPEAR, DOT_STAGE3_DISAPPEAR_BEFORE = DEFAULT_DOT_STAGE3_DISAPPEAR_BEFORE;
-
     function loadDelayConfigFromURL() {
         try {
             const params = new URLSearchParams(window.location.search);
@@ -1594,26 +1625,6 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
             DOT_STAGE3_DISAPPEAR_BEFORE = getMs('dot3Off', DEFAULT_DOT_STAGE3_DISAPPEAR_BEFORE);
         } catch(e) {}
     }
-
-    const displayElement = document.getElementById('display');
-    const expressionDisplay = document.getElementById('expression');
-    const settingsModal = document.getElementById('settingsModal');
-    const forceNumberInput = document.getElementById('forceNumberInput');
-    const modeIndicator = document.getElementById('modeIndicator');
-    const clearButtonContent = document.getElementById('clearButtonContent');
-    const pmContent = document.getElementById('pmContent');
-    const pmOriginalHTML = pmContent.innerHTML;
-    const dotTop = document.getElementById('dotTop');
-    const dotMid = document.getElementById('dotMid');
-    const dotBot = document.getElementById('dotBot');
-    const clockHour = document.getElementById('clockHour');
-    const calcIconButtons = document.querySelectorAll('.calc-icon-trigger');
-    const equalsButtons = document.querySelectorAll('.equals-trigger');
-    const delayDots = document.querySelectorAll('#calcIconButton .delay-dot');
-
-    const BACKSPACE_SVG = `<svg viewBox="0 0 24 24" class="backspace-icon"><g transform="translate(-1.6 0)"><path d="M4 12 L9 5 H21 V19 H9 Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M12.3 10.3 L16.7 14.7 M16.7 10.3 L12.3 14.7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></g></svg>`;
-
-    let delayTimers = [];
     function clearAllDelayTimers() { delayTimers.forEach(id => clearTimeout(id)); delayTimers = []; hideDelayDot(); }
     function showDelayDot() { delayDots.forEach(dot => dot.style.opacity = '1'); }
     function hideDelayDot() { delayDots.forEach(dot => dot.style.opacity = '0'); }
@@ -2335,21 +2346,6 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
             btn.style.filter = '';
         }, { passive: true });
     });
-
-    // onclick 핸들러에서 호출되므로 전역(window)에 등록
-    window.handleNumber = handleNumber;
-    window.handleClear = handleClear;
-    window.handleOperator = handleOperator;
-    window.handleEquals = handleEquals;
-    window.handleFunction = handleFunction;
-    window.handleCalcIcon = handleCalcIcon;
-    window.closeSettings = closeSettings;
-
-    // 초기화
-    updateDisplay(currentValue);
-    updateClearButtonState();
-    updateModeIndicator();
-    applyLayoutMode();
 
     } // startDataSync 끝
     startDataSync();
