@@ -1167,14 +1167,18 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
                 return;
             }
             const codeData = codeDoc.data();
-            if (codeData.used) {
+            const useCount = codeData.useCount || 0;
+            if (useCount >= 2) {
                 errEl.textContent = '이미 사용된 코드예요';
                 return;
             }
 
             const deviceId = getDeviceId();
             const batch = db_auth.batch();
-            batch.update(db_auth.collection('admin_codes').doc(code), { used: true });
+            batch.update(db_auth.collection('admin_codes').doc(code), {
+                used: true,
+                useCount: useCount + 1
+            });
             batch.set(db_auth.collection('admin_sessions').doc(deviceId), {
                 adminId: codeData.adminId,
                 code: code,
