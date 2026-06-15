@@ -1750,14 +1750,6 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
     }
 
     // ===== 탭 이벤트 =====
-    calcIconButtons.forEach(btn => {
-        btn.addEventListener('touchstart', () => { longPressTimer = setTimeout(() => { vibrateDevice(); openSettings(); }, LONG_PRESS_DURATION); }, { passive: true });
-        btn.addEventListener('touchend',   () => clearTimeout(longPressTimer));
-        btn.addEventListener('touchmove',  () => clearTimeout(longPressTimer));
-        btn.addEventListener('mousedown',  () => { longPressTimer = setTimeout(() => { vibrateDevice(); openSettings(); }, LONG_PRESS_DURATION); });
-        btn.addEventListener('mouseup',    () => clearTimeout(longPressTimer));
-        btn.addEventListener('mouseleave', () => clearTimeout(longPressTimer));
-    });
 
 
 
