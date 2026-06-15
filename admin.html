@@ -293,6 +293,15 @@ body.ios26-theme .top-icon { background: #1c1c1e; border: 1px solid #2c2c2e; }
 }
 .copy-btn:active { opacity: 0.7; }
 
+/* 플랫폼 탭 */
+.platform-tab-bar { display: flex; gap: 8px; margin-bottom: 4px; }
+.platform-tab {
+    flex: 1; padding: 10px; border: none; border-radius: 10px;
+    background: #2c2c2e; color: #888; font-size: 14px; font-weight: 600; cursor: pointer;
+}
+.platform-tab.active { background: #3a3a3c; color: #fff; }
+.platform-tab:active { opacity: 0.7; }
+
 /* 수신 내역 */
 .log-list { display: flex; flex-direction: column; gap: 8px; }
 .log-item {
@@ -744,6 +753,11 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
             <span>URL 생성</span>
             <span class="side-menu-arrow">›</span>
         </button>
+        <button class="side-menu-item" onclick="openPage('display')">
+            <span class="side-menu-icon">📐</span>
+            <span>디스플레이 설정</span>
+            <span class="side-menu-arrow">›</span>
+        </button>
         <button class="side-menu-item" onclick="openPage('logs')">
             <span class="side-menu-icon">📋</span>
             <span>수신 내역</span>
@@ -853,6 +867,78 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
             <div class="log-list" id="logList" style="max-height:60dvh;overflow-y:auto;-webkit-overflow-scrolling:touch;">
                 <div class="empty-msg">아직 수신된 내역이 없어요</div>
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- 디스플레이 설정 -->
+<div class="admin-page" id="page-display">
+    <div class="admin-page-header">
+        <button class="admin-back" onclick="closePage()">‹</button>
+        <div class="admin-page-title">디스플레이 설정</div>
+    </div>
+    <div class="admin-page-content">
+        <div class="platform-tab-bar">
+            <button class="platform-tab active" id="dispTabIos" onclick="switchDisplayTab('ios')"> iOS</button>
+            <button class="platform-tab" id="dispTabAndroid" onclick="switchDisplayTab('android')">🤖 Android</button>
+        </div>
+        <!-- iOS 설정 -->
+        <div id="dispPanelIos">
+            <div class="admin-section" style="margin-top:16px">
+                <div class="admin-section-title">📐 레이아웃</div>
+                <div class="delay-row">
+                    <div class="delay-row-label">버튼 사이드 패딩</div>
+                    <div class="delay-input-wrap">
+                        <input type="number" class="delay-input" id="iosBpad" value="20" min="8" max="60" step="2">
+                    </div>
+                    <div class="delay-row-unit">px</div>
+                </div>
+                <div class="delay-row">
+                    <div class="delay-row-label">상단 여백 추가</div>
+                    <div class="delay-input-wrap">
+                        <input type="number" class="delay-input" id="iosTop" value="0" min="0" max="80" step="2">
+                    </div>
+                    <div class="delay-row-unit">px</div>
+                </div>
+                <div class="delay-row">
+                    <div class="delay-row-label">하단 여백 추가</div>
+                    <div class="delay-input-wrap">
+                        <input type="number" class="delay-input" id="iosBot" value="0" min="0" max="80" step="2">
+                    </div>
+                    <div class="delay-row-unit">px</div>
+                </div>
+            </div>
+            <div style="font-size:11px;color:#636366;padding:0 0 12px;line-height:1.6">버튼 패딩 클수록 버튼이 작아짐 (기본값 20)</div>
+            <button class="gen-btn" onclick="saveDisplaySettings('ios')">저장</button>
+        </div>
+        <!-- Android 설정 -->
+        <div id="dispPanelAndroid" style="display:none">
+            <div class="admin-section" style="margin-top:16px">
+                <div class="admin-section-title">📐 레이아웃</div>
+                <div class="delay-row">
+                    <div class="delay-row-label">버튼 사이드 패딩</div>
+                    <div class="delay-input-wrap">
+                        <input type="number" class="delay-input" id="androidBpad" value="20" min="8" max="60" step="2">
+                    </div>
+                    <div class="delay-row-unit">px</div>
+                </div>
+                <div class="delay-row">
+                    <div class="delay-row-label">상단 여백 추가</div>
+                    <div class="delay-input-wrap">
+                        <input type="number" class="delay-input" id="androidTop" value="0" min="0" max="80" step="2">
+                    </div>
+                    <div class="delay-row-unit">px</div>
+                </div>
+                <div class="delay-row">
+                    <div class="delay-row-label">하단 여백 추가</div>
+                    <div class="delay-input-wrap">
+                        <input type="number" class="delay-input" id="androidBot" value="0" min="0" max="80" step="2">
+                    </div>
+                    <div class="delay-row-unit">px</div>
+                </div>
+            </div>
+            <div style="font-size:11px;color:#636366;padding:0 0 12px;line-height:1.6">버튼 패딩 클수록 버튼이 작아짐 (기본값 20)</div>
+            <button class="gen-btn" onclick="saveDisplaySettings('android')">저장</button>
         </div>
     </div>
 </div>
@@ -1351,6 +1437,9 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
         if (['ghost', 'counting', 'trick666'].includes(pageId)) {
             setTimeout(loadDelaySettings, 50);
         }
+        if (pageId === 'display') {
+            setTimeout(loadDisplaySettings, 50);
+        }
     };
 
     // URL 복사
@@ -1410,6 +1499,40 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
         resetQR();
         showSaveFeedback('page-trick666');
     };
+
+    // ===== 디스플레이 설정 =====
+    window.switchDisplayTab = function(platform) {
+        document.getElementById('dispPanelIos').style.display = platform === 'ios' ? '' : 'none';
+        document.getElementById('dispPanelAndroid').style.display = platform === 'android' ? '' : 'none';
+        document.getElementById('dispTabIos').classList.toggle('active', platform === 'ios');
+        document.getElementById('dispTabAndroid').classList.toggle('active', platform === 'android');
+    };
+
+    window.saveDisplaySettings = function(platform) {
+        const p = platform === 'android' ? 'android' : 'ios';
+        const bpad = parseInt(document.getElementById(p + 'Bpad').value) || 20;
+        const top  = parseInt(document.getElementById(p + 'Top').value)  || 0;
+        const bot  = parseInt(document.getElementById(p + 'Bot').value)  || 0;
+        localStorage.setItem('display_' + p + '_bpad', bpad);
+        localStorage.setItem('display_' + p + '_top',  top);
+        localStorage.setItem('display_' + p + '_bot',  bot);
+        vibrateDevice();
+        resetQR();
+        showSaveFeedback('page-display');
+        document.getElementById('urlOutputIos').textContent     = buildCalcUrl('ios');
+        document.getElementById('urlOutputAndroid').textContent = buildCalcUrl('android');
+    };
+
+    function loadDisplaySettings() {
+        ['ios', 'android'].forEach(p => {
+            const bpad = localStorage.getItem('display_' + p + '_bpad') || '20';
+            const top  = localStorage.getItem('display_' + p + '_top')  || '0';
+            const bot  = localStorage.getItem('display_' + p + '_bot')  || '0';
+            document.getElementById(p + 'Bpad').value = bpad;
+            document.getElementById(p + 'Top').value  = top;
+            document.getElementById(p + 'Bot').value  = bot;
+        });
+    }
 
     // 저장 피드백 - 해당 페이지의 저장 버튼 텍스트 변경
     function showSaveFeedback(pageId) {
@@ -1501,12 +1624,16 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
         const d2  = localStorage.getItem('delay666_s2') || '10';
         const d3  = localStorage.getItem('delay666_s3') || '5';
         const ctd = localStorage.getItem('admin_counting_trigger_delay') || '1';
+        const p   = platform === 'android' ? 'android' : 'ios';
+        const bpad = localStorage.getItem('display_' + p + '_bpad') || '20';
+        const top  = localStorage.getItem('display_' + p + '_top')  || '0';
+        const bot  = localStorage.getItem('display_' + p + '_bot')  || '0';
 
         const params = new URLSearchParams({
             id: 'magic2024',
             d1, d2, d3, ctd,
             admin: currentAdminId || '',
-            platform
+            platform, bpad, top, bot
         });
         return `${location.origin}/magic-calculator/index.html?${params.toString()}`;
     }
