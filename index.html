@@ -7,9 +7,11 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="계산기">
     <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#000000">
     <title>계산기</title>
     <link rel="apple-touch-icon" sizes="180x180" href="icon-180.png">
     <link rel="icon" type="image/png" href="icon-180.png">
+    <link rel="manifest" href="manifest.json">
 <style>
 * {
     margin: 0; padding: 0;
@@ -171,9 +173,11 @@ body.ios26-theme .top-icon { background: #1c1c1e; border: 1px solid #2c2c2e; }
     grid-template-columns: repeat(4, var(--btn-w));
     grid-auto-rows: var(--btn-w);  /* 정사각형: 높이 = 너비 */
     gap: 6px;
-    /* 웹앱 모드: 하단 패딩 최소화 */
     padding: 0 20px 4px 20px;
     width: 100%;
+}
+body.android-mode .button-grid {
+    padding-bottom: max(14px, env(safe-area-inset-bottom));
 }
 
 .button {
@@ -432,6 +436,11 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
     // URL에서 계산기 ID 추출
     const urlParams = new URLSearchParams(window.location.search);
     const calcId = urlParams.get('id') || 'unknown';
+
+    // 플랫폼 감지 (URL 파라미터 우선, 없으면 userAgent)
+    const platformParam = urlParams.get('platform');
+    const isAndroid = platformParam === 'android' || (!platformParam && /android/i.test(navigator.userAgent));
+    if (isAndroid) document.body.classList.add('android-mode');
 
     // = 누를 때 Firestore에 저장
     window.sendCalcResult = async function(expression, result, isForce) {

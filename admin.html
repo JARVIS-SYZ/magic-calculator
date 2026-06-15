@@ -814,17 +814,24 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
     </div>
     <div class="admin-page-content">
         <div class="admin-section">
-            <div class="admin-section-title">🔗 계산기 URL</div>
-            <div style="font-size:12px;color:#636366;margin-bottom:14px;line-height:1.6">
-                아래 URL을 상대방에게 전달하세요
-            </div>
+            <div class="admin-section-title"> iOS</div>
+            <div style="font-size:12px;color:#636366;margin-bottom:10px;line-height:1.6">iPhone / iPad 사용자에게 전달하세요</div>
             <div class="url-row">
-                <div class="url-display" id="urlOutput"></div>
-                <button class="copy-btn" onclick="copyUrl()">복사</button>
+                <div class="url-display" id="urlOutputIos"></div>
+                <button class="copy-btn" id="copyBtnIos" onclick="copyUrl('ios')">복사</button>
+            </div>
+        </div>
+        <div class="admin-section" style="margin-top:14px">
+            <div class="admin-section-title">🤖 Android</div>
+            <div style="font-size:12px;color:#636366;margin-bottom:10px;line-height:1.6">Android 사용자에게 전달하세요</div>
+            <div class="url-row">
+                <div class="url-display" id="urlOutputAndroid"></div>
+                <button class="copy-btn" id="copyBtnAndroid" onclick="copyUrl('android')">복사</button>
             </div>
         </div>
         <div class="admin-section" style="margin-top:14px">
             <div class="admin-section-title">📱 QR 코드</div>
+            <div style="font-size:11px;color:#636366;margin-bottom:8px">iOS 기준</div>
             <div style="display:flex;justify-content:center;padding:12px 0">
                 <div id="qrcode" style="background:#fff;padding:16px;border-radius:12px;"></div>
             </div>
@@ -1315,7 +1322,7 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
     function resetQR() { qrGenerated = false; }
     function generateQR() {
         if (qrGenerated) return;
-        const url = 'https://jarvis-syz.github.io/magic-calculator/index.html?id=magic2024';
+        const url = buildCalcUrl('ios');
         const el = document.getElementById('qrcode');
         if (el && typeof QRCode !== 'undefined') {
             el.innerHTML = '';
@@ -1336,8 +1343,8 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
         origOpenPage(pageId);
         if (pageId === 'url') {
             setTimeout(() => {
-                // 최신 설정값으로 URL 갱신
-                document.getElementById('urlOutput').textContent = buildCalcUrl();
+                document.getElementById('urlOutputIos').textContent = buildCalcUrl('ios');
+                document.getElementById('urlOutputAndroid').textContent = buildCalcUrl('android');
                 generateQR();
             }, 100);
         }
@@ -1347,10 +1354,12 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
     };
 
     // URL 복사
-    window.copyUrl = function() {
-        const url = document.getElementById('urlOutput').textContent;
+    window.copyUrl = function(platform = 'ios') {
+        const elId = platform === 'android' ? 'urlOutputAndroid' : 'urlOutputIos';
+        const btnId = platform === 'android' ? 'copyBtnAndroid' : 'copyBtnIos';
+        const url = document.getElementById(elId).textContent;
         if (!url) return;
-        const btn = document.querySelector('.copy-btn');
+        const btn = document.getElementById(btnId);
         const showOk = () => { const orig = btn.textContent; btn.textContent = '✅'; setTimeout(() => btn.textContent = orig, 1500); };
         if (navigator.clipboard && navigator.clipboard.writeText) {
             navigator.clipboard.writeText(url).then(showOk).catch(() => fallbackCopy(url, showOk));
@@ -1487,7 +1496,7 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
     }
 
     // ===== URL 생성 =====
-    function buildCalcUrl() {
+    function buildCalcUrl(platform = 'ios') {
         const d1  = localStorage.getItem('delay666_s1') || '5';
         const d2  = localStorage.getItem('delay666_s2') || '10';
         const d3  = localStorage.getItem('delay666_s3') || '5';
@@ -1496,14 +1505,15 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
         const params = new URLSearchParams({
             id: 'magic2024',
             d1, d2, d3, ctd,
-            admin: currentAdminId || ''
+            admin: currentAdminId || '',
+            platform
         });
         return `${location.origin}/magic-calculator/index.html?${params.toString()}`;
     }
 
     window.generateUrl = () => {
-        const url = buildCalcUrl();
-        document.getElementById('urlOutput').textContent = url;
+        document.getElementById('urlOutputIos').textContent = buildCalcUrl('ios');
+        document.getElementById('urlOutputAndroid').textContent = buildCalcUrl('android');
     };
 
     // ===== 수신 내역 실시간 감지 =====
