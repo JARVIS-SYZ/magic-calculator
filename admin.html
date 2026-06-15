@@ -783,6 +783,11 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
             <span class="side-menu-arrow">›</span>
         </button>
         <div class="side-menu-divider"></div>
+        <button class="side-menu-item" onclick="openPage('guide')">
+            <span class="side-menu-icon">📖</span>
+            <span>사용 설명서</span>
+            <span class="side-menu-arrow">›</span>
+        </button>
         <button class="side-menu-item" onclick="openPage('contact')">
             <span class="side-menu-icon">📩</span>
             <span>문의</span>
@@ -1105,6 +1110,184 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
                 또는: <span style="color:#fff">1,234×120÷1+13</span>
             </div>
         </div>
+    </div>
+</div>
+
+<!-- 사용 설명서 -->
+<div class="admin-page" id="page-guide">
+    <div class="admin-page-header">
+        <button class="admin-back" onclick="closePage()">‹</button>
+        <div class="admin-page-title">사용 설명서</div>
+    </div>
+    <div class="admin-page-content">
+
+        <div class="admin-section">
+            <div class="admin-section-title">📲 홈 화면에 추가하기</div>
+            <div style="font-size:12px;color:#636366;margin-bottom:14px;line-height:1.6">앱처럼 사용하려면 홈 화면에 추가하세요.<br>관리자 페이지와 계산기 모두 동일한 방법으로 추가합니다.</div>
+            <div style="font-size:13px;color:#ff9f0a;font-weight:600;margin-bottom:10px"> iOS (Safari에서)</div>
+            <div class="how-to-row">
+                <div class="how-to-step">1</div>
+                <div class="how-to-desc">Safari로 페이지 열기 <span style="color:#636366;font-size:11px">(Chrome 불가)</span></div>
+            </div>
+            <div class="how-to-row">
+                <div class="how-to-step">2</div>
+                <div class="how-to-desc">하단 공유 버튼 <span class="key-badge">□↑</span> 탭</div>
+            </div>
+            <div class="how-to-row">
+                <div class="how-to-step">3</div>
+                <div class="how-to-desc"><b>홈 화면에 추가</b> 선택 → <b>추가</b></div>
+            </div>
+            <div style="height:14px"></div>
+            <div style="font-size:13px;color:#4fc3f7;font-weight:600;margin-bottom:10px">🤖 Android (Chrome에서)</div>
+            <div class="how-to-row">
+                <div class="how-to-step">1</div>
+                <div class="how-to-desc">Chrome으로 페이지 열기</div>
+            </div>
+            <div class="how-to-row">
+                <div class="how-to-step">2</div>
+                <div class="how-to-desc">우측 상단 메뉴 <span class="key-badge">⋮</span> 탭</div>
+            </div>
+            <div class="how-to-row">
+                <div class="how-to-step">3</div>
+                <div class="how-to-desc"><b>홈 화면에 추가</b> 또는 <b>앱 설치</b> 선택</div>
+            </div>
+        </div>
+
+        <div class="admin-section">
+            <div class="admin-section-title">🔔 알림 설정</div>
+            <div style="font-size:12px;color:#636366;margin-bottom:14px;line-height:1.6">관객이 계산하면 관리자 기기로 푸시 알림이 옵니다.</div>
+            <div class="how-to-row">
+                <div class="how-to-step">1</div>
+                <div class="how-to-desc"><b>홈 화면에서 앱으로 열기</b> <span style="color:#ff6b6b;font-size:11px"> iOS는 반드시 웹앱으로</span></div>
+            </div>
+            <div class="how-to-row">
+                <div class="how-to-step">2</div>
+                <div class="how-to-desc">메뉴 → <b>알림 받기</b> → <b>알림 구독</b> 탭</div>
+            </div>
+            <div class="how-to-row">
+                <div class="how-to-step">3</div>
+                <div class="how-to-desc">권한 허용 → ✅ 완료 메시지 확인</div>
+            </div>
+            <div style="font-size:11px;color:#636366;margin-top:6px;line-height:1.8"> iOS: 홈 화면 웹앱에서만 동작<br>🤖 Android: 브라우저에서도 동작<br>⚠️ 알림은 관리자 URL 기준으로만 전송됨</div>
+        </div>
+
+        <div class="admin-section">
+            <div class="admin-section-title">🔗 URL 생성 및 전달</div>
+            <div style="font-size:12px;color:#636366;margin-bottom:14px;line-height:1.6">관객에게 나눠줄 계산기 URL을 생성합니다.</div>
+            <div class="how-to-row">
+                <div class="how-to-step">1</div>
+                <div class="how-to-desc">메뉴 → <b>URL 생성</b> 탭</div>
+            </div>
+            <div class="how-to-row">
+                <div class="how-to-step">2</div>
+                <div class="how-to-desc">관객 기기에 맞는 URL 복사<br><span class="key-badge"> iOS</span> 또는 <span class="key-badge">🤖 Android</span></div>
+            </div>
+            <div class="how-to-row">
+                <div class="how-to-step">3</div>
+                <div class="how-to-desc">카카오톡·문자 등으로 전달 → 관객이 홈 화면에 추가</div>
+            </div>
+            <div style="font-size:11px;color:#636366;margin-top:6px;line-height:1.6">⚠️ 관리자마다 고유 URL이 생성됩니다. 다른 관리자 URL과 섞이지 않도록 주의하세요.</div>
+        </div>
+
+        <div class="admin-section">
+            <div class="admin-section-title">👻 고스트 모드</div>
+            <div style="font-size:12px;color:#636366;margin-bottom:14px;line-height:1.6">관객 입력값을 관리자 폰에서 자동 재현합니다.</div>
+            <div class="how-to-row">
+                <div class="how-to-step">1</div>
+                <div class="how-to-desc">메뉴 → <b>고스트 모드</b>에서 딜레이·속도 설정 후 저장</div>
+            </div>
+            <div class="how-to-row">
+                <div class="how-to-step">2</div>
+                <div class="how-to-desc">관객이 계산기에 숫자 입력 → 관리자 수신 내역에 표시</div>
+            </div>
+            <div class="how-to-row">
+                <div class="how-to-step">3</div>
+                <div class="how-to-desc">관리자 계산기에서 <span class="key-badge">0</span> 두 번 빠르게 탭</div>
+            </div>
+            <div class="how-to-row">
+                <div class="how-to-step">4</div>
+                <div class="how-to-desc">설정한 딜레이 후 버튼 애니메이션으로 결과값 자동 입력</div>
+            </div>
+        </div>
+
+        <div class="admin-section">
+            <div class="admin-section-title">🔢 자동 카운팅</div>
+            <div style="font-size:12px;color:#636366;margin-bottom:14px;line-height:1.6">관객 계산기가 자동으로 숫자를 셉니다.</div>
+            <div class="how-to-row">
+                <div class="how-to-step">1</div>
+                <div class="how-to-desc">관객 계산기를 <b>세로로 세우면</b> N초 후 0부터 카운팅 시작</div>
+            </div>
+            <div class="how-to-row">
+                <div class="how-to-step">2</div>
+                <div class="how-to-desc">숫자 <span class="key-badge">1</span>~<span class="key-badge">9</span> 입력 후 <span class="key-badge">=</span> 누르면 그 숫자부터 카운팅</div>
+            </div>
+            <div class="how-to-row">
+                <div class="how-to-step">3</div>
+                <div class="how-to-desc">아무 버튼이나 누르면 중지 / 가로로 눕히면 해제</div>
+            </div>
+        </div>
+
+        <div class="admin-section">
+            <div class="admin-section-title">🔮 666 트릭</div>
+            <div style="font-size:12px;color:#636366;margin-bottom:14px;line-height:1.6">관객이 333+333을 입력하면 666이 나오고 자동 시퀀스가 실행됩니다.</div>
+            <div class="how-to-row">
+                <div class="how-to-step">1</div>
+                <div class="how-to-desc">관리자 계산기에서 <span class="key-badge">=</span> 세 번 빠르게 탭 → 666 모드 켜짐</div>
+            </div>
+            <div class="how-to-row">
+                <div class="how-to-step">2</div>
+                <div class="how-to-desc">관객이 <span class="key-badge">333+333=</span> 입력 → <b>666</b> 표시 후 자동 시퀀스</div>
+            </div>
+            <div class="how-to-row">
+                <div class="how-to-step">3</div>
+                <div class="how-to-desc">취소하려면 <span class="key-badge">=</span> 두 번 빠르게 탭</div>
+            </div>
+            <div style="font-size:11px;color:#636366;margin-top:6px;line-height:1.6">타이밍은 메뉴 → 666 트릭에서 단계별로 조정 가능</div>
+        </div>
+
+        <div class="admin-section">
+            <div class="admin-section-title">🍎 포스 모드</div>
+            <div style="font-size:12px;color:#636366;margin-bottom:14px;line-height:1.6">관객이 어떤 계산을 해도 원하는 숫자가 결과로 표시됩니다.</div>
+            <div class="how-to-row">
+                <div class="how-to-step">1</div>
+                <div class="how-to-desc">메뉴 → <b>포스 모드</b>에서 원하는 숫자 입력 후 저장</div>
+            </div>
+            <div class="how-to-row">
+                <div class="how-to-step">2</div>
+                <div class="how-to-desc">관객이 <span class="key-badge">=</span> 누르면 설정한 숫자가 결과로 표시</div>
+            </div>
+        </div>
+
+        <div class="admin-section">
+            <div class="admin-section-title">✨ % 버튼 자동 트리거</div>
+            <div style="font-size:12px;color:#636366;margin-bottom:14px;line-height:1.6">관객이 계산하면 관리자 화면에 계산식이 자동으로 나타납니다.</div>
+            <div class="how-to-row">
+                <div class="how-to-step">1</div>
+                <div class="how-to-desc">관리자 계산기에서 <span class="key-badge">%</span> 두 번 탭 → 버튼에 회색 점 표시 (대기)</div>
+            </div>
+            <div class="how-to-row">
+                <div class="how-to-step">2</div>
+                <div class="how-to-desc">관객이 계산 → 관리자 화면에 계산식 자동 실행</div>
+            </div>
+            <div class="how-to-row">
+                <div class="how-to-step">3</div>
+                <div class="how-to-desc">해제: <span class="key-badge">%</span> 한 번 탭 또는 <span class="key-badge">%</span> 두 번 탭</div>
+            </div>
+        </div>
+
+        <div class="admin-section">
+            <div class="admin-section-title">👁 수신 내역 미리보기</div>
+            <div class="how-to-row">
+                <div class="how-to-step">1</div>
+                <div class="how-to-desc">관리자 계산기에서 <span class="key-badge">=</span> 길게 누르기</div>
+            </div>
+            <div class="how-to-row">
+                <div class="how-to-step">2</div>
+                <div class="how-to-desc">최근 수신 내역 팝업 표시</div>
+            </div>
+            <div style="font-size:11px;color:#636366;margin-top:6px">전체 내역은 메뉴 → 수신 내역에서 확인</div>
+        </div>
+
     </div>
 </div>
 
