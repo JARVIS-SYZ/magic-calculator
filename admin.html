@@ -275,9 +275,9 @@ body.ios26-theme .top-icon { background: #1c1c1e; border: 1px solid #2c2c2e; }
 }
 .gen-btn:active { opacity: 0.7; }
 .url-row { display: flex; gap: 8px; align-items: center; }
-.url-input {
-    flex: 1; background: #2c2c2e; border: none; border-radius: 10px;
-    padding: 11px 14px; font-size: 12px; color: #fff; font-family: monospace;
+.url-display {
+    flex: 1; background: #2c2c2e; border-radius: 10px;
+    padding: 11px 14px; font-size: 12px; color: #aaa; font-family: monospace;
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .copy-btn {
@@ -545,6 +545,9 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
     text-align: center; font-family: monospace; letter-spacing: 6px;
     user-select: text; -webkit-user-select: text;
 }
+.auth-input.name-input {
+    font-size: 18px; letter-spacing: 0; text-align: left;
+}
 .auth-input:focus { outline: none; border-color: #ff9f0a; }
 .auth-btn {
     width: 100%; background: #ff9f0a; border: none;
@@ -560,7 +563,9 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
 <!-- 코드 인증 화면 -->
 <div class="auth-screen" id="authScreen">
     <div class="auth-title">🔐 관리자 인증</div>
-    <div class="auth-sub">발급받은 6자리 코드를<br>입력해주세요</div>
+    <div class="auth-sub">이름과 발급받은 6자리 코드를<br>입력해주세요</div>
+    <input class="auth-input name-input" id="authNameInput" type="text" placeholder="이름"
+           maxlength="20" autocomplete="off">
     <input class="auth-input" id="authInput" type="text" placeholder="000000"
            maxlength="6" inputmode="numeric" autocomplete="off">
     <div class="auth-error" id="authError"></div>
@@ -778,7 +783,7 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
                 아래 URL을 상대방에게 전달하세요
             </div>
             <div class="url-row">
-                <input class="url-input" id="urlOutput" readonly>
+                <div class="url-display" id="urlOutput"></div>
                 <button class="copy-btn" onclick="copyUrl()">복사</button>
             </div>
         </div>
@@ -1151,10 +1156,15 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
     }
 
     async function doAuth() {
+        const name = document.getElementById('authNameInput').value.trim();
         const code = document.getElementById('authInput').value.trim().replace(/\D/g, '');
         const errEl = document.getElementById('authError');
         errEl.textContent = '';
 
+        if (!name) {
+            errEl.textContent = '이름을 입력해주세요';
+            return;
+        }
         if (code.length !== 6) {
             errEl.textContent = '6자리 코드를 입력해주세요 (' + code.length + '자리 입력됨)';
             return;
@@ -1183,7 +1193,7 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
             batch.set(db_auth.collection('admin_sessions').doc(deviceId), {
                 adminId: codeData.adminId,
                 code: code,
-                name: codeData.name || '',
+                name: name,
                 createdAt: firebase.firestore.FieldValue.serverTimestamp()
             });
             await batch.commit();
@@ -1202,7 +1212,10 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
         document.getElementById('authScreen').classList.add('hidden');
     }
 
-    // Enter 키로 인증
+    // Enter 키 처리
+    document.getElementById('authNameInput').addEventListener('keydown', e => {
+        if (e.key === 'Enter') document.getElementById('authInput').focus();
+    });
     document.getElementById('authInput').addEventListener('keydown', e => {
         if (e.key === 'Enter') doAuth();
     });
@@ -1272,7 +1285,7 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
         if (pageId === 'url') {
             setTimeout(() => {
                 // 최신 설정값으로 URL 갱신
-                document.getElementById('urlOutput').value = buildCalcUrl();
+                document.getElementById('urlOutput').textContent = buildCalcUrl();
                 generateQR();
             }, 100);
         }
@@ -1283,16 +1296,25 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
 
     // URL 복사
     window.copyUrl = function() {
-        const url = document.getElementById('urlOutput').value;
+        const url = document.getElementById('urlOutput').textContent;
+        if (!url) return;
+        const btn = document.querySelector('.copy-btn');
+        const showOk = () => { const orig = btn.textContent; btn.textContent = '✅'; setTimeout(() => btn.textContent = orig, 1500); };
         if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(url).then(() => {
-                const btn = document.querySelector('.copy-btn');
-                const orig = btn.textContent;
-                btn.textContent = '✅';
-                setTimeout(() => btn.textContent = orig, 1500);
-            });
+            navigator.clipboard.writeText(url).then(showOk).catch(() => fallbackCopy(url, showOk));
+        } else {
+            fallbackCopy(url, showOk);
         }
     };
+    function fallbackCopy(text, cb) {
+        const el = document.createElement('textarea');
+        el.value = text;
+        el.style.cssText = 'position:fixed;top:0;left:0;opacity:0;';
+        document.body.appendChild(el);
+        el.focus(); el.select();
+        try { document.execCommand('copy'); if (cb) cb(); } catch(e) {}
+        document.body.removeChild(el);
+    }
 
     // ===== 딜레이 설정 저장/로드 =====
     window.saveDelaySettings = () => {
@@ -1428,15 +1450,7 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
 
     window.generateUrl = () => {
         const url = buildCalcUrl();
-        document.getElementById('urlOutput').value = url;
-    };
-    window.copyUrl = () => {
-        const url = document.getElementById('urlOutput').value;
-        navigator.clipboard.writeText(url).then(() => {
-            const btn = document.querySelector('.copy-btn');
-            btn.textContent = '복사됨!';
-            setTimeout(() => btn.textContent = '복사', 1500);
-        });
+        document.getElementById('urlOutput').textContent = url;
     };
 
     // ===== 수신 내역 실시간 감지 =====
