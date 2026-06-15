@@ -844,6 +844,10 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
             <div class="url-row">
                 <div class="url-display" id="urlOutputIos"></div>
                 <button class="copy-btn" id="copyBtnIos" onclick="copyUrl('ios')">복사</button>
+                <button class="copy-btn" id="qrBtnIos" onclick="toggleQR('ios')" style="color:#4fc3f7">QR</button>
+            </div>
+            <div id="qrWrapIos" style="display:none;justify-content:center;padding:14px 0">
+                <div id="qrcodeIos" style="background:#fff;padding:14px;border-radius:12px;"></div>
             </div>
         </div>
         <div class="admin-section" style="margin-top:14px">
@@ -852,13 +856,10 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
             <div class="url-row">
                 <div class="url-display" id="urlOutputAndroid"></div>
                 <button class="copy-btn" id="copyBtnAndroid" onclick="copyUrl('android')">복사</button>
+                <button class="copy-btn" id="qrBtnAndroid" onclick="toggleQR('android')" style="color:#4fc3f7">QR</button>
             </div>
-        </div>
-        <div class="admin-section" style="margin-top:14px">
-            <div class="admin-section-title">📱 QR 코드</div>
-            <div style="font-size:11px;color:#636366;margin-bottom:8px">iOS 기준</div>
-            <div style="display:flex;justify-content:center;padding:12px 0">
-                <div id="qrcode" style="background:#fff;padding:16px;border-radius:12px;"></div>
+            <div id="qrWrapAndroid" style="display:none;justify-content:center;padding:14px 0">
+                <div id="qrcodeAndroid" style="background:#fff;padding:14px;border-radius:12px;"></div>
             </div>
         </div>
     </div>
@@ -1528,35 +1529,54 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
     };
 
     // QR 코드 생성
-    let qrGenerated = false;
-    // 설정 저장 시 QR 재생성 플래그 초기화
-    function resetQR() { qrGenerated = false; }
-    function generateQR() {
-        if (qrGenerated) return;
-        const url = buildCalcUrl('ios');
-        const el = document.getElementById('qrcode');
-        if (el && typeof QRCode !== 'undefined') {
-            el.innerHTML = '';
-            new QRCode(el, {
-                text: url,
-                width: 180,
-                height: 180,
-                colorDark: '#000000',
-                colorLight: '#ffffff',
-            });
-            qrGenerated = true;
-        }
+    function resetQR() {} // URL 변경 시 호출되지만 QR은 열 때 항상 최신 URL로 재생성됨
+
+    function makeQR(platform) {
+        const elId = platform === 'ios' ? 'qrcodeIos' : 'qrcodeAndroid';
+        const el = document.getElementById(elId);
+        if (!el || typeof QRCode === 'undefined') return;
+        el.innerHTML = '';
+        new QRCode(el, {
+            text: buildCalcUrl(platform),
+            width: 160, height: 160,
+            colorDark: '#000000', colorLight: '#ffffff',
+        });
     }
 
-    // URL 페이지 열 때 QR 생성 + URL 갱신, 설정 페이지 열 때 값 로드
+    window.toggleQR = function(platform) {
+        const key   = platform === 'ios' ? 'Ios' : 'Android';
+        const wrap  = document.getElementById('qrWrap'  + key);
+        const btn   = document.getElementById('qrBtn'   + key);
+        const shown = wrap.style.display === 'flex';
+        const next  = !shown;
+        wrap.style.display = next ? 'flex' : 'none';
+        btn.textContent    = next ? 'QR ✕' : 'QR';
+        localStorage.setItem('qr_show_' + platform, next ? '1' : '0');
+        if (next) makeQR(platform);
+    };
+
+    function restoreQR() {
+        ['ios', 'android'].forEach(p => {
+            const key   = p === 'ios' ? 'Ios' : 'Android';
+            const shown = localStorage.getItem('qr_show_' + p) === '1';
+            const wrap  = document.getElementById('qrWrap' + key);
+            const btn   = document.getElementById('qrBtn'  + key);
+            if (!wrap) return;
+            wrap.style.display = shown ? 'flex' : 'none';
+            btn.textContent    = shown ? 'QR ✕' : 'QR';
+            if (shown) makeQR(p);
+        });
+    }
+
+    // URL 페이지 열 때 URL 갱신 + QR 상태 복원, 설정 페이지 열 때 값 로드
     const origOpenPage = window.openPage;
     window.openPage = function(pageId) {
         origOpenPage(pageId);
         if (pageId === 'url') {
             setTimeout(() => {
-                document.getElementById('urlOutputIos').textContent = buildCalcUrl('ios');
+                document.getElementById('urlOutputIos').textContent     = buildCalcUrl('ios');
                 document.getElementById('urlOutputAndroid').textContent = buildCalcUrl('android');
-                generateQR();
+                restoreQR();
             }, 100);
         }
         if (['ghost', 'counting', 'trick666'].includes(pageId)) {
