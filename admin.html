@@ -162,6 +162,13 @@ body.ios26-theme .top-icon { background: #1c1c1e; border: 1px solid #2c2c2e; }
 .button.operator .button-content { font-size: calc(var(--btn-w) * 0.60); font-weight: 300; transform: translateY(-3px); }
 .button.function { background: #505050; color: #fff; }
 .button.function .button-content { font-size: calc(var(--btn-w) * 0.30); }
+.percent-button { position: relative; }
+.percent-button.armed::after {
+    content: '';
+    position: absolute; bottom: 6px; left: 50%; transform: translateX(-50%);
+    width: 5px; height: 5px; border-radius: 50%;
+    background: #8e8e93;
+}
 .button.calc-icon { background: #333; color: #fff; position: relative; }
 .calc-icon-svg  { width: calc(var(--btn-w) * 0.44); height: calc(var(--btn-w) * 0.44); }
 .backspace-icon { width: calc(var(--btn-w) * 0.46); height: calc(var(--btn-w) * 0.46); }
@@ -1849,8 +1856,7 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
     const percentBtn = document.querySelector('.percent-button');
     function setMagicArmed(armed) {
         magicArmed = armed;
-        percentBtn.style.color = armed ? '#ff9f0a' : '';
-        percentBtn.style.fontWeight = armed ? '800' : '';
+        percentBtn.classList.toggle('armed', armed);
     }
     percentBtn.addEventListener('click', () => {
         percentTapCount++;
@@ -1870,15 +1876,8 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
             // 이미 대기 중이면 취소
             if (magicArmed) { setMagicArmed(false); return; }
 
-            // 데이터 없으면 대기 상태 활성
-            if (!dataReady || !cachedLatestData) {
-                setMagicArmed(true);
-                return;
-            }
-
-            // 데이터 있으면 즉시 실행
-            magicRunning = true;
-            generateMagicExpression().finally(() => { magicRunning = false; });
+            // 항상 대기 상태로 — 이후 수신 데이터에만 반응
+            setMagicArmed(true);
         }
     });
 
