@@ -204,6 +204,17 @@ body.ios26-theme .top-icon { background: #1c1c1e; border: 1px solid #2c2c2e; }
     font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
 }
 .force-input:focus { outline: none; background: #3a3a3c; }
+.version-select {
+    width: 100%; background: #2c2c2e; border: none; border-radius: 12px;
+    padding: 15px 20px; font-size: 17px; color: #fff; font-weight: 500;
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+    appearance: none; -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23888' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 16px center;
+    cursor: pointer;
+}
+.version-select:focus { outline: none; background-color: #3a3a3c; }
+.version-select option { background: #2c2c2e; }
 .close-button {
     width: 100%; background: #ff9f0a; border: none; border-radius: 12px;
     padding: 15px; font-size: 18px; color: #fff; font-weight: 600;
@@ -708,6 +719,13 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
 <div class="settings-modal" id="settingsModal">
     <div class="settings-content">
         <div class="settings-title">설정</div>
+        <div class="setting-item">
+            <div class="setting-label">iOS 버전</div>
+            <select class="version-select" id="iosVersionSelect" onchange="onIosVersionChange(this.value)">
+                <option value="18">iOS 18 (기본)</option>
+                <option value="26">iOS 26</option>
+            </select>
+        </div>
         <div class="setting-item">
             <div class="setting-label">포스 모드 숫자</div>
             <input type="number" class="force-input" id="forceNumberInput" placeholder="숫자 입력">
@@ -2092,8 +2110,20 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
         displayTapCount++;
         if (displayTapTimer) clearTimeout(displayTapTimer);
         displayTapTimer = setTimeout(() => { displayTapCount = 0; }, DISPLAY_TAP_TIMEOUT);
-        if (displayTapCount === 3) { displayTapCount=0; clearTimeout(displayTapTimer); ios26Mode=!ios26Mode; applyLayoutMode(); }
     });
+
+    window.onIosVersionChange = function(val) {
+        ios26Mode = (val === '26');
+        localStorage.setItem('admin_ios_version', val);
+        applyLayoutMode();
+    };
+
+    // iOS 버전 초기 로드
+    const savedIosVersion = localStorage.getItem('admin_ios_version') || '18';
+    const iosVersionSelect = document.getElementById('iosVersionSelect');
+    if (iosVersionSelect) iosVersionSelect.value = savedIosVersion;
+    ios26Mode = (savedIosVersion === '26');
+    applyLayoutMode();
 
     forceNumberInput.addEventListener('input', e => { const v = e.target.value; forceNumber = v==='' ? null : parseFloat(v); });
 
