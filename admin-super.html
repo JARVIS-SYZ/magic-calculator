@@ -275,7 +275,7 @@ html, body {
     function doLogin() {
         const pw = document.getElementById('pwInput').value;
         if (pw === SUPER_PW) {
-            sessionStorage.setItem('super_auth', '1');
+            localStorage.setItem('super_auth', '1');
             showMain();
         } else {
             document.getElementById('loginError').textContent = '비밀번호가 틀렸어요.';
@@ -284,7 +284,7 @@ html, body {
     }
 
     function doLogout() {
-        sessionStorage.removeItem('super_auth');
+        localStorage.removeItem('super_auth');
         document.getElementById('mainScreen').classList.remove('active');
         document.getElementById('loginScreen').style.display = 'flex';
         document.getElementById('pwInput').value = '';
@@ -301,7 +301,7 @@ html, body {
     }
 
     // 세션 유지
-    if (sessionStorage.getItem('super_auth') === '1') showMain();
+    if (localStorage.getItem('super_auth') === '1') showMain();
 
     // ===== 탭 전환 =====
     function switchTab(name) {
