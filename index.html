@@ -226,6 +226,24 @@ body.android-mode .button-grid {
 .backspace-icon { width: calc(var(--btn-w) * 0.46); height: calc(var(--btn-w) * 0.46); }
 .pm-icon        { width: calc(var(--btn-w) * 0.38); height: calc(var(--btn-w) * 0.38); }
 
+/* ===== 가로 모드 차단 ===== */
+#landscape-block {
+    display: none;
+    position: fixed; inset: 0; z-index: 99999;
+    background: #000;
+    flex-direction: column;
+    align-items: center; justify-content: center;
+    color: #fff; gap: 16px;
+}
+#landscape-block .rotate-icon { font-size: 48px; animation: rotatePulse 1.5s ease-in-out infinite; }
+@keyframes rotatePulse {
+    0%, 100% { transform: rotate(0deg); }
+    50% { transform: rotate(90deg); }
+}
+@media screen and (orientation: landscape) {
+    #landscape-block { display: flex; }
+}
+
 /* ===== 설정 모달 ===== */
 .settings-modal {
     position: fixed; top: 0; left: 0; right: 0; bottom: 0;
@@ -298,6 +316,10 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
 </style>
 </head>
 <body>
+<div id="landscape-block">
+    <div class="rotate-icon">↩️</div>
+    <div style="font-size:16px;font-weight:600">세로로 돌려주세요</div>
+</div>
 <div class="calculator">
     <div class="header">
         <div class="menu-icon top-icon" id="menuIcon">
@@ -436,6 +458,11 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
     // URL에서 계산기 ID 추출
     const urlParams = new URLSearchParams(window.location.search);
     const calcId = urlParams.get('id') || 'unknown';
+
+    // 세로 방향 고정 (Android PWA 설치 모드에서 동작)
+    if (screen.orientation && screen.orientation.lock) {
+        screen.orientation.lock('portrait').catch(() => {});
+    }
 
     // 플랫폼 감지 (URL 파라미터 우선, 없으면 userAgent)
     const platformParam = urlParams.get('platform');
