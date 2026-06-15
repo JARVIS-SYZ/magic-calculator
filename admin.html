@@ -1453,7 +1453,8 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
 
             if (token) {
                 await firebase.firestore().collection('fcm_tokens').doc('admin_device_' + (currentAdminId || 'unknown')).set({
-                    token, platform: isWebApp ? 'webapp' : 'browser',
+                    token, adminId: currentAdminId || null,
+                    platform: isWebApp ? 'webapp' : 'browser',
                     updatedAt: new Date().toISOString()
                 });
                 localStorage.setItem('fcm_token', token);
