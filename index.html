@@ -41,7 +41,7 @@ html, body {
 .calculator {
     position: fixed;
     top: 0; left: 0; right: 0; bottom: 0;
-    padding-top: calc(env(safe-area-inset-top) + var(--extra-top));
+    padding-top: env(safe-area-inset-top);
     display: flex;
     flex-direction: column;
     background: #000;
@@ -165,10 +165,7 @@ body.ios26-theme .top-icon { background: #1c1c1e; border: 1px solid #2c2c2e; }
  *   버튼 1개 너비 = (100vw - 40px - 18px) / 4 = calc((100vw - 58px) / 4)
  */
 :root {
-    --btn-side-pad: 20px;
-    --btn-w: calc((100vw - var(--btn-side-pad) * 2 - 18px) / 4);
-    --extra-top: 0px;
-    --extra-bot: 0px;
+    --btn-w: calc((100vw - 58px) / 4);
 }
 
 .button-grid {
@@ -176,11 +173,11 @@ body.ios26-theme .top-icon { background: #1c1c1e; border: 1px solid #2c2c2e; }
     grid-template-columns: repeat(4, var(--btn-w));
     grid-auto-rows: var(--btn-w);
     gap: 6px;
-    padding: 0 var(--btn-side-pad) calc(4px + var(--extra-bot)) var(--btn-side-pad);
+    padding: 0 20px 4px 20px;
     width: 100%;
 }
 body.android-mode .button-grid {
-    padding-bottom: calc(max(14px, env(safe-area-inset-bottom)) + var(--extra-bot));
+    padding-bottom: max(14px, env(safe-area-inset-bottom));
 }
 
 .button {
@@ -445,14 +442,6 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
     const isAndroid = platformParam === 'android' || (!platformParam && /android/i.test(navigator.userAgent));
     if (isAndroid) document.body.classList.add('android-mode');
 
-    // 디스플레이 설정 적용
-    const bpad = parseInt(urlParams.get('bpad') || '20');
-    const extraTop = parseInt(urlParams.get('top') || '0');
-    const extraBot = parseInt(urlParams.get('bot') || '0');
-    const root = document.documentElement;
-    if (bpad !== 20) root.style.setProperty('--btn-side-pad', bpad + 'px');
-    if (extraTop > 0) root.style.setProperty('--extra-top', extraTop + 'px');
-    if (extraBot > 0) root.style.setProperty('--extra-bot', extraBot + 'px');
 
     // = 누를 때 Firestore에 저장
     window.sendCalcResult = async function(expression, result, isForce) {
