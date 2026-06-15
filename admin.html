@@ -1324,6 +1324,11 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
     // ===== 플랫폼 감지 =====
     if (/android/i.test(navigator.userAgent)) document.body.classList.add('android-mode');
 
+    // 세로 방향 고정 (Android PWA 설치 모드에서 동작)
+    if (screen.orientation && screen.orientation.lock) {
+        screen.orientation.lock('portrait').catch(() => {});
+    }
+
     // ===== Firebase 초기화 =====
     const firebaseConfig = {
         apiKey: "AIzaSyDEZlkBRFt4JtR1v3QGaBeTOPvD-Zg0cBs",
