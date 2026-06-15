@@ -1218,7 +1218,8 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
             const batch = db_auth.batch();
             batch.update(db_auth.collection('admin_codes').doc(code), {
                 used: true,
-                useCount: useCount + 1
+                useCount: useCount + 1,
+                name: name
             });
             batch.set(db_auth.collection('admin_sessions').doc(deviceId), {
                 adminId: codeData.adminId,

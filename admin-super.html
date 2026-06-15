@@ -235,8 +235,8 @@ html, body {
         <div class="section">
             <div class="section-title">새 코드 생성</div>
             <div class="code-create-row">
-                <input class="code-name-input" id="newCodeName" placeholder="이름 또는 이름1, 이름2, …" type="text">
-                <button class="create-btn" onclick="createCode()">생성</button>
+                <input class="code-name-input" id="newCodeName" placeholder="보안코드 (예: 123456, 789012)" type="text" inputmode="numeric">
+                <button class="create-btn" onclick="createCode()">등록</button>
             </div>
         </div>
         <div class="section">
@@ -341,8 +341,8 @@ html, body {
             item.className = 'code-item' + (d.used ? ' used' : '');
             item.innerHTML = `
                 <div class="code-info">
-                    <div class="code-name">${d.name || '이름 없음'}</div>
-                    <div class="code-val">${doc.id}</div>
+                    <div class="code-val" style="font-size:17px">${doc.id}</div>
+                    ${d.name ? `<div class="code-name" style="font-size:13px;color:#aaa;margin-top:3px">${d.name}</div>` : ''}
                     <div class="code-status ${d.used ? 'used' : ''}">${d.used ? `● 사용됨 (${useCount}/2)` : '● 미사용'}</div>
                 </div>
                 <div class="code-actions">
@@ -446,26 +446,25 @@ html, body {
     // ===== 코드 생성 =====
     async function createCode() {
         const input = document.getElementById('newCodeName').value.trim();
-        if (!input) { alert('관리자 이름을 입력해주세요'); return; }
+        if (!input) { alert('보안코드를 입력해주세요'); return; }
 
-        const names = input.split(',').map(n => n.trim()).filter(n => n);
-        const results = [];
+        const codes = input.split(',').map(s => s.trim().replace(/\D/g, '')).filter(s => s);
+        const invalid = codes.filter(c => c.length !== 6);
+        if (invalid.length) { alert(`6자리가 아닌 코드가 있어요: ${invalid.join(', ')}`); return; }
 
         try {
-            for (const name of names) {
-                const code = Math.floor(100000 + Math.random() * 900000).toString();
+            for (const code of codes) {
                 const adminId = Math.random().toString(36).substring(2, 10);
                 await db.collection('admin_codes').doc(code).set({
-                    name, adminId, used: false, useCount: 0,
+                    adminId, used: false, useCount: 0,
                     createdAt: firebase.firestore.FieldValue.serverTimestamp()
                 });
-                results.push({ name, code });
             }
             document.getElementById('newCodeName').value = '';
-            if (results.length === 1) {
-                alert(`코드 생성 완료!\n\n이름: ${results[0].name}\n코드: ${results[0].code}`);
+            if (codes.length === 1) {
+                alert(`코드 등록 완료!\n\n${codes[0]}`);
             } else {
-                alert(`${results.length}개 코드 생성 완료!\n\n` + results.map(r => `${r.name}: ${r.code}`).join('\n'));
+                alert(`${codes.length}개 코드 등록 완료!\n\n${codes.join('\n')}`);
             }
         } catch(e) {
             alert('오류: ' + e.message);
