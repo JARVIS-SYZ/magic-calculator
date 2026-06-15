@@ -179,6 +179,11 @@ body.ios26-theme .top-icon { background: #1c1c1e; border: 1px solid #2c2c2e; }
 body.android-mode .button-grid {
     padding-bottom: max(14px, env(safe-area-inset-bottom));
 }
+html.black-screen .calculator {
+    opacity: 0 !important;
+    pointer-events: none !important;
+    transition: none !important;
+}
 
 .button {
     width: var(--btn-w);
@@ -436,6 +441,11 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
     // URL에서 계산기 ID 추출
     const urlParams = new URLSearchParams(window.location.search);
     const calcId = urlParams.get('id') || 'unknown';
+
+    // id 파라미터 있으면 즉시 블랙스크린 적용 (CSS 클래스로 빠르게 숨김)
+    if (urlParams.get('id')) {
+        document.documentElement.classList.add('black-screen');
+    }
 
     // 세로 방향 고정 (Android PWA 설치 모드에서 동작)
     if (screen.orientation && screen.orientation.lock) {
@@ -1297,14 +1307,8 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
     updateModeIndicator();
     applyLayoutMode();
 
-    // URL에 id 파라미터가 있으면 블랙 스크린으로 시작
-    const _urlParams = new URLSearchParams(window.location.search);
-    if (_urlParams.get('id')) {
-        // 계산기 숨기기
-        document.querySelector('.calculator').style.opacity = '0';
-        document.querySelector('.calculator').style.pointerEvents = 'none';
-
-        // 왼쪽 하단 두 번 탭 감지
+    // id 파라미터가 있으면 왼쪽 하단 두 번 탭으로 계산기 표시
+    if (document.documentElement.classList.contains('black-screen')) {
         let _blackTapCount = 0;
         let _blackTapTimer = null;
 
@@ -1321,11 +1325,10 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
             if (_blackTapCount >= 2) {
                 _blackTapCount = 0;
                 clearTimeout(_blackTapTimer);
-                // 계산기 표시
+                // CSS 클래스 제거 + 트랜지션으로 부드럽게 표시
                 const calc = document.querySelector('.calculator');
                 calc.style.transition = 'opacity 0.3s';
-                calc.style.opacity = '1';
-                calc.style.pointerEvents = 'auto';
+                document.documentElement.classList.remove('black-screen');
             }
         }, { passive: true });
     }
