@@ -1,7 +1,7 @@
 {
   "name": "계산기 관리자",
   "short_name": "관리자",
-  "start_url": "/admin.html",
+  "start_url": "/magic-calculator/admin.html",
   "display": "standalone",
   "background_color": "#0a0a0a",
   "theme_color": "#0a0a0a",
