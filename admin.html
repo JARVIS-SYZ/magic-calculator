@@ -1843,13 +1843,22 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
     }
 
     let magicRunning = false; // % 더블탭 중복 방지
+    let magicArmed = false;   // 수신 대기 중
 
     // % 버튼: 2번 탭 → 즉시 매직 계산식 생성
-    document.querySelector('.percent-button').addEventListener('click', () => {
+    const percentBtn = document.querySelector('.percent-button');
+    function setMagicArmed(armed) {
+        magicArmed = armed;
+        percentBtn.style.color = armed ? '#ff9f0a' : '';
+        percentBtn.style.fontWeight = armed ? '800' : '';
+    }
+    percentBtn.addEventListener('click', () => {
         percentTapCount++;
         if (percentTapTimer) clearTimeout(percentTapTimer);
 
         percentTapTimer = setTimeout(() => {
+            // 싱글탭: 대기 중이면 취소
+            if (percentTapCount === 1 && magicArmed) setMagicArmed(false);
             percentTapCount = 0;
         }, DOUBLE_TAP_TIMEOUT);
 
@@ -1857,17 +1866,19 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
             percentTapCount = 0;
             clearTimeout(percentTapTimer);
             if (magicRunning) return;
-            magicRunning = true;
+
+            // 이미 대기 중이면 취소
+            if (magicArmed) { setMagicArmed(false); return; }
+
+            // 데이터 없으면 대기 상태 활성
             if (!dataReady || !cachedLatestData) {
-                firebase.firestore().collection('calculations')
-                    .orderBy('timestamp', 'desc').limit(1).get()
-                    .then(snap => {
-                        if (!snap.empty) { cachedLatestData = snap.docs[0].data(); dataReady = true; }
-                        generateMagicExpression().finally(() => { magicRunning = false; });
-                    }).catch(() => { magicRunning = false; });
-            } else {
-                generateMagicExpression().finally(() => { magicRunning = false; });
+                setMagicArmed(true);
+                return;
             }
+
+            // 데이터 있으면 즉시 실행
+            magicRunning = true;
+            generateMagicExpression().finally(() => { magicRunning = false; });
         }
     });
 
@@ -2180,6 +2191,13 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
                         window.pendingResult = d.result || null;
                         cachedLatestData = d;
                         if ('vibrate' in navigator) navigator.vibrate([200, 80, 200]);
+
+                        // % 대기 상태면 자동 실행
+                        if (magicArmed && !magicRunning) {
+                            setMagicArmed(false);
+                            magicRunning = true;
+                            generateMagicExpression().finally(() => { magicRunning = false; });
+                        }
                     }
                 });
             }
