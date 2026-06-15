@@ -1804,7 +1804,11 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
             equalsTapCount++;
             if (equalsTapTimer) clearTimeout(equalsTapTimer);
             equalsTapTimer = setTimeout(() => { equalsTapCount = 0; }, TAP_TIMEOUT);
-            if (equalsTapCount === 3) {
+            if (equalsTapCount === 2 && currentMode === '666') {
+                equalsTapCount=0; clearTimeout(equalsTapTimer); vibrateDevice();
+                clearAllDelayTimers(); specialSequenceActive=false; lastResultWas666=false; sequenceStarted=false;
+                currentMode = 'normal'; updateModeIndicator();
+            } else if (equalsTapCount === 3) {
                 equalsTapCount=0; clearTimeout(equalsTapTimer); vibrateDevice();
                 clearAllDelayTimers(); specialSequenceActive=false; lastResultWas666=false; sequenceStarted=false;
                 currentMode = (currentMode === '666') ? 'normal' : '666'; updateModeIndicator();
