@@ -476,39 +476,6 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
 .toggle-switch input:checked + .toggle-slider { background: #30d158; }
 .toggle-switch input:checked + .toggle-slider::before { transform: translateX(20px); }
 
-/* 최근 계산 팝업 */
-.recent-popup {
-    position: fixed; inset: 0;
-    background: rgba(0,0,0,0.6);
-    z-index: 5000;
-    display: none; align-items: flex-end;
-}
-.recent-popup.active { display: flex; }
-.recent-popup-sheet {
-    width: 100%;
-    background: #1c1c1e;
-    border-radius: 20px 20px 0 0;
-    padding: 0 0 calc(env(safe-area-inset-bottom) + 16px);
-    max-height: 60vh;
-    display: flex; flex-direction: column;
-}
-.recent-popup-handle {
-    width: 36px; height: 4px; background: #3a3a3c;
-    border-radius: 2px; margin: 12px auto 4px;
-}
-.recent-popup-title {
-    font-size: 13px; font-weight: 600; color: #636366;
-    text-transform: uppercase; letter-spacing: 0.6px;
-    padding: 10px 20px 8px;
-}
-.recent-popup-list { overflow-y: auto; flex: 1; padding: 0 20px; }
-.recent-calc-item {
-    display: flex; justify-content: space-between; align-items: center;
-    padding: 13px 0; border-bottom: 1px solid #2c2c2e; gap: 12px;
-}
-.recent-calc-item:last-child { border-bottom: none; }
-.recent-calc-expr { font-size: 16px; color: #888; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.recent-calc-result { font-size: 18px; color: #fff; font-weight: 600; flex-shrink: 0; }
 
 /* ===== 페이지 패널 ===== */
 .admin-page {
@@ -742,15 +709,6 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
 
 <!-- = 길게 누르기 팝업 -->
 <div class="peek-popup" id="peekPopup"></div>
-
-<!-- 최근 계산 팝업 -->
-<div class="recent-popup" id="recentPopup" onclick="closeRecentPopup()">
-    <div class="recent-popup-sheet" onclick="event.stopPropagation()">
-        <div class="recent-popup-handle"></div>
-        <div class="recent-popup-title">최근 계산</div>
-        <div class="recent-popup-list" id="recentCalcList"></div>
-    </div>
-</div>
 
 <!-- 관리자 메뉴 오버레이 -->
 <div class="menu-overlay" id="menuOverlay" onclick="closeMenuOverlay()"></div>
@@ -1320,23 +1278,6 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
         localStorage.setItem('admin_start_with_calc', checked ? 'true' : 'false');
     };
 
-    window.showRecentCalcs = function() {
-        const list = document.getElementById('recentCalcList');
-        if (!recentCalcs.length) {
-            list.innerHTML = '<div style="color:#636366;text-align:center;padding:24px 0">아직 수신된 계산이 없어요</div>';
-        } else {
-            list.innerHTML = recentCalcs.slice(0, 10).map(d =>
-                `<div class="recent-calc-item">
-                    <span class="recent-calc-expr">${d.expression || ''}</span>
-                    <span class="recent-calc-result">${d.result != null ? d.result : ''}</span>
-                </div>`
-            ).join('');
-        }
-        document.getElementById('recentPopup').classList.add('active');
-    };
-    window.closeRecentPopup = function() {
-        document.getElementById('recentPopup').classList.remove('active');
-    };
     window.closeSideMenu = function() {
         document.getElementById('sideMenu').classList.remove('active');
         document.getElementById('menuOverlay').classList.remove('active');
@@ -1650,7 +1591,7 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
 
     // ===== 메뉴 아이콘 탭 → 관리자 패널 =====
     document.getElementById('menuIcon').addEventListener('click', () => {
-        showRecentCalcs();
+        openSideMenu();
     });
 
     // ===== 0 두번 탭 → 도트 숨김 + 딜레이 후 자동 입력 =====
@@ -1810,12 +1751,6 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
 
     // ===== 탭 이벤트 =====
     calcIconButtons.forEach(btn => {
-        btn.addEventListener('click', () => {
-            calcIconTapCount++;
-            if (calcIconTapTimer) clearTimeout(calcIconTapTimer);
-            calcIconTapTimer = setTimeout(() => { calcIconTapCount = 0; }, TAP_TIMEOUT);
-            if (calcIconTapCount === 2) { calcIconTapCount=0; clearTimeout(calcIconTapTimer); vibrateDevice(); openSideMenu(); }
-        });
         btn.addEventListener('touchstart', () => { longPressTimer = setTimeout(() => { vibrateDevice(); openSettings(); }, LONG_PRESS_DURATION); }, { passive: true });
         btn.addEventListener('touchend',   () => clearTimeout(longPressTimer));
         btn.addEventListener('touchmove',  () => clearTimeout(longPressTimer));
