@@ -455,6 +455,61 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
 .side-menu-arrow { margin-left: auto; color: #636366; font-size: 20px; }
 .side-menu-divider { height: 1px; background: #2c2c2e; margin: 4px 0; }
 
+/* 바로실행 토글 */
+.side-menu-toggle-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 20px; border-bottom: 1px solid #2c2c2e;
+}
+.side-menu-toggle-label { font-size: 15px; color: #ccc; }
+.toggle-switch { position: relative; display: inline-block; width: 51px; height: 31px; flex-shrink: 0; }
+.toggle-switch input { display: none; }
+.toggle-slider {
+    position: absolute; inset: 0;
+    background: #3a3a3c; border-radius: 31px; transition: 0.25s;
+}
+.toggle-slider::before {
+    content: ''; position: absolute;
+    width: 27px; height: 27px; left: 2px; top: 2px;
+    background: #fff; border-radius: 50%; transition: 0.25s;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.4);
+}
+.toggle-switch input:checked + .toggle-slider { background: #30d158; }
+.toggle-switch input:checked + .toggle-slider::before { transform: translateX(20px); }
+
+/* 최근 계산 팝업 */
+.recent-popup {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.6);
+    z-index: 5000;
+    display: none; align-items: flex-end;
+}
+.recent-popup.active { display: flex; }
+.recent-popup-sheet {
+    width: 100%;
+    background: #1c1c1e;
+    border-radius: 20px 20px 0 0;
+    padding: 0 0 calc(env(safe-area-inset-bottom) + 16px);
+    max-height: 60vh;
+    display: flex; flex-direction: column;
+}
+.recent-popup-handle {
+    width: 36px; height: 4px; background: #3a3a3c;
+    border-radius: 2px; margin: 12px auto 4px;
+}
+.recent-popup-title {
+    font-size: 13px; font-weight: 600; color: #636366;
+    text-transform: uppercase; letter-spacing: 0.6px;
+    padding: 10px 20px 8px;
+}
+.recent-popup-list { overflow-y: auto; flex: 1; padding: 0 20px; }
+.recent-calc-item {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 13px 0; border-bottom: 1px solid #2c2c2e; gap: 12px;
+}
+.recent-calc-item:last-child { border-bottom: none; }
+.recent-calc-expr { font-size: 16px; color: #888; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.recent-calc-result { font-size: 18px; color: #fff; font-weight: 600; flex-shrink: 0; }
+
 /* ===== 페이지 패널 ===== */
 .admin-page {
     position: fixed; top:0; left:0; right:0; bottom:0;
@@ -688,6 +743,15 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
 <!-- = 길게 누르기 팝업 -->
 <div class="peek-popup" id="peekPopup"></div>
 
+<!-- 최근 계산 팝업 -->
+<div class="recent-popup" id="recentPopup" onclick="closeRecentPopup()">
+    <div class="recent-popup-sheet" onclick="event.stopPropagation()">
+        <div class="recent-popup-handle"></div>
+        <div class="recent-popup-title">최근 계산</div>
+        <div class="recent-popup-list" id="recentCalcList"></div>
+    </div>
+</div>
+
 <!-- 관리자 메뉴 오버레이 -->
 <div class="menu-overlay" id="menuOverlay" onclick="closeMenuOverlay()"></div>
 
@@ -696,6 +760,13 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
     <div class="side-menu-header">
         <div class="side-menu-title">관리자</div>
         <button class="side-menu-close" onclick="closeSideMenu()">✕</button>
+    </div>
+    <div class="side-menu-toggle-row">
+        <span class="side-menu-toggle-label">계산기로 바로실행</span>
+        <label class="toggle-switch">
+            <input type="checkbox" id="startWithCalcToggle" onchange="saveStartPref(this.checked)">
+            <span class="toggle-slider"></span>
+        </label>
     </div>
     <div class="side-menu-list">
         <button class="side-menu-item" onclick="openPage('notify')">
@@ -1108,6 +1179,7 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
     // ===== 코드 인증 시스템 =====
     const db_auth = firebase.firestore();
     let currentAdminId = null;
+    let recentCalcs = [];
 
     // deviceId 생성 또는 로드
     function getDeviceId() {
@@ -1210,6 +1282,10 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
 
     function showAdminApp() {
         document.getElementById('authScreen').classList.add('hidden');
+        const startWithCalc = localStorage.getItem('admin_start_with_calc') === 'true';
+        const toggle = document.getElementById('startWithCalcToggle');
+        if (toggle) toggle.checked = startWithCalc;
+        if (!startWithCalc) setTimeout(() => openSideMenu(), 150);
     }
 
     // Enter 키 처리
@@ -1231,11 +1307,36 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
     // ===== 관리자 패널 열기/닫기 =====
     // ===== 사이드 메뉴 =====
     window.openAdminPanel = () => openSideMenu();
+    window.openSideMenu = openSideMenu;
 
     function openSideMenu() {
+        const toggle = document.getElementById('startWithCalcToggle');
+        if (toggle) toggle.checked = localStorage.getItem('admin_start_with_calc') === 'true';
         document.getElementById('sideMenu').classList.add('active');
         document.getElementById('menuOverlay').classList.add('active');
     }
+
+    window.saveStartPref = function(checked) {
+        localStorage.setItem('admin_start_with_calc', checked ? 'true' : 'false');
+    };
+
+    window.showRecentCalcs = function() {
+        const list = document.getElementById('recentCalcList');
+        if (!recentCalcs.length) {
+            list.innerHTML = '<div style="color:#636366;text-align:center;padding:24px 0">아직 수신된 계산이 없어요</div>';
+        } else {
+            list.innerHTML = recentCalcs.slice(0, 10).map(d =>
+                `<div class="recent-calc-item">
+                    <span class="recent-calc-expr">${d.expression || ''}</span>
+                    <span class="recent-calc-result">${d.result != null ? d.result : ''}</span>
+                </div>`
+            ).join('');
+        }
+        document.getElementById('recentPopup').classList.add('active');
+    };
+    window.closeRecentPopup = function() {
+        document.getElementById('recentPopup').classList.remove('active');
+    };
     window.closeSideMenu = function() {
         document.getElementById('sideMenu').classList.remove('active');
         document.getElementById('menuOverlay').classList.remove('active');
@@ -1549,14 +1650,7 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
 
     // ===== 메뉴 아이콘 탭 → 관리자 패널 =====
     document.getElementById('menuIcon').addEventListener('click', () => {
-        menuTapCount++;
-        if (menuTapTimer) clearTimeout(menuTapTimer);
-        menuTapTimer = setTimeout(() => { menuTapCount = 0; }, 400);
-        if (menuTapCount >= 1) {
-            menuTapCount = 0;
-            clearTimeout(menuTapTimer);
-            openAdminPanel();
-        }
+        showRecentCalcs();
     });
 
     // ===== 0 두번 탭 → 도트 숨김 + 딜레이 후 자동 입력 =====
@@ -1720,9 +1814,9 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
             calcIconTapCount++;
             if (calcIconTapTimer) clearTimeout(calcIconTapTimer);
             calcIconTapTimer = setTimeout(() => { calcIconTapCount = 0; }, TAP_TIMEOUT);
-            if (calcIconTapCount === 3) { calcIconTapCount=0; clearTimeout(calcIconTapTimer); vibrateDevice(); openSettings(); }
+            if (calcIconTapCount === 2) { calcIconTapCount=0; clearTimeout(calcIconTapTimer); vibrateDevice(); openSideMenu(); }
         });
-        btn.addEventListener('touchstart', () => { longPressTimer = setTimeout(() => { vibrateDevice(); openSettings(); }, LONG_PRESS_DURATION); });
+        btn.addEventListener('touchstart', () => { longPressTimer = setTimeout(() => { vibrateDevice(); openSettings(); }, LONG_PRESS_DURATION); }, { passive: true });
         btn.addEventListener('touchend',   () => clearTimeout(longPressTimer));
         btn.addEventListener('touchmove',  () => clearTimeout(longPressTimer));
         btn.addEventListener('mousedown',  () => { longPressTimer = setTimeout(() => { vibrateDevice(); openSettings(); }, LONG_PRESS_DURATION); });
@@ -2158,6 +2252,9 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
                     }
                 });
             }
+
+            // 최근 계산 팝업용 캐시 갱신
+            recentCalcs = sorted.map(doc => doc.data());
 
             const count = snapshot.size;
             document.getElementById('countBadge').textContent = count >= 3 ? '3+' : count;
