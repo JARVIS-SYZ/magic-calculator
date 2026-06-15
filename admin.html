@@ -583,7 +583,7 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
 <body>
 
 <!-- 코드 인증 화면 -->
-<div class="auth-screen" id="authScreen">
+<div class="auth-screen hidden" id="authScreen">
     <div class="auth-title">🔐 관리자 인증</div>
     <div class="auth-sub">이름과 발급받은 6자리 코드를<br>입력해주세요</div>
     <input class="auth-input name-input" id="authNameInput" type="text" placeholder="이름"
@@ -1182,6 +1182,8 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
             } catch(e) { console.error('URL 인증 오류:', e); }
         }
 
+        // 세션 없음 → auth 화면 표시
+        document.getElementById('authScreen').classList.remove('hidden');
         return false;
     }
 
