@@ -128,12 +128,19 @@ html, body {
     font-size:11px; color:#30d158; font-weight:600;
 }
 .code-status.used { color:#ff453a; }
+.code-actions { display:flex; gap:6px; flex-shrink:0; }
 .code-delete {
     background:#ff453a22; border:none; border-radius:8px;
     padding:8px 12px; font-size:12px; color:#ff453a;
     cursor:pointer; font-weight:600;
 }
 .code-delete:active { opacity:0.7; }
+.code-reset {
+    background:#ff9f0a22; border:none; border-radius:8px;
+    padding:8px 12px; font-size:12px; color:#ff9f0a;
+    cursor:pointer; font-weight:600;
+}
+.code-reset:active { opacity:0.7; }
 
 .empty-msg { text-align:center; color:#48484a; font-size:14px; padding:28px 0; }
 
@@ -228,7 +235,7 @@ html, body {
         <div class="section">
             <div class="section-title">새 코드 생성</div>
             <div class="code-create-row">
-                <input class="code-name-input" id="newCodeName" placeholder="관리자 이름/메모" type="text">
+                <input class="code-name-input" id="newCodeName" placeholder="이름 또는 이름1, 이름2, …" type="text">
                 <button class="create-btn" onclick="createCode()">생성</button>
             </div>
         </div>
@@ -329,15 +336,19 @@ html, body {
         list.innerHTML = '';
         snapshot.forEach(doc => {
             const d = doc.data();
+            const useCount = d.useCount || 0;
             const item = document.createElement('div');
             item.className = 'code-item' + (d.used ? ' used' : '');
             item.innerHTML = `
                 <div class="code-info">
                     <div class="code-name">${d.name || '이름 없음'}</div>
                     <div class="code-val">${doc.id}</div>
-                    <div class="code-status ${d.used ? 'used' : ''}">${d.used ? '● 사용됨' : '● 미사용'}</div>
+                    <div class="code-status ${d.used ? 'used' : ''}">${d.used ? `● 사용됨 (${useCount}/2)` : '● 미사용'}</div>
                 </div>
-                <button class="code-delete" onclick="deleteCode('${doc.id}')">삭제</button>
+                <div class="code-actions">
+                    ${useCount > 0 ? `<button class="code-reset" onclick="resetCode('${doc.id}')">초기화</button>` : ''}
+                    <button class="code-delete" onclick="deleteCode('${doc.id}')">삭제</button>
+                </div>
             `;
             list.appendChild(item);
         });
@@ -434,22 +445,38 @@ html, body {
 
     // ===== 코드 생성 =====
     async function createCode() {
-        const name = document.getElementById('newCodeName').value.trim();
-        if (!name) { alert('관리자 이름을 입력해주세요'); return; }
+        const input = document.getElementById('newCodeName').value.trim();
+        if (!input) { alert('관리자 이름을 입력해주세요'); return; }
 
-        // 6자리 랜덤 숫자 코드
-        const code = Math.floor(100000 + Math.random() * 900000).toString();
-        const adminId = Math.random().toString(36).substring(2, 10);
+        const names = input.split(',').map(n => n.trim()).filter(n => n);
+        const results = [];
 
         try {
-            await db.collection('admin_codes').doc(code).set({
-                name,
-                adminId,
-                used: false,
-                createdAt: firebase.firestore.FieldValue.serverTimestamp()
-            });
+            for (const name of names) {
+                const code = Math.floor(100000 + Math.random() * 900000).toString();
+                const adminId = Math.random().toString(36).substring(2, 10);
+                await db.collection('admin_codes').doc(code).set({
+                    name, adminId, used: false, useCount: 0,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                results.push({ name, code });
+            }
             document.getElementById('newCodeName').value = '';
-            alert(`코드 생성 완료!\n\n이름: ${name}\n코드: ${code}\n\n이 코드를 관리자에게 전달하세요.`);
+            if (results.length === 1) {
+                alert(`코드 생성 완료!\n\n이름: ${results[0].name}\n코드: ${results[0].code}`);
+            } else {
+                alert(`${results.length}개 코드 생성 완료!\n\n` + results.map(r => `${r.name}: ${r.code}`).join('\n'));
+            }
+        } catch(e) {
+            alert('오류: ' + e.message);
+        }
+    }
+
+    // ===== 사용횟수 초기화 =====
+    async function resetCode(code) {
+        if (!confirm(`코드 ${code}의 사용횟수를 초기화할까요?\n(다시 사용할 수 있게 됩니다)`)) return;
+        try {
+            await db.collection('admin_codes').doc(code).update({ used: false, useCount: 0 });
         } catch(e) {
             alert('오류: ' + e.message);
         }
