@@ -839,27 +839,15 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
     </div>
     <div class="admin-page-content">
         <div class="admin-section">
-            <div class="admin-section-title"> iOS</div>
-            <div style="font-size:12px;color:#636366;margin-bottom:10px;line-height:1.6">iPhone / iPad 사용자에게 전달하세요</div>
+            <div class="admin-section-title">🔗 계산기 URL</div>
+            <div style="font-size:12px;color:#636366;margin-bottom:10px;line-height:1.6">기기를 자동 감지합니다. 상대방에게 전달하세요.</div>
             <div class="url-row">
-                <div class="url-display" id="urlOutputIos"></div>
-                <button class="copy-btn" id="copyBtnIos" onclick="copyUrl('ios')">복사</button>
-                <button class="copy-btn" id="qrBtnIos" onclick="toggleQR('ios')" style="color:#4fc3f7">QR</button>
+                <div class="url-display" id="urlOutput"></div>
+                <button class="copy-btn" id="copyBtnUrl" onclick="copyUrl()">복사</button>
+                <button class="copy-btn" id="qrBtnUrl" onclick="toggleQR()" style="color:#4fc3f7">QR</button>
             </div>
-            <div id="qrWrapIos" style="display:none;justify-content:center;padding:14px 0">
-                <div id="qrcodeIos" style="background:#fff;padding:14px;border-radius:12px;"></div>
-            </div>
-        </div>
-        <div class="admin-section" style="margin-top:14px">
-            <div class="admin-section-title">🤖 Android</div>
-            <div style="font-size:12px;color:#636366;margin-bottom:10px;line-height:1.6">Android 사용자에게 전달하세요</div>
-            <div class="url-row">
-                <div class="url-display" id="urlOutputAndroid"></div>
-                <button class="copy-btn" id="copyBtnAndroid" onclick="copyUrl('android')">복사</button>
-                <button class="copy-btn" id="qrBtnAndroid" onclick="toggleQR('android')" style="color:#4fc3f7">QR</button>
-            </div>
-            <div id="qrWrapAndroid" style="display:none;justify-content:center;padding:14px 0">
-                <div id="qrcodeAndroid" style="background:#fff;padding:14px;border-radius:12px;"></div>
+            <div id="qrWrapUrl" style="display:none;justify-content:center;padding:14px 0">
+                <div id="qrcodeUrl" style="background:#fff;padding:14px;border-radius:12px;"></div>
             </div>
         </div>
     </div>
@@ -1529,43 +1517,37 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
     };
 
     // QR 코드 생성
-    function resetQR() {} // URL 변경 시 호출되지만 QR은 열 때 항상 최신 URL로 재생성됨
+    function resetQR() {}
 
-    function makeQR(platform) {
-        const elId = platform === 'ios' ? 'qrcodeIos' : 'qrcodeAndroid';
-        const el = document.getElementById(elId);
+    function makeQR() {
+        const el = document.getElementById('qrcodeUrl');
         if (!el || typeof QRCode === 'undefined') return;
         el.innerHTML = '';
         new QRCode(el, {
-            text: buildCalcUrl(platform),
+            text: buildCalcUrl(),
             width: 160, height: 160,
             colorDark: '#000000', colorLight: '#ffffff',
         });
     }
 
-    window.toggleQR = function(platform) {
-        const key   = platform === 'ios' ? 'Ios' : 'Android';
-        const wrap  = document.getElementById('qrWrap'  + key);
-        const btn   = document.getElementById('qrBtn'   + key);
-        const shown = wrap.style.display === 'flex';
-        const next  = !shown;
+    window.toggleQR = function() {
+        const wrap  = document.getElementById('qrWrapUrl');
+        const btn   = document.getElementById('qrBtnUrl');
+        const next  = wrap.style.display !== 'flex';
         wrap.style.display = next ? 'flex' : 'none';
         btn.textContent    = next ? 'QR ✕' : 'QR';
-        localStorage.setItem('qr_show_' + platform, next ? '1' : '0');
-        if (next) makeQR(platform);
+        localStorage.setItem('qr_show', next ? '1' : '0');
+        if (next) makeQR();
     };
 
     function restoreQR() {
-        ['ios', 'android'].forEach(p => {
-            const key   = p === 'ios' ? 'Ios' : 'Android';
-            const shown = localStorage.getItem('qr_show_' + p) === '1';
-            const wrap  = document.getElementById('qrWrap' + key);
-            const btn   = document.getElementById('qrBtn'  + key);
-            if (!wrap) return;
-            wrap.style.display = shown ? 'flex' : 'none';
-            btn.textContent    = shown ? 'QR ✕' : 'QR';
-            if (shown) makeQR(p);
-        });
+        const shown = localStorage.getItem('qr_show') === '1';
+        const wrap  = document.getElementById('qrWrapUrl');
+        const btn   = document.getElementById('qrBtnUrl');
+        if (!wrap) return;
+        wrap.style.display = shown ? 'flex' : 'none';
+        btn.textContent    = shown ? 'QR ✕' : 'QR';
+        if (shown) makeQR();
     }
 
     // URL 페이지 열 때 URL 갱신 + QR 상태 복원, 설정 페이지 열 때 값 로드
@@ -1574,8 +1556,7 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
         origOpenPage(pageId);
         if (pageId === 'url') {
             setTimeout(() => {
-                document.getElementById('urlOutputIos').textContent     = buildCalcUrl('ios');
-                document.getElementById('urlOutputAndroid').textContent = buildCalcUrl('android');
+                document.getElementById('urlOutput').textContent = buildCalcUrl();
                 restoreQR();
             }, 100);
         }
@@ -1585,12 +1566,10 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
     };
 
     // URL 복사
-    window.copyUrl = function(platform = 'ios') {
-        const elId = platform === 'android' ? 'urlOutputAndroid' : 'urlOutputIos';
-        const btnId = platform === 'android' ? 'copyBtnAndroid' : 'copyBtnIos';
-        const url = document.getElementById(elId).textContent;
+    window.copyUrl = function() {
+        const url = document.getElementById('urlOutput').textContent;
         if (!url) return;
-        const btn = document.getElementById(btnId);
+        const btn = document.getElementById('copyBtnUrl');
         const showOk = () => { const orig = btn.textContent; btn.textContent = '✅'; setTimeout(() => btn.textContent = orig, 1500); };
         if (navigator.clipboard && navigator.clipboard.writeText) {
             navigator.clipboard.writeText(url).then(showOk).catch(() => fallbackCopy(url, showOk));
@@ -1727,7 +1706,7 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
     }
 
     // ===== URL 생성 =====
-    function buildCalcUrl(platform = 'ios') {
+    function buildCalcUrl() {
         const d1  = localStorage.getItem('delay666_s1') || '5';
         const d2  = localStorage.getItem('delay666_s2') || '10';
         const d3  = localStorage.getItem('delay666_s3') || '5';
@@ -1736,15 +1715,13 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
         const params = new URLSearchParams({
             id: 'magic2024',
             d1, d2, d3, ctd,
-            admin: currentAdminId || '',
-            platform
+            admin: currentAdminId || ''
         });
         return `${location.origin}/magic-calculator/index.html?${params.toString()}`;
     }
 
     window.generateUrl = () => {
-        document.getElementById('urlOutputIos').textContent = buildCalcUrl('ios');
-        document.getElementById('urlOutputAndroid').textContent = buildCalcUrl('android');
+        document.getElementById('urlOutput').textContent = buildCalcUrl();
     };
 
     // ===== 수신 내역 실시간 감지 =====
@@ -1845,6 +1822,15 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
     document.getElementById('menuIcon').addEventListener('click', () => {
         openSideMenu();
     });
+
+    // ===== 헤더 계산기 아이콘 길게 누르기 → 설정 모달 =====
+    const headerCalcButton = document.getElementById('headerCalcButton');
+    let headerLongPressTimer = null;
+    headerCalcButton.addEventListener('touchstart', () => {
+        headerLongPressTimer = setTimeout(() => { vibrateDevice(); openSettings(); }, 800);
+    }, { passive: true });
+    headerCalcButton.addEventListener('touchend',   () => clearTimeout(headerLongPressTimer), { passive: true });
+    headerCalcButton.addEventListener('touchcancel',() => clearTimeout(headerLongPressTimer), { passive: true });
 
     // ===== 0 두번 탭 → 도트 숨김 + 딜레이 후 자동 입력 =====
     let ghostModeRunning = false; // 중복 실행 방지

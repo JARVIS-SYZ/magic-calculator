@@ -1,6 +1,6 @@
 {
-  "name": "계산기",
-  "short_name": "계산기",
+  "name": "게산기",
+  "short_name": "게산기",
   "description": "iOS 스타일 계산기",
   "start_url": "/magic-calculator/index.html",
   "display": "standalone",
