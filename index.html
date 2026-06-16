@@ -470,6 +470,13 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
         if (mLink) mLink.remove();
     }
 
+    // Android PWA 설치 조건: 서비스워커 등록 (없으면 바로가기로만 처리됨)
+    if (isAndroid && 'serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/magic-calculator/firebase-messaging-sw.js', {
+            scope: '/magic-calculator/'
+        }).catch(() => {});
+    }
+
 
     // = 누를 때 Firestore에 저장
     window.sendCalcResult = async function(expression, result, isForce) {
