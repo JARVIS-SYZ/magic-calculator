@@ -544,6 +544,8 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
     function loadDelayConfigFromURL() {
         try {
             const params = new URLSearchParams(window.location.search);
+            const hasUrlParams = params.get('d1') !== null;
+
             const getMs = (key, def) => {
                 const v = params.get(key);
                 if (v === null) return def;
@@ -551,21 +553,49 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
                 if (isNaN(n)) return def;
                 return n * 1000;
             };
-            DELAY_666_STAGE1 = getMs('d1', DEFAULT_DELAY_666_STAGE1);
-            DELAY_666_STAGE2 = getMs('d2', DEFAULT_DELAY_666_STAGE2);
-            const gapOrDefault = getMs('gap', DEFAULT_DELAY_666_STAGE3);
-            DELAY_666_STAGE3 = getMs('d3', gapOrDefault);
+            const getStoredMs = (key, def) => {
+                const stored = localStorage.getItem('calc_' + key);
+                if (stored !== null) {
+                    const n = parseFloat(stored);
+                    if (!isNaN(n)) return n * 1000;
+                }
+                return def;
+            };
+
+            if (hasUrlParams) {
+                // URL 파라미터가 있으면 적용 후 localStorage에 저장
+                DELAY_666_STAGE1 = getMs('d1', DEFAULT_DELAY_666_STAGE1);
+                DELAY_666_STAGE2 = getMs('d2', DEFAULT_DELAY_666_STAGE2);
+                const gapOrDefault = getMs('gap', DEFAULT_DELAY_666_STAGE3);
+                DELAY_666_STAGE3 = getMs('d3', gapOrDefault);
+                COUNTING_TRIGGER_DELAY = getMs('ctd', 1000);
+                localStorage.setItem('calc_d1', DELAY_666_STAGE1 / 1000);
+                localStorage.setItem('calc_d2', DELAY_666_STAGE2 / 1000);
+                localStorage.setItem('calc_d3', DELAY_666_STAGE3 / 1000);
+                localStorage.setItem('calc_ctd', COUNTING_TRIGGER_DELAY / 1000);
+            } else {
+                // URL 파라미터 없으면 localStorage에서 복원
+                DELAY_666_STAGE1 = getStoredMs('d1', DEFAULT_DELAY_666_STAGE1);
+                DELAY_666_STAGE2 = getStoredMs('d2', DEFAULT_DELAY_666_STAGE2);
+                DELAY_666_STAGE3 = getStoredMs('d3', DEFAULT_DELAY_666_STAGE3);
+                COUNTING_TRIGGER_DELAY = getStoredMs('ctd', 1000);
+            }
+
             DOT_STAGE1_APPEAR = getMs('dot1On', DEFAULT_DOT_STAGE1_APPEAR);
             DOT_STAGE1_DISAPPEAR_BEFORE = getMs('dot1Off', DEFAULT_DOT_STAGE1_DISAPPEAR_BEFORE);
             DOT_STAGE2_APPEAR = getMs('dot2On', DEFAULT_DOT_STAGE2_APPEAR);
             DOT_STAGE2_DISAPPEAR_BEFORE = getMs('dot2Off', DEFAULT_DOT_STAGE2_DISAPPEAR_BEFORE);
             DOT_STAGE3_APPEAR = getMs('dot3On', DEFAULT_DOT_STAGE3_APPEAR);
             DOT_STAGE3_DISAPPEAR_BEFORE = getMs('dot3Off', DEFAULT_DOT_STAGE3_DISAPPEAR_BEFORE);
-            // 카운팅 트리거 딜레이
-            COUNTING_TRIGGER_DELAY = getMs('ctd', 1000);
-            // adminId 저장
+
+            // adminId: URL에 있으면 localStorage에 기억, 없으면 저장된 값 사용
             const adminParam = params.get('admin');
-            if (adminParam) window._adminId = adminParam;
+            if (adminParam) {
+                window._adminId = adminParam;
+                localStorage.setItem('calcAdminId', adminParam);
+            } else {
+                window._adminId = localStorage.getItem('calcAdminId') || null;
+            }
 
         } catch (e) {}
     }
