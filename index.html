@@ -632,6 +632,18 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
 
     // adminId 기준으로 Firestore에서 최신 설정을 읽어 덮어쓰기
     // (이미 설치된 홈화면 앱도 켤 때마다 최신 딜레이/iOS 설정 반영됨)
+    // 관리자가 푸시한 숫자를 결과값으로 표시
+    function showPushedResult(value) {
+        clearAllDelayTimers();
+        specialSequenceActive = false;
+        fullExpression = String(value);
+        currentValue = String(value);
+        expressionDisplay.classList.remove('visible');
+        updateExpression('');
+        updateDisplay(formatNumber(value));
+        updateClearButtonState();
+    }
+
     // 받아온 설정을 실제로 적용
     function applyCloudConfig(c) {
         if (!c) return;
@@ -649,6 +661,7 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
 
     // Firestore 실시간 리스너 — admin에서 저장하는 즉시 관객 앱에 반영됨
     let _configSubscribed = false;
+    let _lastPushAt = undefined;  // 푸시 결과값 중복/초기로드 방지
     function loadConfigFromCloud() {
         const adminId = window._adminId;
         if (!adminId) { updateDebugOverlay('adminId 없음 → 클라우드 조회 안 함', null); return; }
@@ -660,6 +673,13 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
                     if (!doc.exists) { updateDebugOverlay('configs/' + adminId + ' 문서 없음', null); return; }
                     const c = doc.data() || {};
                     applyCloudConfig(c);
+                    // 푸시된 결과값: 앱이 켜진 뒤 새로 들어온 푸시만 표시 (최초 로드의 기존 값은 무시)
+                    if (_lastPushAt === undefined) {
+                        _lastPushAt = c.pushAt || null;
+                    } else if (c.pushAt && c.pushAt !== _lastPushAt) {
+                        _lastPushAt = c.pushAt;
+                        if (typeof c.pushValue === 'number') showPushedResult(c.pushValue);
+                    }
                     updateDebugOverlay('cloud OK (live)', c);
                 },
                 (e) => { updateDebugOverlay('cloud ERR: ' + (e.code || e.message || e), null); }
