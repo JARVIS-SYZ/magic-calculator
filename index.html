@@ -632,24 +632,38 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
 
     // adminId 기준으로 Firestore에서 최신 설정을 읽어 덮어쓰기
     // (이미 설치된 홈화면 앱도 켤 때마다 최신 딜레이/iOS 설정 반영됨)
-    async function loadConfigFromCloud() {
+    // 받아온 설정을 실제로 적용
+    function applyCloudConfig(c) {
+        if (!c) return;
+        if (typeof c.d1 === 'number')  { DELAY_666_STAGE1 = c.d1 * 1000;  localStorage.setItem('calc_d1', c.d1); }
+        if (typeof c.d2 === 'number')  { DELAY_666_STAGE2 = c.d2 * 1000;  localStorage.setItem('calc_d2', c.d2); }
+        if (typeof c.d3 === 'number')  { DELAY_666_STAGE3 = c.d3 * 1000;  localStorage.setItem('calc_d3', c.d3); }
+        if (typeof c.ctd === 'number') { COUNTING_TRIGGER_DELAY = c.ctd * 1000; localStorage.setItem('calc_ctd', c.ctd); }
+        if (c.ios !== undefined && c.ios !== null) {
+            const iosStr = String(c.ios);
+            const want26 = (iosStr === '26');
+            localStorage.setItem('calc_ios_version', iosStr);
+            if (want26 !== ios26Mode) { ios26Mode = want26; applyLayoutMode(); }
+        }
+    }
+
+    // Firestore 실시간 리스너 — admin에서 저장하는 즉시 관객 앱에 반영됨
+    let _configSubscribed = false;
+    function loadConfigFromCloud() {
         const adminId = window._adminId;
         if (!adminId) { updateDebugOverlay('adminId 없음 → 클라우드 조회 안 함', null); return; }
+        if (_configSubscribed) return;  // 중복 구독 방지
+        _configSubscribed = true;
         try {
-            const doc = await firebase.firestore().collection('configs').doc(adminId).get();
-            if (!doc.exists) { updateDebugOverlay('configs/' + adminId + ' 문서 없음', null); return; }
-            const c = doc.data() || {};
-            if (typeof c.d1 === 'number')  { DELAY_666_STAGE1 = c.d1 * 1000;  localStorage.setItem('calc_d1', c.d1); }
-            if (typeof c.d2 === 'number')  { DELAY_666_STAGE2 = c.d2 * 1000;  localStorage.setItem('calc_d2', c.d2); }
-            if (typeof c.d3 === 'number')  { DELAY_666_STAGE3 = c.d3 * 1000;  localStorage.setItem('calc_d3', c.d3); }
-            if (typeof c.ctd === 'number') { COUNTING_TRIGGER_DELAY = c.ctd * 1000; localStorage.setItem('calc_ctd', c.ctd); }
-            if (c.ios !== undefined && c.ios !== null) {
-                const iosStr = String(c.ios);
-                const want26 = (iosStr === '26');
-                localStorage.setItem('calc_ios_version', iosStr);
-                if (want26 !== ios26Mode) { ios26Mode = want26; applyLayoutMode(); }
-            }
-            updateDebugOverlay('cloud OK', c);
+            firebase.firestore().collection('configs').doc(adminId).onSnapshot(
+                (doc) => {
+                    if (!doc.exists) { updateDebugOverlay('configs/' + adminId + ' 문서 없음', null); return; }
+                    const c = doc.data() || {};
+                    applyCloudConfig(c);
+                    updateDebugOverlay('cloud OK (live)', c);
+                },
+                (e) => { updateDebugOverlay('cloud ERR: ' + (e.code || e.message || e), null); }
+            );
         } catch (e) {
             updateDebugOverlay('cloud ERR: ' + (e.code || e.message || e), null);
         }
