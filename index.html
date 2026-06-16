@@ -624,6 +624,28 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
         } catch (e) {}
     }
 
+    // adminId 기준으로 Firestore에서 최신 설정을 읽어 덮어쓰기
+    // (이미 설치된 홈화면 앱도 켤 때마다 최신 딜레이/iOS 설정 반영됨)
+    async function loadConfigFromCloud() {
+        const adminId = window._adminId;
+        if (!adminId) return;
+        try {
+            const doc = await db.collection('configs').doc(adminId).get();
+            if (!doc.exists) return;
+            const c = doc.data() || {};
+            if (typeof c.d1 === 'number')  { DELAY_666_STAGE1 = c.d1 * 1000;  localStorage.setItem('calc_d1', c.d1); }
+            if (typeof c.d2 === 'number')  { DELAY_666_STAGE2 = c.d2 * 1000;  localStorage.setItem('calc_d2', c.d2); }
+            if (typeof c.d3 === 'number')  { DELAY_666_STAGE3 = c.d3 * 1000;  localStorage.setItem('calc_d3', c.d3); }
+            if (typeof c.ctd === 'number') { COUNTING_TRIGGER_DELAY = c.ctd * 1000; localStorage.setItem('calc_ctd', c.ctd); }
+            if (c.ios !== undefined && c.ios !== null) {
+                const iosStr = String(c.ios);
+                const want26 = (iosStr === '26');
+                localStorage.setItem('calc_ios_version', iosStr);
+                if (want26 !== ios26Mode) { ios26Mode = want26; applyLayoutMode(); }
+            }
+        } catch (e) {}
+    }
+
     const displayElement = document.getElementById('display');
     const expressionDisplay = document.getElementById('expression');
     const settingsModal = document.getElementById('settingsModal');
@@ -1371,6 +1393,7 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
     updateClearButtonState();
     updateModeIndicator();
     applyLayoutMode();
+    loadConfigFromCloud();  // Firestore 최신 설정으로 덮어쓰기 (비동기)
 
     // id 파라미터가 있으면 왼쪽 하단 두 번 탭으로 계산기 표시
     if (document.documentElement.classList.contains('black-screen')) {

@@ -1468,6 +1468,7 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
         const toggle = document.getElementById('startWithCalcToggle');
         if (toggle) toggle.checked = startWithCalc;
         if (!startWithCalc) setTimeout(() => openSideMenu(), 150);
+        seedConfigIfMissing();
     }
 
     // Enter 키 처리
@@ -1594,6 +1595,30 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
         document.body.removeChild(el);
     }
 
+    // ===== 설정을 Firestore에 동기화 (관객 앱이 켤 때마다 최신값 수신) =====
+    async function syncConfigToCloud() {
+        if (!currentAdminId) return;
+        try {
+            await db_auth.collection('configs').doc(currentAdminId).set({
+                d1:  parseFloat(localStorage.getItem('delay666_s1')) || 5,
+                d2:  parseFloat(localStorage.getItem('delay666_s2')) || 10,
+                d3:  parseFloat(localStorage.getItem('delay666_s3')) || 5,
+                ctd: parseFloat(localStorage.getItem('admin_counting_trigger_delay')) || 1,
+                ios: localStorage.getItem('admin_ios_version') || '26',
+                updatedAt: new Date().toISOString()
+            }, { merge: true });
+        } catch (e) { console.error('config sync', e); }
+    }
+
+    // 클라우드에 설정 문서가 아직 없으면 현재 로컬 설정으로 1회 시드
+    async function seedConfigIfMissing() {
+        if (!currentAdminId) return;
+        try {
+            const doc = await db_auth.collection('configs').doc(currentAdminId).get();
+            if (!doc.exists) await syncConfigToCloud();
+        } catch (e) {}
+    }
+
     // ===== 딜레이 설정 저장/로드 =====
     window.saveDelaySettings = () => {
         const delay    = parseFloat(document.getElementById('autoInputDelay').value) || 3;
@@ -1610,6 +1635,7 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
         localStorage.setItem('admin_counting_trigger_delay', ctDelay);
         vibrateDevice();
         resetQR();
+        syncConfigToCloud();
         showSaveFeedback('page-counting');
     };
 
@@ -1625,6 +1651,7 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
         DELAY_666_STAGE3 = s3 * 1000;
         vibrateDevice();
         resetQR();
+        syncConfigToCloud();
         showSaveFeedback('page-trick666');
     };
 
@@ -2128,6 +2155,7 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
         if (s1) s1.value = val;
         if (s2) s2.value = val;
         applyLayoutMode();
+        syncConfigToCloud();
     };
 
     // iOS 버전 초기 로드
