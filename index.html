@@ -11,6 +11,7 @@
     <title>게산기</title>
     <link rel="apple-touch-icon" sizes="180x180" href="icon-180.png">
     <link rel="icon" type="image/png" href="icon-180.png">
+    <link rel="manifest" href="manifest.json">
 <script>
     // CSS 적용 전 즉시 실행 - 계산기 숨김 (플래시 방지)
     if (new URLSearchParams(location.search).get('id')) {
@@ -462,13 +463,11 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
     const isAndroid = platformParam === 'android' || (!platformParam && /android/i.test(navigator.userAgent));
     if (isAndroid) document.body.classList.add('android-mode');
 
-    // Android에서만 manifest 추가 (PWA standalone 설치용)
-    // iOS는 manifest가 있으면 start_url이 install-time URL을 덮어쓰므로 제외
-    if (isAndroid) {
-        const mLink = document.createElement('link');
-        mLink.rel = 'manifest';
-        mLink.href = 'manifest.json';
-        document.head.appendChild(mLink);
+    // iOS에서는 manifest 제거 (install-time URL 보존)
+    // Android는 manifest 유지 (PWA standalone 설치용)
+    if (!isAndroid) {
+        const mLink = document.querySelector('link[rel="manifest"]');
+        if (mLink) mLink.remove();
     }
 
 
