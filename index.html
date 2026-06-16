@@ -1470,6 +1470,18 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
     applyLayoutMode();
     loadConfigFromCloud();  // Firestore 최신 설정으로 덮어쓰기 (비동기)
 
+    // 주소창에서 파라미터 숨기기 (관객에게 트릭 노출 방지)
+    // 단, iOS 브라우저는 홈화면 추가 시 install-time URL에 파라미터가 필요하므로 그대로 둠
+    // (iOS 홈화면 앱은 별도 저장소라 URL 파라미터만이 adminId 전달 통로 / standalone은 주소창 없음)
+    try {
+        const _isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+        const _isStandalone = navigator.standalone === true
+            || (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+        if (location.search && !(_isIOS && !_isStandalone)) {
+            history.replaceState(null, '', location.pathname + location.hash);
+        }
+    } catch (e) {}
+
     // 홈화면 앱은 다시 열 때 페이지를 새로 로드하지 않고 복귀하는 경우가 많음
     // → 포그라운드로 돌아올 때마다 최신 설정을 다시 읽어옴
     document.addEventListener('visibilitychange', () => {
