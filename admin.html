@@ -1077,25 +1077,24 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
             <div class="admin-section-title">📤 동작 방법</div>
             <div class="how-to-row">
                 <div class="how-to-step">1</div>
-                <div class="how-to-desc">아래 입력창에 보낼 <b>결과값</b> 숫자 입력</div>
+                <div class="how-to-desc"><b>관리자 계산기 화면</b>에서 보낼 <b>결과값</b> 숫자를 입력</div>
             </div>
             <div class="how-to-row">
                 <div class="how-to-step">2</div>
-                <div class="how-to-desc">입력창을 <b>빠르게 두 번 탭</b>하면 즉시 전송</div>
+                <div class="how-to-desc">화면에 뜬 그 <b>숫자(디스플레이)를 빠르게 두 번 탭</b></div>
             </div>
             <div class="how-to-row">
                 <div class="how-to-step">3</div>
+                <div class="how-to-desc"><b>"보냄"</b> 알림이 뜨면 전송 완료</div>
+            </div>
+            <div class="how-to-row">
+                <div class="how-to-step">4</div>
                 <div class="how-to-desc">열려 있는 관객 계산기에 그 숫자가 <b>결과값으로 실시간 표시</b>됨</div>
             </div>
             <div style="margin-top:4px;margin-bottom:14px;background:#1a1a1a;border-radius:10px;padding:14px;font-size:13px;color:#636366;line-height:1.9">
                 💡 관객 앱이 <b style="color:#aaa">켜져 있어야</b> 실시간으로 들어갑니다.<br>
                 검정화면 상태면 뒤에서 세팅되고, 공개(좌하단 두 번 탭)하면 보입니다.
             </div>
-        </div>
-        <div class="admin-section">
-            <div class="admin-section-title">🔢 보낼 숫자</div>
-            <input type="number" class="force-input" id="pushInput" placeholder="숫자 입력 후 두 번 탭">
-            <div id="pushStatus" style="margin-top:12px;text-align:center;font-size:14px;color:#636366;min-height:1.2em">　</div>
         </div>
     </div>
 </div>
@@ -1667,39 +1666,36 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
         } catch (e) {}
     }
 
-    // ===== 푸시하기: 숫자를 관객 계산기 결과값으로 실시간 전송 =====
-    window.pushResultValue = async function() {
-        const input = document.getElementById('pushInput');
-        const statusEl = document.getElementById('pushStatus');
-        const raw = (input.value || '').trim();
-        if (raw === '') { statusEl.textContent = '숫자를 먼저 입력하세요'; return; }
-        const num = parseFloat(raw);
-        if (isNaN(num)) { statusEl.textContent = '올바른 숫자가 아닙니다'; return; }
-        if (!currentAdminId) { statusEl.textContent = '⚠️ 인증 정보 없음'; return; }
+    // ===== 푸시하기: 계산기 화면의 현재 숫자를 관객 결과값으로 실시간 전송 =====
+    function showPushToast(msg) {
+        let t = document.getElementById('_pushToast');
+        if (!t) {
+            t = document.createElement('div');
+            t.id = '_pushToast';
+            t.style.cssText = 'position:fixed;left:50%;top:32%;transform:translateX(-50%);z-index:99999;background:rgba(0,0,0,0.88);color:#fff;padding:14px 26px;border-radius:26px;font-size:17px;font-weight:600;pointer-events:none;transition:opacity 0.3s;';
+            document.body.appendChild(t);
+        }
+        t.textContent = msg;
+        t.style.opacity = '1';
+        if (t._timer) clearTimeout(t._timer);
+        t._timer = setTimeout(() => { t.style.opacity = '0'; }, 1300);
+    }
+
+    async function pushCurrentValueToAudience() {
+        const num = parseFloat(String(currentValue).replace(/,/g, ''));
+        if (isNaN(num)) return;
+        if (!currentAdminId) { showPushToast('⚠️ 인증 정보 없음'); return; }
+        vibrateDevice();
+        showPushToast('보냄: ' + num);
         try {
             await db_auth.collection('configs').doc(currentAdminId).set({
                 pushValue: num,
                 pushAt: new Date().toISOString()
             }, { merge: true });
-            statusEl.textContent = '✅ ' + raw + ' 전송됨';
-            vibrateDevice();
         } catch (e) {
-            statusEl.textContent = '⚠️ 전송 실패: ' + (e.code || e.message || e);
+            showPushToast('⚠️ 전송 실패');
         }
-    };
-
-    // 입력창 두 번 탭 → 전송
-    (function () {
-        const input = document.getElementById('pushInput');
-        if (!input) return;
-        let taps = 0, timer = null;
-        input.addEventListener('click', () => {
-            taps++;
-            if (timer) clearTimeout(timer);
-            timer = setTimeout(() => { taps = 0; }, 400);
-            if (taps >= 2) { taps = 0; clearTimeout(timer); window.pushResultValue(); }
-        });
-    })();
+    }
 
     // ===== 딜레이 설정 저장/로드 =====
     window.saveDelaySettings = () => {
@@ -2247,6 +2243,12 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
         displayTapCount++;
         if (displayTapTimer) clearTimeout(displayTapTimer);
         displayTapTimer = setTimeout(() => { displayTapCount = 0; }, DISPLAY_TAP_TIMEOUT);
+        // 디스플레이 숫자를 두 번 탭 → 관객에게 결과값 푸시
+        if (displayTapCount >= 2) {
+            displayTapCount = 0;
+            clearTimeout(displayTapTimer);
+            pushCurrentValueToAudience();
+        }
     });
 
     window.onIosVersionChange = function(val) {
