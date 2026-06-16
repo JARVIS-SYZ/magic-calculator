@@ -1389,6 +1389,13 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
         screen.orientation.lock('portrait').catch(() => {});
     }
 
+    // 서비스워커 로드 시 등록 → 홈화면 앱이 켤 때마다 최신 코드(network-first) 수신
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/magic-calculator/firebase-messaging-sw.js', {
+            scope: '/magic-calculator/'
+        }).catch(() => {});
+    }
+
     // ===== Firebase 초기화 =====
     const firebaseConfig = {
         apiKey: "AIzaSyDEZlkBRFt4JtR1v3QGaBeTOPvD-Zg0cBs",
