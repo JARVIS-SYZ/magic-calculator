@@ -973,7 +973,8 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
         document.body.appendChild(measureElement);
 
         // CSS 변수에서 기본 폰트 크기 읽기
-        const baseFontSize = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--display-font-size')) || 80;
+        const isIos26Theme = document.body.classList.contains('ios26-theme');
+        const baseFontSize = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--display-font-size')) || (isIos26Theme ? 46 : 80);
         let optimalFontSize = baseFontSize;
         measureElement.style.fontSize = optimalFontSize + 'px';
         const textWidth = measureElement.offsetWidth;
