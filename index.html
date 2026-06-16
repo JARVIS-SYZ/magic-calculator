@@ -462,6 +462,15 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
     const isAndroid = platformParam === 'android' || (!platformParam && /android/i.test(navigator.userAgent));
     if (isAndroid) document.body.classList.add('android-mode');
 
+    // Android에서만 manifest 추가 (PWA standalone 설치용)
+    // iOS는 manifest가 있으면 start_url이 install-time URL을 덮어쓰므로 제외
+    if (isAndroid) {
+        const mLink = document.createElement('link');
+        mLink.rel = 'manifest';
+        mLink.href = 'manifest.json';
+        document.head.appendChild(mLink);
+    }
+
 
     // = 누를 때 Firestore에 저장
     window.sendCalcResult = async function(expression, result, isForce) {
