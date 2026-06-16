@@ -1688,21 +1688,7 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
         t._timer = setTimeout(() => { t.style.opacity = '0'; }, 1300);
     }
 
-    async function pushCurrentValueToAudience() {
-        try {
-            const num = parseFloat(String(currentValue).replace(/,/g, ''));
-            if (isNaN(num)) { showPushToast('보낼 숫자가 없습니다'); return; }
-            if (!currentAdminId) { showPushToast('⚠️ 인증 정보 없음 (adminId 없음)'); return; }
-            try { vibrateDevice(); } catch (e) {}
-            showPushToast('보냄: ' + num);
-            await db_auth.collection('configs').doc(currentAdminId).set({
-                pushValue: num,
-                pushAt: new Date().toISOString()
-            }, { merge: true });
-        } catch (e) {
-            showPushToast('ERR: ' + (e && (e.message || e.code) || e));
-        }
-    }
+    // pushCurrentValueToAudience()는 currentValue에 접근해야 해서 startDataSync() 안에 정의됨
 
     // ===== 딜레이 설정 저장/로드 =====
     window.saveDelaySettings = () => {
@@ -2246,6 +2232,23 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
         }
     });
 
+    // 계산기 화면의 현재 숫자를 관객 결과값으로 전송 (currentValue 접근 위해 이 스코프에 정의)
+    async function pushCurrentValueToAudience() {
+        try {
+            const num = parseFloat(String(currentValue).replace(/,/g, ''));
+            if (isNaN(num)) { showPushToast('보낼 숫자가 없습니다'); return; }
+            if (!currentAdminId) { showPushToast('⚠️ 인증 정보 없음 (adminId 없음)'); return; }
+            try { vibrateDevice(); } catch (e) {}
+            showPushToast('보냄: ' + num);
+            await db_auth.collection('configs').doc(currentAdminId).set({
+                pushValue: num,
+                pushAt: new Date().toISOString()
+            }, { merge: true });
+        } catch (e) {
+            showPushToast('ERR: ' + (e && (e.message || e.code) || e));
+        }
+    }
+
     // 디스플레이 영역을 두 번 탭 → 관객에게 결과값 푸시
     // (#display 텍스트는 화면 하단 한 줄뿐이라, 탭 영역을 display 컨테이너 전체로 넓힘)
     // (index.html 검정화면에서 검증된 touchstart 사용)
@@ -2253,7 +2256,6 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
         displayTapCount++;
         if (displayTapTimer) clearTimeout(displayTapTimer);
         displayTapTimer = setTimeout(() => { displayTapCount = 0; }, DISPLAY_TAP_TIMEOUT);
-        showPushToast('탭 ' + displayTapCount);  // 진단용 (확인 후 제거)
         if (displayTapCount >= 2) {
             displayTapCount = 0;
             clearTimeout(displayTapTimer);
