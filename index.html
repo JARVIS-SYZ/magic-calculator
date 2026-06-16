@@ -659,8 +659,13 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
     // URL에서 dbg=1을 본 적 있으면 플래그를 저장 → Android 홈화면 앱(파라미터 사라짐)에서도 표시됨
     function updateDebugOverlay(status, c) {
         try {
-            if (new URLSearchParams(location.search).get('dbg') === '1') {
-                localStorage.setItem('calc_dbg', '1');
+            const dbgParam = new URLSearchParams(location.search).get('dbg');
+            if (dbgParam === '1') localStorage.setItem('calc_dbg', '1');
+            if (dbgParam === '0') {
+                localStorage.removeItem('calc_dbg');
+                const old = document.getElementById('_dbgOverlay');
+                if (old) old.remove();
+                return;
             }
         } catch (e) {}
         const dbgOn = (new URLSearchParams(location.search).get('dbg') === '1')
