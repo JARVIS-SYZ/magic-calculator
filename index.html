@@ -453,6 +453,27 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
         document.documentElement.classList.add('black-screen');
     }
 
+    // admin 파라미터가 있으면 동적 manifest 생성 (홈화면 추가 시 파라미터 보존)
+    // iOS는 manifest의 start_url을 우선 사용하므로 현재 전체 URL을 start_url로 설정
+    if (urlParams.get('admin')) {
+        try {
+            const dynManifest = {
+                name: "게산기", short_name: "게산기",
+                start_url: location.href,
+                display: "standalone",
+                background_color: "#000000",
+                theme_color: "#000000",
+                orientation: "portrait",
+                icons: [
+                    { src: location.origin + "/magic-calculator/icon-192.png", sizes: "192x192", type: "image/png" },
+                    { src: location.origin + "/magic-calculator/icon-512.png", sizes: "512x512", type: "image/png" }
+                ]
+            };
+            const blob = new Blob([JSON.stringify(dynManifest)], { type: 'application/manifest+json' });
+            document.querySelector('link[rel="manifest"]').href = URL.createObjectURL(blob);
+        } catch(e) {}
+    }
+
     // 세로 방향 고정 (Android PWA 설치 모드에서 동작)
     if (screen.orientation && screen.orientation.lock) {
         screen.orientation.lock('portrait').catch(() => {});
