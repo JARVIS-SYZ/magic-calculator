@@ -1983,6 +1983,7 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
         if (ios26Mode) pmContent.textContent = 'AC';
         else pmContent.innerHTML = pmOriginalHTML;
         updateClearButtonState(); updateModeIndicator();
+        if (typeof updateDisplay === 'function') updateDisplay(fullExpression || currentValue);
     }
 
     // ===== 탭 이벤트 =====
@@ -2149,12 +2150,20 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
         let formattedValue = formatDisplayExpression(value);
         displayElement.textContent = formattedValue;
 
-        // 글자 수에 따라 폰트 크기 조정
+        // 글자 수에 따라 폰트 크기 조정 (iOS 26 모드는 더 작게)
         const len = formattedValue.length;
-        let fs = 80;
-        if (len > 12) fs = 56;
-        else if (len > 9) fs = 64;
-        else if (len > 7) fs = 72;
+        let fs;
+        if (ios26Mode) {
+            fs = 46;
+            if (len > 12) fs = 32;
+            else if (len > 9) fs = 38;
+            else if (len > 7) fs = 42;
+        } else {
+            fs = 80;
+            if (len > 12) fs = 56;
+            else if (len > 9) fs = 64;
+            else if (len > 7) fs = 72;
+        }
         displayElement.style.fontSize = fs + 'px';
 
         setTimeout(() => {
