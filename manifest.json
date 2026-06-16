@@ -1,8 +1,10 @@
 {
+  "id": "gesangi-calc",
   "name": "게산기",
   "short_name": "게산기",
   "description": "iOS 스타일 계산기",
   "start_url": "/magic-calculator/index.html",
+  "scope": "/magic-calculator/index.html",
   "display": "standalone",
   "background_color": "#000000",
   "theme_color": "#000000",
