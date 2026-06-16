@@ -11,7 +11,19 @@
     <title>게산기</title>
     <link rel="apple-touch-icon" sizes="180x180" href="icon-180.png">
     <link rel="icon" type="image/png" href="icon-180.png">
-    <link rel="manifest" href="manifest.json">
+<script>
+    // iOS는 manifest가 있으면 홈화면 앱이 start_url(파라미터 없는 주소)로 열려서
+    // id·admin·딜레이 등 URL 파라미터가 전부 사라짐 → iOS엔 manifest를 주지 않아 설치 시점 URL을 보존.
+    // Android는 manifest가 있어야 standalone PWA로 설치되므로 여기서 동기적으로 주입.
+    (function () {
+        if (!/iPad|iPhone|iPod/.test(navigator.userAgent)) {
+            var l = document.createElement('link');
+            l.rel = 'manifest';
+            l.href = 'manifest.json';
+            document.head.appendChild(l);
+        }
+    })();
+</script>
 <script>
     // CSS 적용 전 즉시 실행 - 계산기 숨김 (플래시 방지)
     if (new URLSearchParams(location.search).get('id')) {
@@ -462,13 +474,7 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
     const platformParam = urlParams.get('platform');
     const isAndroid = platformParam === 'android' || (!platformParam && /android/i.test(navigator.userAgent));
     if (isAndroid) document.body.classList.add('android-mode');
-
-    // iOS에서는 manifest 제거 (install-time URL 보존)
-    // Android는 manifest 유지 (PWA standalone 설치용)
-    if (!isAndroid) {
-        const mLink = document.querySelector('link[rel="manifest"]');
-        if (mLink) mLink.remove();
-    }
+    // manifest는 head에서 플랫폼별로 처리됨 (iOS엔 없음, Android엔 주입)
 
     // 서비스워커 등록 (Android PWA 설치 조건 + iOS/Android 모두 network-first로 최신 HTML 수신)
     if ('serviceWorker' in navigator) {
