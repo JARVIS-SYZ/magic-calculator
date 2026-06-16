@@ -611,13 +611,14 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
                 window._adminId = localStorage.getItem('calcAdminId') || null;
             }
 
-            // iOS 버전: URL에 있으면 적용 후 기억, 없으면 저장된 값 복원
+            // iOS 버전: URL에 있으면 적용 후 기억, 없으면 저장된 값(없으면 기본 26) 복원
             const iosParam = params.get('ios');
             if (iosParam !== null) {
                 ios26Mode = (iosParam === '26');
                 localStorage.setItem('calc_ios_version', iosParam);
             } else {
-                ios26Mode = (localStorage.getItem('calc_ios_version') === '26');
+                const storedIos = localStorage.getItem('calc_ios_version');
+                ios26Mode = (storedIos === null) ? true : (storedIos === '26');
             }
 
         } catch (e) {}
@@ -937,10 +938,11 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
         displayTapCount++;
         if (displayTapTimer) clearTimeout(displayTapTimer);
         displayTapTimer = setTimeout(() => { displayTapCount = 0; }, DISPLAY_TAP_TIMEOUT);
-        if (displayTapCount === 3) {
+        if (displayTapCount === 2) {
             displayTapCount = 0;
             clearTimeout(displayTapTimer);
             ios26Mode = !ios26Mode;
+            localStorage.setItem('calc_ios_version', ios26Mode ? '26' : '18');
             applyLayoutMode();
         }
     });
