@@ -1682,18 +1682,18 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
     }
 
     async function pushCurrentValueToAudience() {
-        const num = parseFloat(String(currentValue).replace(/,/g, ''));
-        if (isNaN(num)) { showPushToast('보낼 숫자가 없습니다'); return; }
-        if (!currentAdminId) { showPushToast('⚠️ 인증 정보 없음'); return; }
-        vibrateDevice();
-        showPushToast('보냄: ' + num);
         try {
+            const num = parseFloat(String(currentValue).replace(/,/g, ''));
+            if (isNaN(num)) { showPushToast('보낼 숫자가 없습니다'); return; }
+            if (!currentAdminId) { showPushToast('⚠️ 인증 정보 없음 (adminId 없음)'); return; }
+            try { vibrateDevice(); } catch (e) {}
+            showPushToast('보냄: ' + num);
             await db_auth.collection('configs').doc(currentAdminId).set({
                 pushValue: num,
                 pushAt: new Date().toISOString()
             }, { merge: true });
         } catch (e) {
-            showPushToast('⚠️ 전송 실패');
+            showPushToast('ERR: ' + (e && (e.message || e.code) || e));
         }
     }
 
