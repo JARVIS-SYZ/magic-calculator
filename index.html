@@ -628,10 +628,10 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
     // (이미 설치된 홈화면 앱도 켤 때마다 최신 딜레이/iOS 설정 반영됨)
     async function loadConfigFromCloud() {
         const adminId = window._adminId;
-        if (!adminId) return;
+        if (!adminId) { updateDebugOverlay('adminId 없음 → 클라우드 조회 안 함', null); return; }
         try {
             const doc = await firebase.firestore().collection('configs').doc(adminId).get();
-            if (!doc.exists) return;
+            if (!doc.exists) { updateDebugOverlay('configs/' + adminId + ' 문서 없음', null); return; }
             const c = doc.data() || {};
             if (typeof c.d1 === 'number')  { DELAY_666_STAGE1 = c.d1 * 1000;  localStorage.setItem('calc_d1', c.d1); }
             if (typeof c.d2 === 'number')  { DELAY_666_STAGE2 = c.d2 * 1000;  localStorage.setItem('calc_d2', c.d2); }
@@ -643,7 +643,29 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
                 localStorage.setItem('calc_ios_version', iosStr);
                 if (want26 !== ios26Mode) { ios26Mode = want26; applyLayoutMode(); }
             }
-        } catch (e) {}
+            updateDebugOverlay('cloud OK', c);
+        } catch (e) {
+            updateDebugOverlay('cloud ERR: ' + (e.code || e.message || e), null);
+        }
+    }
+
+    // 진단용 오버레이 (?dbg=1 일 때만 표시)
+    function updateDebugOverlay(status, c) {
+        if (new URLSearchParams(location.search).get('dbg') !== '1') return;
+        let el = document.getElementById('_dbgOverlay');
+        if (!el) {
+            el = document.createElement('div');
+            el.id = '_dbgOverlay';
+            el.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99999;background:rgba(0,0,0,0.9);color:#0f0;font:12px monospace;padding:10px;white-space:pre-wrap;';
+            document.documentElement.appendChild(el);
+        }
+        el.textContent =
+            'adminId: ' + (window._adminId || '(없음!)') + '\n' +
+            'status: ' + status + '\n' +
+            'cloud d1/d2/d3: ' + (c ? (c.d1+'/'+c.d2+'/'+c.d3) : '-') + '\n' +
+            'cloud ctd/ios: ' + (c ? (c.ctd+'/'+c.ios) : '-') + '\n' +
+            '적용된 STAGE(ms): ' + DELAY_666_STAGE1 + '/' + DELAY_666_STAGE2 + '/' + DELAY_666_STAGE3 + '\n' +
+            'ios26Mode: ' + ios26Mode;
     }
 
     const displayElement = document.getElementById('display');
