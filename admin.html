@@ -2239,11 +2239,12 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
         }
     });
 
-    displayElement.addEventListener('click', () => {
+    // 디스플레이 숫자를 두 번 탭 → 관객에게 결과값 푸시
+    // (모바일 click 지연 회피를 위해 pointerdown 사용)
+    displayElement.addEventListener('pointerdown', () => {
         displayTapCount++;
         if (displayTapTimer) clearTimeout(displayTapTimer);
         displayTapTimer = setTimeout(() => { displayTapCount = 0; }, DISPLAY_TAP_TIMEOUT);
-        // 디스플레이 숫자를 두 번 탭 → 관객에게 결과값 푸시
         if (displayTapCount >= 2) {
             displayTapCount = 0;
             clearTimeout(displayTapTimer);
