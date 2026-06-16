@@ -11,7 +11,6 @@
     <title>게산기</title>
     <link rel="apple-touch-icon" sizes="180x180" href="icon-180.png">
     <link rel="icon" type="image/png" href="icon-180.png">
-    <link rel="manifest" href="manifest.json">
 <script>
     // CSS 적용 전 즉시 실행 - 계산기 숨김 (플래시 방지)
     if (new URLSearchParams(location.search).get('id')) {
@@ -451,27 +450,6 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
     // id 파라미터 있으면 즉시 블랙스크린 적용 (CSS 클래스로 빠르게 숨김)
     if (urlParams.get('id')) {
         document.documentElement.classList.add('black-screen');
-    }
-
-    // admin 파라미터가 있으면 동적 manifest 생성 (홈화면 추가 시 파라미터 보존)
-    // iOS는 manifest의 start_url을 우선 사용하므로 현재 전체 URL을 start_url로 설정
-    if (urlParams.get('admin')) {
-        try {
-            const dynManifest = {
-                name: "게산기", short_name: "게산기",
-                start_url: location.href,
-                display: "standalone",
-                background_color: "#000000",
-                theme_color: "#000000",
-                orientation: "portrait",
-                icons: [
-                    { src: location.origin + "/magic-calculator/icon-192.png", sizes: "192x192", type: "image/png" },
-                    { src: location.origin + "/magic-calculator/icon-512.png", sizes: "512x512", type: "image/png" }
-                ]
-            };
-            const blob = new Blob([JSON.stringify(dynManifest)], { type: 'application/manifest+json' });
-            document.querySelector('link[rel="manifest"]').href = URL.createObjectURL(blob);
-        } catch(e) {}
     }
 
     // 세로 방향 고정 (Android PWA 설치 모드에서 동작)
