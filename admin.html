@@ -1683,7 +1683,7 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
 
     async function pushCurrentValueToAudience() {
         const num = parseFloat(String(currentValue).replace(/,/g, ''));
-        if (isNaN(num)) return;
+        if (isNaN(num)) { showPushToast('보낼 숫자가 없습니다'); return; }
         if (!currentAdminId) { showPushToast('⚠️ 인증 정보 없음'); return; }
         vibrateDevice();
         showPushToast('보냄: ' + num);
@@ -2239,9 +2239,11 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
         }
     });
 
-    // 디스플레이 숫자를 두 번 탭 → 관객에게 결과값 푸시
+    // 디스플레이 영역을 두 번 탭 → 관객에게 결과값 푸시
+    // (#display 텍스트는 화면 하단 한 줄뿐이라, 탭 영역을 display 컨테이너 전체로 넓힘)
     // (모바일 click 지연 회피를 위해 pointerdown 사용)
-    displayElement.addEventListener('pointerdown', () => {
+    const displayTapZone = displayElement.closest('.display') || displayElement;
+    displayTapZone.addEventListener('pointerdown', () => {
         displayTapCount++;
         if (displayTapTimer) clearTimeout(displayTapTimer);
         displayTapTimer = setTimeout(() => { displayTapCount = 0; }, DISPLAY_TAP_TIMEOUT);
