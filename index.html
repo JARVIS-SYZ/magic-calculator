@@ -470,8 +470,8 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
         if (mLink) mLink.remove();
     }
 
-    // Android PWA 설치 조건: 서비스워커 등록 (없으면 바로가기로만 처리됨)
-    if (isAndroid && 'serviceWorker' in navigator) {
+    // 서비스워커 등록 (Android PWA 설치 조건 + iOS/Android 모두 network-first로 최신 HTML 수신)
+    if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('/magic-calculator/firebase-messaging-sw.js', {
             scope: '/magic-calculator/'
         }).catch(() => {});
