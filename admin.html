@@ -857,6 +857,14 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
                 <div id="qrcodeUrl" style="background:#fff;padding:14px;border-radius:12px;"></div>
             </div>
         </div>
+        <div class="admin-section">
+            <div class="admin-section-title">☁️ 클라우드에 저장된 설정</div>
+            <div style="font-size:12px;color:#636366;margin-bottom:10px;line-height:1.6">관객 앱이 켤 때마다 받아오는 값입니다. 설정 저장 후 여기에 반영되면 정상입니다.</div>
+            <div class="url-row">
+                <div class="url-display" id="cloudConfigStatus" style="font-size:13px">확인하려면 새로고침 →</div>
+                <button class="copy-btn" onclick="refreshCloudConfig()" style="color:#4fc3f7">새로고침</button>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -1566,6 +1574,7 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
             setTimeout(() => {
                 document.getElementById('urlOutput').textContent = buildCalcUrl();
                 restoreQR();
+                refreshCloudConfig();
             }, 100);
         }
         if (['ghost', 'counting', 'trick666'].includes(pageId)) {
@@ -1759,6 +1768,26 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
 
     window.generateUrl = () => {
         document.getElementById('urlOutput').textContent = buildCalcUrl();
+    };
+
+    // 클라우드(Firestore)에 저장된 설정을 읽어와 화면에 표시
+    window.refreshCloudConfig = async () => {
+        const el = document.getElementById('cloudConfigStatus');
+        if (!el) return;
+        if (!currentAdminId) { el.textContent = '⚠️ 인증 정보 없음 (adminId 미확인)'; return; }
+        el.textContent = '불러오는 중…';
+        try {
+            const doc = await db_auth.collection('configs').doc(currentAdminId).get();
+            if (!doc.exists) { el.textContent = '❌ 클라우드에 설정 문서 없음 — 설정을 한 번 저장하세요'; return; }
+            const c = doc.data() || {};
+            const when = c.updatedAt ? c.updatedAt.replace('T', ' ').slice(0, 19) : '-';
+            el.innerHTML = '666: ' + (c.d1 ?? '-') + ' / ' + (c.d2 ?? '-') + ' / ' + (c.d3 ?? '-') + '초<br>'
+                         + '카운팅 시작: ' + (c.ctd ?? '-') + '초<br>'
+                         + 'iOS: ' + (c.ios ?? '-') + '<br>'
+                         + '<span style="color:#636366;font-size:11px">갱신: ' + when + '</span>';
+        } catch (e) {
+            el.textContent = '⚠️ 읽기 실패: ' + (e.code || e.message || '권한 확인 필요');
+        }
     };
 
     // ===== 수신 내역 실시간 감지 =====
