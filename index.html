@@ -12,6 +12,12 @@
     <link rel="apple-touch-icon" sizes="180x180" href="icon-180.png">
     <link rel="icon" type="image/png" href="icon-180.png">
     <link rel="manifest" href="manifest.json">
+<script>
+    // CSS 적용 전 즉시 실행 - 계산기 숨김 (플래시 방지)
+    if (new URLSearchParams(location.search).get('id')) {
+        document.documentElement.classList.add('black-screen');
+    }
+</script>
 <style>
 * {
     margin: 0; padding: 0;
