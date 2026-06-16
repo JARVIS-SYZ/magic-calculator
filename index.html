@@ -754,7 +754,7 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
             case 'vertical':
                 if (!countingInterval && !countingStartDelay) {
                     vibrateDevice();
-                    countingStartDelay = setTimeout(() => { startCounting(); countingStartDelay = null; }, 2000);
+                    countingStartDelay = setTimeout(() => { startCounting(); countingStartDelay = null; }, COUNTING_TRIGGER_DELAY);
                 }
                 break;
             case 'up':

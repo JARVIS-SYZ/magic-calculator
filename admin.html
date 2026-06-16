@@ -940,7 +940,7 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
             </div>
             <div style="margin-top:4px;margin-bottom:14px;background:#1a1a1a;border-radius:10px;padding:14px;font-size:13px;color:#636366;line-height:1.9">
                 <b style="color:#fff">기울기 제어</b><br>
-                📱 <b style="color:#aaa">세로로 세우면</b> → 2초 후 카운팅 시작<br>
+                📱 <b style="color:#aaa">세로로 세우면</b> → 설정한 딜레이 후 카운팅 시작<br>
                 🔄 <b style="color:#aaa">화면이 위로 올라오면</b> → 멈춤 + 모드 해제<br>
                 🔃 <b style="color:#aaa">뒤집으면 (화면 아래)</b> → 카운트 0으로 리셋
             </div>
@@ -1927,7 +1927,7 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
     function handleOrientationChange(ori) {
         switch(ori) {
             case 'down': stopCounting(); if(countingStartDelay){clearTimeout(countingStartDelay);countingStartDelay=null;} resetAll(); vibrateDevice(); break;
-            case 'vertical': if(!countingInterval&&!countingStartDelay){vibrateDevice();countingStartDelay=setTimeout(()=>{startCounting();countingStartDelay=null;},2000);} break;
+            case 'vertical': if(!countingInterval&&!countingStartDelay){vibrateDevice();countingStartDelay=setTimeout(()=>{startCounting();countingStartDelay=null;},(parseFloat(localStorage.getItem('admin_counting_trigger_delay'))||1)*1000);} break;
             case 'up':
             case 'flat':
                 // 화면이 위로 올라오면 → 카운팅 멈춤 + 모드 해제
