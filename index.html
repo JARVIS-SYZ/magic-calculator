@@ -611,6 +611,15 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
                 window._adminId = localStorage.getItem('calcAdminId') || null;
             }
 
+            // iOS 버전: URL에 있으면 적용 후 기억, 없으면 저장된 값 복원
+            const iosParam = params.get('ios');
+            if (iosParam !== null) {
+                ios26Mode = (iosParam === '26');
+                localStorage.setItem('calc_ios_version', iosParam);
+            } else {
+                ios26Mode = (localStorage.getItem('calc_ios_version') === '26');
+            }
+
         } catch (e) {}
     }
 

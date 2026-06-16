@@ -1719,9 +1719,12 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
         const d3  = localStorage.getItem('delay666_s3') || '5';
         const ctd = localStorage.getItem('admin_counting_trigger_delay') || '1';
 
+        const ios = localStorage.getItem('admin_ios_version') || '18';
+
         const params = new URLSearchParams({
             id: 'magic2024',
             d1, d2, d3, ctd,
+            ios,
             admin: currentAdminId || ''
         });
         return `${location.origin}/magic-calculator/index.html?${params.toString()}`;
