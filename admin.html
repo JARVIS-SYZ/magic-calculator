@@ -1687,9 +1687,10 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
             const token = await messaging.getToken({ vapidKey: VAPID_KEY, serviceWorkerRegistration: swReg });
 
             if (token) {
-                await firebase.firestore().collection('fcm_tokens').doc('admin_device_' + (currentAdminId || 'unknown')).set({
+                const deviceId = getDeviceId();
+                await firebase.firestore().collection('fcm_tokens').doc('admin_device_' + (currentAdminId || 'unknown') + '_' + deviceId).set({
                     token, adminId: currentAdminId || null,
-                    platform: isWebApp ? 'webapp' : 'browser',
+                    platform: isWebApp ? 'webapp' : (isIOS ? 'ios-browser' : 'android'),
                     updatedAt: new Date().toISOString()
                 });
                 localStorage.setItem('fcm_token', token);
@@ -1706,9 +1707,8 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
     };
 
     if (localStorage.getItem('fcm_token')) {
-        document.getElementById('notifyBtn').textContent = '✅ 알림 등록됨';
-        document.getElementById('notifyBtn').disabled = true;
-        document.getElementById('notifyStatus').textContent = '✅ 완료! 앱을 닫아도 알림이 와요.';
+        document.getElementById('notifyBtn').textContent = '🔔 알림 재등록';
+        document.getElementById('notifyStatus').textContent = '✅ 이 기기에 등록됨 (재등록으로 갱신 가능)';
         document.getElementById('notifyStatus').className = 'notify-status ok';
     }
 
