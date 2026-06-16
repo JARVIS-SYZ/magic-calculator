@@ -2175,7 +2175,7 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
             }
         }, 0);
     }
-    function updateExpression(text) { expressionDisplay.textContent = text; }
+    function updateExpression(text) { if (ios26Mode && typeof text === 'string') text = text.replace(/=$/, ''); expressionDisplay.textContent = text; }
 
     // ===== 입력 처리 =====
     function handleNumber(num) {

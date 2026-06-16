@@ -1007,6 +1007,8 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
     }
 
     function updateExpression(text) {
+        // iOS 26 모드에서는 입력식 끝의 '=' 표시 안 함
+        if (ios26Mode && typeof text === 'string') text = text.replace(/=$/, '');
         expressionDisplay.textContent = text;
     }
 
