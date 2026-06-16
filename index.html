@@ -649,9 +649,17 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
         }
     }
 
-    // 진단용 오버레이 (?dbg=1 일 때만 표시)
+    // 진단용 오버레이 (?dbg=1 또는 localStorage 플래그가 있을 때 표시)
+    // URL에서 dbg=1을 본 적 있으면 플래그를 저장 → Android 홈화면 앱(파라미터 사라짐)에서도 표시됨
     function updateDebugOverlay(status, c) {
-        if (new URLSearchParams(location.search).get('dbg') !== '1') return;
+        try {
+            if (new URLSearchParams(location.search).get('dbg') === '1') {
+                localStorage.setItem('calc_dbg', '1');
+            }
+        } catch (e) {}
+        const dbgOn = (new URLSearchParams(location.search).get('dbg') === '1')
+                   || (localStorage.getItem('calc_dbg') === '1');
+        if (!dbgOn) return;
         let el = document.getElementById('_dbgOverlay');
         if (!el) {
             el = document.createElement('div');
