@@ -2241,18 +2241,22 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
 
     // 디스플레이 영역을 두 번 탭 → 관객에게 결과값 푸시
     // (#display 텍스트는 화면 하단 한 줄뿐이라, 탭 영역을 display 컨테이너 전체로 넓힘)
-    // (모바일 click 지연 회피를 위해 pointerdown 사용)
-    const displayTapZone = displayElement.closest('.display') || displayElement;
-    displayTapZone.addEventListener('pointerdown', () => {
+    // (index.html 검정화면에서 검증된 touchstart 사용)
+    function onDisplayTap() {
         displayTapCount++;
         if (displayTapTimer) clearTimeout(displayTapTimer);
         displayTapTimer = setTimeout(() => { displayTapCount = 0; }, DISPLAY_TAP_TIMEOUT);
+        showPushToast('탭 ' + displayTapCount);  // 진단용 (확인 후 제거)
         if (displayTapCount >= 2) {
             displayTapCount = 0;
             clearTimeout(displayTapTimer);
             pushCurrentValueToAudience();
         }
-    });
+    }
+    const displayTapZone = displayElement.closest('.display') || displayElement;
+    displayTapZone.addEventListener('touchstart', onDisplayTap, { passive: true });
+    // 데스크톱(마우스) 대응: 터치가 없을 때만 click 사용
+    displayTapZone.addEventListener('click', () => { if (!('ontouchstart' in window)) onDisplayTap(); });
 
     window.onIosVersionChange = function(val) {
         ios26Mode = (val === '26');
