@@ -1690,67 +1690,9 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
 
     // pushCurrentValueToAudience()는 currentValue에 접근해야 해서 startDataSync() 안에 정의됨
 
-    // ===== 딜레이 설정 저장/로드 =====
-    window.saveDelaySettings = () => {
-        const delay    = parseFloat(document.getElementById('autoInputDelay').value) || 3;
-        const interval = parseFloat(document.getElementById('digitInterval').value)  || 0.3;
-        localStorage.setItem('admin_auto_delay',    delay);
-        localStorage.setItem('admin_digit_interval', interval);
-        vibrateDevice();
-        resetQR();
-        showSaveFeedback('page-ghost');
-    };
-
-    window.saveCountingSettings = () => {
-        const ctDelay = parseFloat(document.getElementById('countingTriggerDelay').value) || 1;
-        localStorage.setItem('admin_counting_trigger_delay', ctDelay);
-        vibrateDevice();
-        resetQR();
-        syncConfigToCloud();
-        showSaveFeedback('page-counting');
-    };
-
-    window.save666Settings = () => {
-        const s1 = parseFloat(document.getElementById('delay666s1').value) || 5;
-        const s2 = parseFloat(document.getElementById('delay666s2').value) || 10;
-        const s3 = parseFloat(document.getElementById('delay666s3').value) || 5;
-        localStorage.setItem('delay666_s1', s1);
-        localStorage.setItem('delay666_s2', s2);
-        localStorage.setItem('delay666_s3', s3);
-        DELAY_666_STAGE1 = s1 * 1000;
-        DELAY_666_STAGE2 = s2 * 1000;
-        DELAY_666_STAGE3 = s3 * 1000;
-        vibrateDevice();
-        resetQR();
-        syncConfigToCloud();
-        showSaveFeedback('page-trick666');
-    };
-
-    // 저장 피드백 - 해당 페이지의 저장 버튼 텍스트 변경
-    function showSaveFeedback(pageId) {
-        const page = document.getElementById(pageId);
-        if (!page) return;
-        const btn = page.querySelector('.gen-btn');
-        if (!btn) return;
-        const orig = btn.textContent;
-        btn.textContent = '✅ 저장됨';
-        setTimeout(() => btn.textContent = orig, 1500);
-    }
-
-    function loadDelaySettings() {
-        const delay    = localStorage.getItem('admin_auto_delay');
-        const interval = localStorage.getItem('admin_digit_interval');
-        const ctDelay  = localStorage.getItem('admin_counting_trigger_delay');
-        const s1 = localStorage.getItem('delay666_s1');
-        const s2 = localStorage.getItem('delay666_s2');
-        const s3 = localStorage.getItem('delay666_s3');
-        if (delay)    document.getElementById('autoInputDelay').value  = delay;
-        if (interval) document.getElementById('digitInterval').value   = interval;
-        if (ctDelay)  document.getElementById('countingTriggerDelay').value = ctDelay;
-        if (s1) { document.getElementById('delay666s1').value = s1; DELAY_666_STAGE1 = parseFloat(s1) * 1000; }
-        if (s2) { document.getElementById('delay666s2').value = s2; DELAY_666_STAGE2 = parseFloat(s2) * 1000; }
-        if (s3) { document.getElementById('delay666s3').value = s3; DELAY_666_STAGE3 = parseFloat(s3) * 1000; }
-    }
+    // ===== 딜레이/666 설정 저장·로드 함수는 startDataSync() 안에 정의됨 =====
+    // (save666Settings/loadDelaySettings가 계산기 내부 변수 DELAY_666_STAGE1~3에
+    //  접근해야 하므로 이 스코프 밖에 두면 관리자 계산기에 반영되지 않음)
 
     // ===== 푸시 알림 구독 =====
     const isWebApp = window.navigator.standalone === true;
@@ -1924,6 +1866,70 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
     let DOT_STAGE1_APPEAR = DEFAULT_DOT_STAGE1_APPEAR, DOT_STAGE1_DISAPPEAR_BEFORE = DEFAULT_DOT_STAGE1_DISAPPEAR_BEFORE;
     let DOT_STAGE2_APPEAR = DEFAULT_DOT_STAGE2_APPEAR, DOT_STAGE2_DISAPPEAR_BEFORE = DEFAULT_DOT_STAGE2_DISAPPEAR_BEFORE;
     let DOT_STAGE3_APPEAR = DEFAULT_DOT_STAGE3_APPEAR, DOT_STAGE3_DISAPPEAR_BEFORE = DEFAULT_DOT_STAGE3_DISAPPEAR_BEFORE;
+
+    // ===== 딜레이 설정 저장/로드 (계산기 내부 변수 DELAY_666_STAGE1~3에 접근해야 해서 이 스코프에 정의) =====
+    window.saveDelaySettings = () => {
+        const delay    = parseFloat(document.getElementById('autoInputDelay').value) || 3;
+        const interval = parseFloat(document.getElementById('digitInterval').value)  || 0.3;
+        localStorage.setItem('admin_auto_delay',    delay);
+        localStorage.setItem('admin_digit_interval', interval);
+        vibrateDevice();
+        resetQR();
+        showSaveFeedback('page-ghost');
+    };
+
+    window.saveCountingSettings = () => {
+        const ctDelay = parseFloat(document.getElementById('countingTriggerDelay').value) || 1;
+        localStorage.setItem('admin_counting_trigger_delay', ctDelay);
+        vibrateDevice();
+        resetQR();
+        syncConfigToCloud();
+        showSaveFeedback('page-counting');
+    };
+
+    window.save666Settings = () => {
+        const s1 = parseFloat(document.getElementById('delay666s1').value) || 5;
+        const s2 = parseFloat(document.getElementById('delay666s2').value) || 10;
+        const s3 = parseFloat(document.getElementById('delay666s3').value) || 5;
+        localStorage.setItem('delay666_s1', s1);
+        localStorage.setItem('delay666_s2', s2);
+        localStorage.setItem('delay666_s3', s3);
+        DELAY_666_STAGE1 = s1 * 1000;
+        DELAY_666_STAGE2 = s2 * 1000;
+        DELAY_666_STAGE3 = s3 * 1000;
+        vibrateDevice();
+        resetQR();
+        syncConfigToCloud();
+        showSaveFeedback('page-trick666');
+    };
+
+    // 저장 피드백 - 해당 페이지의 저장 버튼 텍스트 변경
+    function showSaveFeedback(pageId) {
+        const page = document.getElementById(pageId);
+        if (!page) return;
+        const btn = page.querySelector('.gen-btn');
+        if (!btn) return;
+        const orig = btn.textContent;
+        btn.textContent = '✅ 저장됨';
+        setTimeout(() => btn.textContent = orig, 1500);
+    }
+
+    function loadDelaySettings() {
+        const delay    = localStorage.getItem('admin_auto_delay');
+        const interval = localStorage.getItem('admin_digit_interval');
+        const ctDelay  = localStorage.getItem('admin_counting_trigger_delay');
+        const s1 = localStorage.getItem('delay666_s1');
+        const s2 = localStorage.getItem('delay666_s2');
+        const s3 = localStorage.getItem('delay666_s3');
+        if (delay)    document.getElementById('autoInputDelay').value  = delay;
+        if (interval) document.getElementById('digitInterval').value   = interval;
+        if (ctDelay)  document.getElementById('countingTriggerDelay').value = ctDelay;
+        if (s1) { document.getElementById('delay666s1').value = s1; DELAY_666_STAGE1 = parseFloat(s1) * 1000; }
+        if (s2) { document.getElementById('delay666s2').value = s2; DELAY_666_STAGE2 = parseFloat(s2) * 1000; }
+        if (s3) { document.getElementById('delay666s3').value = s3; DELAY_666_STAGE3 = parseFloat(s3) * 1000; }
+    }
+    // 최상위 openPage 핸들러(1626행)에서 bare 호출하므로 window에도 노출
+    window.loadDelaySettings = loadDelaySettings;
 
     const displayElement = document.getElementById('display');
     const expressionDisplay = document.getElementById('expression');
