@@ -109,6 +109,14 @@ function serializeCalculation(doc) {
     };
 }
 
+function buildRouterValue(data) {
+    const expression = String(data?.expression || "").trim();
+    const result = String(data?.result ?? "").trim();
+    if (!expression) return result;
+    if (!result || expression.includes("=")) return expression;
+    return `${expression} = ${result}`;
+}
+
 async function updateRouterLatest(adminId, data, createTime) {
     const db = admin.firestore();
     const ref = db.collection("router_latest").doc(adminId);
@@ -125,7 +133,9 @@ async function updateRouterLatest(adminId, data, createTime) {
         }
 
         transaction.set(ref, {
-            value: String(data.result ?? ""),
+            value: buildRouterValue(data),
+            expression: String(data.expression || ""),
+            result: String(data.result ?? ""),
             updatedAt: incomingTimestamp,
         });
     });
@@ -252,7 +262,7 @@ async function getViewerLatest(req, res) {
         .doc(tokenData.adminId)
         .get();
 
-    if (latest.exists) {
+    if (latest.exists && latest.data().expression !== undefined) {
         res.json(serializeRouterValue(latest.data()));
         return;
     }
@@ -273,7 +283,7 @@ async function getViewerLatest(req, res) {
     }
     const data = newest.data();
     res.json({
-        value: String(data.result ?? ""),
+        value: buildRouterValue(data),
         updatedAt: data.timestamp?.toDate
             ? data.timestamp.toDate().toISOString()
             : null,
