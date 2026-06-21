@@ -305,6 +305,14 @@ body.ios26-theme .top-icon { background: #1c1c1e; border: 1px solid #2c2c2e; }
     padding: 11px 16px; font-size: 14px; color: #ff9f0a; font-weight: 600; cursor: pointer;
 }
 .copy-btn:active { opacity: 0.7; }
+.api-value {
+    background: #2c2c2e; border-radius: 10px;
+    padding: 12px 14px; margin-bottom: 8px;
+    color: #aaa; font: 12px/1.5 monospace;
+    overflow-wrap: anywhere; user-select: text; -webkit-user-select: text;
+}
+.api-label { font-size: 12px; color: #8e8e93; margin: 14px 0 6px; }
+.api-status { min-height: 20px; margin-top: 10px; color: #8e8e93; font-size: 13px; text-align: center; }
 
 /* 수신 내역 */
 .log-list { display: flex; flex-direction: column; gap: 8px; }
@@ -771,6 +779,11 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
             <span>URL 생성</span>
             <span class="side-menu-arrow">›</span>
         </button>
+        <button class="side-menu-item" onclick="openPage('api')">
+            <span class="side-menu-icon">🔑</span>
+            <span>API</span>
+            <span class="side-menu-arrow">›</span>
+        </button>
         <button class="side-menu-item" onclick="openPage('logs')">
             <span class="side-menu-icon">📋</span>
             <span>수신 내역</span>
@@ -869,6 +882,39 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
                 <div class="url-display" id="cloudConfigStatus" style="font-size:13px">확인하려면 새로고침 →</div>
                 <button class="copy-btn" onclick="refreshCloudConfig()" style="color:#4fc3f7">새로고침</button>
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- API -->
+<div class="admin-page" id="page-api">
+    <div class="admin-page-header">
+        <button class="admin-back" onclick="closePage()">‹</button>
+        <div class="admin-page-title">API</div>
+    </div>
+    <div class="admin-page-content">
+        <div class="admin-section">
+            <div class="admin-section-title">🔑 관리자 API 키</div>
+            <div style="font-size:12px;color:#636366;line-height:1.7">이 키로 이 관리자의 관객 계산 결과만 조회합니다. 키는 외부에 공개하지 마세요.</div>
+            <button class="gen-btn" id="issueApiKeyBtn" style="margin-top:14px" onclick="issueApiKey()">API 키 발급</button>
+            <div class="api-status" id="apiStatus"></div>
+
+            <div class="api-label">API 키</div>
+            <div class="api-value" id="apiKeyValue">발급 전</div>
+            <button class="copy-btn" style="width:100%" onclick="copyApiValue('apiKeyValue', this)">키 복사</button>
+
+            <div class="api-label">최신 결과 주소</div>
+            <div class="api-value" id="apiLatestValue"></div>
+            <button class="copy-btn" style="width:100%" onclick="copyApiValue('apiLatestValue', this)">주소 복사</button>
+
+            <div class="api-label">최근 내역 주소</div>
+            <div class="api-value" id="apiHistoryValue"></div>
+            <button class="copy-btn" style="width:100%" onclick="copyApiValue('apiHistoryValue', this)">주소 복사</button>
+        </div>
+        <div class="admin-section">
+            <div class="admin-section-title">요청 헤더</div>
+            <div class="api-value">Authorization: Bearer API_KEY</div>
+            <div style="font-size:12px;color:#636366;line-height:1.7">최신 결과는 <b style="color:#aaa">/latest</b>, 최근 내역은 <b style="color:#aaa">/history?limit=20</b>으로 조회합니다.</div>
         </div>
     </div>
 </div>
@@ -1539,6 +1585,7 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
 
 
     const VAPID_KEY = 'BK9hx4nDAnvp7znOPbcfhxBDK737pAsYyoEkxm7YYtiYKfAsQ1LoXQf1JZOvvxKhSmEMC-9mHbxfFPtZJ38FX7w';
+    const API_BASE_URL = 'https://asia-northeast3-magic-calculator-5dcac.cloudfunctions.net/calculationsApi';
 
     // ===== 관리자 패널 열기/닫기 =====
     // ===== 사이드 메뉴 =====
@@ -1622,6 +1669,7 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
                 refreshCloudConfig();
             }, 100);
         }
+        if (pageId === 'api') setTimeout(loadApiPage, 50);
         if (['ghost', 'counting', 'trick666'].includes(pageId)) {
             setTimeout(loadDelaySettings, 50);
         }
@@ -1648,6 +1696,67 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
         try { document.execCommand('copy'); if (cb) cb(); } catch(e) {}
         document.body.removeChild(el);
     }
+
+    // ===== 관리자별 계산 결과 API =====
+    function loadApiPage() {
+        document.getElementById('apiLatestValue').textContent = API_BASE_URL + '/latest';
+        document.getElementById('apiHistoryValue').textContent = API_BASE_URL + '/history?limit=20';
+        const savedKey = currentAdminId
+            ? localStorage.getItem('admin_api_key_' + currentAdminId)
+            : '';
+        document.getElementById('apiKeyValue').textContent = savedKey || '발급 전';
+        document.getElementById('issueApiKeyBtn').textContent = savedKey ? 'API 키 재발급' : 'API 키 발급';
+        document.getElementById('apiStatus').textContent = '';
+    }
+
+    window.issueApiKey = async function() {
+        const btn = document.getElementById('issueApiKeyBtn');
+        const status = document.getElementById('apiStatus');
+        if (!currentAdminId) {
+            status.textContent = '관리자 인증 정보가 없습니다.';
+            return;
+        }
+
+        btn.disabled = true;
+        status.textContent = '발급 중…';
+        try {
+            const session = await db_auth.collection('admin_sessions').doc(getDeviceId()).get();
+            const code = session.exists ? session.data().code : '';
+            if (!code) throw new Error('보안코드를 확인할 수 없습니다. 다시 인증해주세요.');
+
+            const response = await fetch(API_BASE_URL + '/keys', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ code, adminId: currentAdminId })
+            });
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.error || 'API 키 발급 실패');
+
+            localStorage.setItem('admin_api_key_' + currentAdminId, result.apiKey);
+            document.getElementById('apiKeyValue').textContent = result.apiKey;
+            btn.textContent = 'API 키 재발급';
+            status.textContent = '발급 완료. 재발급하면 기존 키는 즉시 폐기됩니다.';
+        } catch (e) {
+            status.textContent = '오류: ' + (e.message || e);
+        } finally {
+            btn.disabled = false;
+        }
+    };
+
+    window.copyApiValue = function(id, btn) {
+        const value = document.getElementById(id).textContent.trim();
+        if (!value || value === '발급 전') return;
+        const done = () => {
+            const original = btn.textContent;
+            btn.textContent = '복사됨';
+            setTimeout(() => { btn.textContent = original; }, 1200);
+        };
+        if (navigator.clipboard?.writeText) {
+            navigator.clipboard.writeText(value).then(done).catch(() => fallbackCopy(value, done));
+        } else {
+            fallbackCopy(value, done);
+        }
+    };
 
     // ===== 설정을 Firestore에 동기화 (관객 앱이 켤 때마다 최신값 수신) =====
     async function syncConfigToCloud() {
