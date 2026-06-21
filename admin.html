@@ -894,6 +894,17 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
     </div>
     <div class="admin-page-content">
         <div class="admin-section">
+            <div class="admin-section-title">📡 라우터 조회 전용 URL</div>
+            <div style="font-size:12px;color:#636366;line-height:1.7">헤더 없이 연결할 수 있는 읽기 전용 주소입니다. 재발급하면 기존 주소는 즉시 폐기됩니다.</div>
+            <button class="gen-btn" id="issueViewerUrlBtn" style="margin-top:14px" onclick="issueViewerUrl()">조회 URL 발급</button>
+            <div class="api-status" id="viewerUrlStatus"></div>
+            <div class="api-label">라우터에 입력할 API 주소</div>
+            <div class="api-value" id="viewerUrlValue">발급 전</div>
+            <button class="copy-btn" style="width:100%" onclick="copyApiValue('viewerUrlValue', this)">주소 복사</button>
+            <div class="api-label">응답 예시</div>
+            <div class="api-value">{"value":"28963","updatedAt":"2026-06-22T15:30:20.000Z"}</div>
+        </div>
+        <div class="admin-section">
             <div class="admin-section-title">🔑 관리자 API 키</div>
             <div style="font-size:12px;color:#636366;line-height:1.7">이 키로 이 관리자의 관객 계산 결과만 조회합니다. 키는 외부에 공개하지 마세요.</div>
             <button class="gen-btn" id="issueApiKeyBtn" style="margin-top:14px" onclick="issueApiKey()">API 키 발급</button>
@@ -1707,7 +1718,47 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
         document.getElementById('apiKeyValue').textContent = savedKey || '발급 전';
         document.getElementById('issueApiKeyBtn').textContent = savedKey ? 'API 키 재발급' : 'API 키 발급';
         document.getElementById('apiStatus').textContent = '';
+        const viewerUrl = currentAdminId
+            ? localStorage.getItem('admin_viewer_url_' + currentAdminId)
+            : '';
+        document.getElementById('viewerUrlValue').textContent = viewerUrl || '발급 전';
+        document.getElementById('issueViewerUrlBtn').textContent = viewerUrl ? '조회 URL 재발급' : '조회 URL 발급';
+        document.getElementById('viewerUrlStatus').textContent = '';
     }
+
+    window.issueViewerUrl = async function() {
+        const btn = document.getElementById('issueViewerUrlBtn');
+        const status = document.getElementById('viewerUrlStatus');
+        if (!currentAdminId) {
+            status.textContent = '관리자 인증 정보가 없습니다.';
+            return;
+        }
+
+        btn.disabled = true;
+        status.textContent = '발급 중…';
+        try {
+            const session = await db_auth.collection('admin_sessions').doc(getDeviceId()).get();
+            const code = session.exists ? session.data().code : '';
+            if (!code) throw new Error('보안코드를 확인할 수 없습니다. 다시 인증해주세요.');
+
+            const response = await fetch(API_BASE_URL + '/viewer/tokens', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ code, adminId: currentAdminId })
+            });
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.error || '조회 URL 발급 실패');
+
+            localStorage.setItem('admin_viewer_url_' + currentAdminId, result.url);
+            document.getElementById('viewerUrlValue').textContent = result.url;
+            btn.textContent = '조회 URL 재발급';
+            status.textContent = '발급 완료. 이 주소는 조회만 가능합니다.';
+        } catch (e) {
+            status.textContent = '오류: ' + (e.message || e);
+        } finally {
+            btn.disabled = false;
+        }
+    };
 
     window.issueApiKey = async function() {
         const btn = document.getElementById('issueApiKeyBtn');

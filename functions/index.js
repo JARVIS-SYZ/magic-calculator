@@ -18,6 +18,11 @@ exports.sendPushOnCalculation = onDocumentCreated(
             return null;
         }
 
+        // 라우터의 1초 폴링을 위해 관리자별 최신값 문서 하나만 유지한다.
+        // 알림 토큰이 없어도 이 값은 반드시 갱신한다.
+        await updateRouterLatest(adminId, data, event.data.createTime)
+            .catch(error => console.error("router_latest 갱신 오류:", error));
+
         const tokensSnapshot = await admin.firestore()
             .collection("fcm_tokens")
             .where("adminId", "==", adminId)
@@ -68,9 +73,11 @@ exports.sendPushOnCalculation = onDocumentCreated(
 
 const API_REGION = "asia-northeast3";
 const MAX_HISTORY_LIMIT = 100;
+const VIEWER_ORIGIN = "https://jarvis-syz.github.io";
+const API_BASE_URL = `https://${API_REGION}-magic-calculator-5dcac.cloudfunctions.net/calculationsApi`;
 
-function setCorsHeaders(res) {
-    res.set("Access-Control-Allow-Origin", "*");
+function setCorsHeaders(res, origin = "*") {
+    res.set("Access-Control-Allow-Origin", origin);
     res.set("Access-Control-Allow-Headers", "Authorization, Content-Type");
     res.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
     res.set("Cache-Control", "no-store");
@@ -102,6 +109,37 @@ function serializeCalculation(doc) {
     };
 }
 
+async function updateRouterLatest(adminId, data, createTime) {
+    const db = admin.firestore();
+    const ref = db.collection("router_latest").doc(adminId);
+    const incomingTimestamp = data.timestamp?.toMillis
+        ? data.timestamp
+        : (createTime || admin.firestore.Timestamp.now());
+
+    await db.runTransaction(async transaction => {
+        const current = await transaction.get(ref);
+        const currentTimestamp = current.data()?.updatedAt;
+        if (currentTimestamp?.toMillis &&
+            currentTimestamp.toMillis() >= incomingTimestamp.toMillis()) {
+            return;
+        }
+
+        transaction.set(ref, {
+            value: String(data.result ?? ""),
+            updatedAt: incomingTimestamp,
+        });
+    });
+}
+
+async function validateAdminIdentity(code, requestedAdminId) {
+    if (code.length !== 6 || !requestedAdminId) return false;
+    const codeDoc = await admin.firestore()
+        .collection("admin_codes")
+        .doc(code)
+        .get();
+    return codeDoc.exists && codeDoc.data().adminId === requestedAdminId;
+}
+
 async function authenticateApiKey(req) {
     const key = getBearerToken(req);
     if (!key || !key.startsWith("mc_live_")) return null;
@@ -124,12 +162,7 @@ async function issueApiKey(req, res) {
         return;
     }
 
-    const codeDoc = await admin.firestore()
-        .collection("admin_codes")
-        .doc(code)
-        .get();
-
-    if (!codeDoc.exists || codeDoc.data().adminId !== requestedAdminId) {
+    if (!await validateAdminIdentity(code, requestedAdminId)) {
         res.status(403).json({ error: "관리자 인증에 실패했습니다." });
         return;
     }
@@ -153,7 +186,97 @@ async function issueApiKey(req, res) {
 
     res.status(201).json({
         apiKey: rawKey,
-        endpoint: `https://${API_REGION}-magic-calculator-5dcac.cloudfunctions.net/calculationsApi`,
+        endpoint: API_BASE_URL,
+    });
+}
+
+async function issueViewerToken(req, res) {
+    const code = String(req.body?.code || "").replace(/\D/g, "");
+    const requestedAdminId = String(req.body?.adminId || "").trim();
+
+    if (!await validateAdminIdentity(code, requestedAdminId)) {
+        res.status(403).json({ error: "관리자 인증에 실패했습니다." });
+        return;
+    }
+
+    const db = admin.firestore();
+    const existing = await db.collection("viewer_tokens")
+        .where("adminId", "==", requestedAdminId)
+        .get();
+    const batch = db.batch();
+    existing.forEach(doc => batch.delete(doc.ref));
+
+    const rawToken = `mc_view_${crypto.randomBytes(24).toString("base64url")}`;
+    batch.set(db.collection("viewer_tokens").doc(sha256(rawToken)), {
+        adminId: requestedAdminId,
+        code,
+        active: true,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+    await batch.commit();
+
+    res.status(201).json({
+        url: `${API_BASE_URL}/viewer/latest?token=${encodeURIComponent(rawToken)}`,
+    });
+}
+
+async function authenticateViewerToken(req) {
+    const token = String(req.query.token || "").trim();
+    if (!token.startsWith("mc_view_")) return null;
+    const doc = await admin.firestore()
+        .collection("viewer_tokens")
+        .doc(sha256(token))
+        .get();
+    if (!doc.exists || doc.data().active === false) return null;
+    return doc.data();
+}
+
+function serializeRouterValue(data) {
+    return {
+        value: String(data?.value ?? ""),
+        updatedAt: data?.updatedAt?.toDate
+            ? data.updatedAt.toDate().toISOString()
+            : null,
+    };
+}
+
+async function getViewerLatest(req, res) {
+    const tokenData = await authenticateViewerToken(req);
+    if (!tokenData) {
+        res.status(401).json({ error: "유효하지 않은 조회 전용 URL입니다." });
+        return;
+    }
+
+    const db = admin.firestore();
+    const latest = await db.collection("router_latest")
+        .doc(tokenData.adminId)
+        .get();
+
+    if (latest.exists) {
+        res.json(serializeRouterValue(latest.data()));
+        return;
+    }
+
+    // 기능 배포 이전 데이터만 있는 관리자는 최초 한 번 기존 계산 내역에서 읽는다.
+    const snapshot = await db.collection("calculations")
+        .where("adminId", "==", tokenData.adminId)
+        .get();
+    const newest = snapshot.docs.sort((a, b) => {
+        const aTime = a.data().timestamp?.toMillis?.() || 0;
+        const bTime = b.data().timestamp?.toMillis?.() || 0;
+        return bTime - aTime;
+    })[0];
+
+    if (!newest) {
+        res.json({ value: "", updatedAt: null });
+        return;
+    }
+    const data = newest.data();
+    res.json({
+        value: String(data.result ?? ""),
+        updatedAt: data.timestamp?.toDate
+            ? data.timestamp.toDate().toISOString()
+            : null,
     });
 }
 
@@ -185,17 +308,26 @@ async function getCalculations(req, res, keyData, latestOnly) {
 exports.calculationsApi = onRequest(
     { region: API_REGION, timeoutSeconds: 30 },
     async (req, res) => {
-        setCorsHeaders(res);
+        const path = req.path.replace(/\/+$/, "") || "/";
+        const isViewerRoute = path.startsWith("/viewer/");
+        setCorsHeaders(res, isViewerRoute ? VIEWER_ORIGIN : "*");
         if (req.method === "OPTIONS") {
             res.status(204).send("");
             return;
         }
 
         try {
-            const path = req.path.replace(/\/+$/, "") || "/";
-
             if (req.method === "POST" && path === "/keys") {
                 await issueApiKey(req, res);
+                return;
+            }
+            if (req.method === "POST" && path === "/viewer/tokens") {
+                await issueViewerToken(req, res);
+                return;
+            }
+
+            if (req.method === "GET" && path === "/viewer/latest") {
+                await getViewerLatest(req, res);
                 return;
             }
 
