@@ -374,51 +374,86 @@ body.ios26-theme .display-text { font-weight: 500; }
 body.ios26-theme #calcIconSvg { display: none; }
 body.ios26-theme #calcIconPlusMinus { display: block; }
 
-/* ===== Android(구글 계산기) 테마 =====
+/* ===== Android(갤럭시 One UI 계산기) 테마 - 라이트 =====
  * html/body 배경은 검정 그대로 둠 - 블랙스크린 트릭이 .calculator를 투명하게 만들어
  * body 배경을 그대로 노출시키기 때문에 여기 색을 넣으면 검은 화면이 회색이 됨 */
 body.android-mode .calculator,
 body.android-mode .header,
 body.android-mode .display,
-body.android-mode .buttons { background: #1b1b1f; }
+body.android-mode .buttons,
+body.android-mode .android-tools { background: #fafafa; }
 
 body.android-mode {
-    font-family: 'Google Sans', Roboto, 'Noto Sans KR', sans-serif;
+    font-family: 'SamsungOne', 'Noto Sans KR', Roboto, -apple-system, sans-serif;
 }
 
-/* 메뉴 아이콘: iOS 주황색 대신 안드로이드 중립 회색 */
-body.android-mode #menuDots .menu-dot  { fill: #c9c5d0; }
-body.android-mode #menuDots .menu-line { stroke: #c9c5d0; }
+body.android-mode #menuDots .menu-dot  { fill: #8a8a8a; }
+body.android-mode #menuDots .menu-line { stroke: #8a8a8a; }
 
-/* 디스플레이: 수식이 크게, 결과 미리보기가 그 아래 작게(회색) */
-body.android-mode .display { padding: 0 24px 18px 24px; }
-body.android-mode .display-text    { font-weight: 400; color: #e3e2e6; }
-body.android-mode .expression-text { color: #a2a0a8; font-size: clamp(20px, 5vw, 27px); }
-body.android-mode .preview-text    { display: block; }
+/* 디스플레이: 수식이 크게(연산자만 초록), 결과 미리보기가 그 아래 작게 */
+body.android-mode .display { padding: 0 24px 4px 24px; }
+body.android-mode .display-text     { font-weight: 300; color: #3c3c3c; }
+body.android-mode .display-text .op { color: #00a32e; }
+body.android-mode .expression-text  { color: #9a9a9a; font-size: clamp(20px, 5vw, 27px); }
+body.android-mode .preview-text     { display: block; color: #5c5c5c; font-weight: 300; }
 
-/* 버튼: 숫자는 중립 회색 칩, 연산자/기능은 파란 계열, =만 채워진 원 */
+/* 디스플레이 아래 도구줄 + 구분선 (android-mode에서만 보임) */
+.android-tools, .android-divider { display: none; }
+body.android-mode .android-tools {
+    display: flex; align-items: center; gap: 30px;
+    padding: 6px 26px 0 26px; flex-shrink: 0;
+}
+body.android-mode .android-tools button {
+    background: none; border: none; padding: 4px; display: flex; cursor: pointer;
+}
+body.android-mode .android-tools .at-icon {
+    width: 23px; height: 23px; fill: none;
+    stroke: #8a8a8a; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round;
+}
+body.android-mode .android-tools .at-back { margin-left: auto; }
+body.android-mode .android-tools .at-back .at-icon { stroke: #00c400; }
+body.android-mode .android-divider {
+    display: block; flex-shrink: 0;
+    height: 1px; background: #e4e4e4; margin: 10px 26px 2px 26px;
+}
+
+/* 버튼: 숫자는 흰 원, 기능은 연회색, 연산자는 진회색, =만 초록 */
 body.android-mode .button.number,
-body.android-mode .button.calc-icon { background: #2b2930; color: #e3e2e6; }
-body.android-mode .button.function,
-body.android-mode .button.operator  { background: #2a3140; color: #a8c7fa; }
-body.android-mode #equalsButton     { background: #a8c7fa; color: #00315f; }
+body.android-mode .button.calc-icon { background: #ffffff; color: #2b2b2b; }
+body.android-mode .button.function  { background: #ededed; color: #2b2b2b; }
+body.android-mode .button.operator  { background: #8c8c8c; color: #ffffff; }
+body.android-mode #equalsButton     { background: #00c400; color: #ffffff; }
 
-/* 계산기 아이콘 SVG 안쪽 파임은 #333로 하드코딩돼 있어 버튼색과 어긋남 */
-body.android-mode #calcIconSvg rect:nth-of-type(2),
-body.android-mode #calcIconSvg circle { fill: #2b2930; }
-
-/* iOS는 연산자만 크고 얇게 쓰는데 구글은 숫자와 같은 크기 */
+body.android-mode .button-content { font-weight: 400; }
 body.android-mode .button.operator .button-content {
-    font-size: calc(var(--btn-w) * 0.36);
-    font-weight: 500;
-    transform: none;
+    font-size: calc(var(--btn-w) * 0.40); font-weight: 400; transform: none;
 }
-body.android-mode .button.function .button-content { font-size: calc(var(--btn-w) * 0.32); }
-body.android-mode .button:active { filter: brightness(1.35); }
-
+body.android-mode .button.function .button-content { font-size: calc(var(--btn-w) * 0.34); }
 /* iOS26 테마가 함께 켜져 있어도 안드로이드 외형이 이기도록 광택/축소 제거 */
-body.android-mode .button { transform: scale(0.96); }
+body.android-mode .button { transform: scale(0.98); }
 body.android-mode .button::before { content: none; }
+
+/* 버튼 글자 교체는 CSS로만 한다 - JS가 이 버튼들의 내용을 수시로 바꿔서
+ * (AC <-> 백스페이스 아이콘 등) JS를 건드리면 트릭 로직과 충돌한다 */
+body.android-mode #clearButtonContent      { font-size: 0; }
+body.android-mode #clearButtonContent > *  { display: none; }
+body.android-mode #clearButtonContent::after {
+    content: 'C'; font-size: calc(var(--btn-w) * 0.34); font-weight: 400;
+}
+body.android-mode #pmButton .pm-icon { display: none; }
+/* iOS26 모드가 이 버튼 글자를 AC로 바꿔놓기 때문에 글자도 같이 숨긴다 */
+body.android-mode #pmContent { font-size: 0; }
+body.android-mode #pmButton .button-content::after {
+    content: '( )'; font-size: calc(var(--btn-w) * 0.30); font-weight: 400;
+}
+/* One UI의 ( ) 자리인데 수식 평가기가 괄호를 못 받아서, 잘못 동작하느니 무반응 */
+body.android-mode #pmButton { pointer-events: none; }
+
+body.android-mode #calcIconSvg { display: none; }
+body.android-mode #calcIconPlusMinus { display: block; font-size: 0; }
+body.android-mode #calcIconPlusMinus::after {
+    content: '+/−'; font-size: calc(var(--btn-w) * 0.28); font-weight: 400;
+}
 
 
 /* ===== = 길게 누르기 팝업 ===== */
@@ -723,6 +758,21 @@ body.android-mode .button::before { content: none; }
         <div class="display-text" id="display">0</div>
         <div class="preview-text" id="previewResult"></div>
     </div>
+    <div class="android-tools">
+        <button type="button" aria-label="계산 기록">
+            <svg class="at-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.2v5l3.4 2"/></svg>
+        </button>
+        <button type="button" aria-label="단위 변환">
+            <svg class="at-icon" viewBox="0 0 24 24"><rect x="2.6" y="8.6" width="18.8" height="6.8" rx="1.6"/><path d="M7.2 8.6v3M12 8.6v4M16.8 8.6v3"/></svg>
+        </button>
+        <button type="button" aria-label="수식 입력">
+            <svg class="at-icon" viewBox="0 0 24 24"><rect x="4.2" y="3.6" width="15.6" height="16.8" rx="2.2"/><path d="M8 9.2h3.6M8 13h8M8 16.4h8"/></svg>
+        </button>
+        <button type="button" class="at-back" aria-label="지우기" onclick="handleBackspace()">
+            <svg class="at-icon" viewBox="0 0 24 24"><path d="M8.4 5.2H19a2 2 0 0 1 2 2v9.6a2 2 0 0 1-2 2H8.4L2.6 12z"/><path d="M11.6 9.6l4.2 4.8M15.8 9.6l-4.2 4.8"/></svg>
+        </button>
+    </div>
+    <div class="android-divider"></div>
     <div class="buttons">
         <div class="button-grid">
             <button class="button function" id="clearButton" onclick="handleClear()">
@@ -1503,7 +1553,12 @@ body.android-mode .button::before { content: none; }
     // index.html과 동일하게 ?platform= 파라미터를 userAgent보다 우선 적용
     const _platformParam = new URLSearchParams(location.search).get('platform');
     const _isAndroid = _platformParam === 'android' || (!_platformParam && /android/i.test(navigator.userAgent));
-    if (_isAndroid) document.body.classList.add('android-mode');
+    if (_isAndroid) {
+        document.body.classList.add('android-mode');
+        // One UI 테마는 밝은 화면이라 상태바 색도 맞춰준다
+        const _tc = document.querySelector('meta[name="theme-color"]');
+        if (_tc) _tc.setAttribute('content', '#fafafa');
+    }
 
     // 세로 방향 고정 (Android PWA 설치 모드에서 동작)
     if (screen.orientation && screen.orientation.lock) {
@@ -2530,7 +2585,12 @@ body.android-mode .button::before { content: none; }
     // ===== 디스플레이 =====
     function updateDisplay(value) {
         let formattedValue = formatDisplayExpression(value);
-        displayElement.textContent = formattedValue;
+        if (document.body.classList.contains('android-mode')) {
+            // One UI는 수식 안의 연산자만 초록으로 보여준다 (내용은 숫자/기호뿐이라 안전)
+            displayElement.innerHTML = formattedValue.replace(/[+×÷−]/g, (m) => '<span class="op">' + m + '</span>');
+        } else {
+            displayElement.textContent = formattedValue;
+        }
 
         // 글자 수에 따라 폰트 크기 조정 (iOS 26 모드는 더 작게)
         const len = formattedValue.length;
@@ -2691,7 +2751,8 @@ body.android-mode .button::before { content: none; }
         updateDisplay(fullExpression||currentValue); updateClearButtonState();
     }
 
-    function handleCalcIcon() { if(ios26Mode)handleFunction('±'); }
+    // 안드로이드에서는 이 자리가 One UI의 +/− 버튼이다
+    function handleCalcIcon() { if(ios26Mode||document.body.classList.contains('android-mode'))handleFunction('±'); }
 
 
     function handleEquals() {
@@ -2802,6 +2863,7 @@ body.android-mode .button::before { content: none; }
     window.handleEquals = handleEquals;
     window.handleFunction = handleFunction;
     window.handleCalcIcon = handleCalcIcon;
+    window.handleBackspace = handleBackspace;
     window.closeSettings = closeSettings;
     window.vibrateDevice = vibrateDevice;
 
