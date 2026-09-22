@@ -155,6 +155,19 @@ body.ios26-theme .top-icon { background: #1c1c1e; border: 1px solid #2c2c2e; }
 }
 .expression-text.visible { opacity: 1; }
 
+/* 안드로이드 전용: 입력 중 결과 미리보기 (android-mode에서만 display:block) */
+.preview-text {
+    display: none;
+    text-align: right;
+    font-size: clamp(20px, 5.5vw, 30px);
+    color: #a2a0a8;
+    margin-top: 4px;
+    min-height: 1.2em;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    opacity: 0; transition: opacity 0.15s;
+}
+.preview-text.visible { opacity: 1; }
+
 .display-text {
     /* 버튼 5행 기준 남은 공간에 맞는 크기 */
     font-size: clamp(48px, 13vw, 90px);
@@ -315,6 +328,48 @@ body.ios26-theme .display-text { font-weight: 500; font-size: clamp(34px, 9.7vw,
 #calcIconPlusMinus { display: none; font-size: calc(var(--btn-w) * 0.36); font-weight: 600; }
 body.ios26-theme #calcIconSvg { display: none; }
 body.ios26-theme #calcIconPlusMinus { display: block; }
+
+/* ===== Android(구글 계산기) 테마 =====
+ * html/body 배경은 검정 그대로 둠 - 블랙스크린 트릭이 .calculator를 투명하게 만들어
+ * body 배경을 그대로 노출시키기 때문에 여기 색을 넣으면 검은 화면이 회색이 됨 */
+body.android-mode .calculator,
+body.android-mode .header,
+body.android-mode .display,
+body.android-mode .buttons { background: #1b1b1f; }
+
+body.android-mode {
+    font-family: 'Google Sans', Roboto, 'Noto Sans KR', sans-serif;
+}
+
+/* 메뉴 아이콘: iOS 주황색 대신 안드로이드 중립 회색 */
+body.android-mode #menuDots .menu-dot  { fill: #c9c5d0; }
+body.android-mode #menuDots .menu-line { stroke: #c9c5d0; }
+
+/* 디스플레이: 수식이 크게, 결과 미리보기가 그 아래 작게(회색) */
+body.android-mode .display { padding: 0 24px 18px 24px; }
+body.android-mode .display-text    { font-weight: 400; color: #e3e2e6; }
+body.android-mode .expression-text { color: #a2a0a8; font-size: clamp(20px, 5vw, 27px); }
+body.android-mode .preview-text    { display: block; }
+
+/* 버튼: 숫자는 중립 회색 칩, 연산자/기능은 파란 계열, =만 채워진 원 */
+body.android-mode .button.number,
+body.android-mode .button.calc-icon { background: #2b2930; color: #e3e2e6; }
+body.android-mode .button.function,
+body.android-mode .button.operator  { background: #2a3140; color: #a8c7fa; }
+body.android-mode #equalsButton     { background: #a8c7fa; color: #00315f; }
+
+/* 계산기 아이콘 SVG 안쪽 파임은 #333로 하드코딩돼 있어 버튼색과 어긋남 */
+body.android-mode #calcIconSvg rect:nth-of-type(2),
+body.android-mode #calcIconSvg circle { fill: #2b2930; }
+
+/* iOS는 연산자만 크고 얇게 쓰는데 구글은 숫자와 같은 크기 */
+body.android-mode .button.operator .button-content {
+    font-size: calc(var(--btn-w) * 0.36);
+    font-weight: 500;
+    transform: none;
+}
+body.android-mode .button.function .button-content { font-size: calc(var(--btn-w) * 0.32); }
+body.android-mode .button:active { filter: brightness(1.35); }
 </style>
 </head>
 <body>
@@ -359,6 +414,7 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
     <div class="display">
         <div class="expression-text" id="expression"></div>
         <div class="display-text" id="display">0</div>
+        <div class="preview-text" id="previewResult"></div>
     </div>
 
     <div class="buttons">
@@ -470,7 +526,11 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
     // 플랫폼 감지 (URL 파라미터 우선, 없으면 userAgent)
     const platformParam = urlParams.get('platform');
     const isAndroid = platformParam === 'android' || (!platformParam && /android/i.test(navigator.userAgent));
-    if (isAndroid) document.body.classList.add('android-mode');
+    if (isAndroid) {
+        document.body.classList.add('android-mode');
+        // updateDisplay는 --display-font-size를 documentElement에서 읽으므로 body가 아닌 html에 지정
+        document.documentElement.style.setProperty('--display-font-size', '58px');
+    }
     // manifest는 head에서 플랫폼별로 처리됨 (iOS엔 없음, Android엔 주입)
 
     // 서비스워커 등록 (Android PWA 설치 조건 + iOS/Android 모두 network-first로 최신 HTML 수신)
@@ -720,6 +780,7 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
 
     const displayElement = document.getElementById('display');
     const expressionDisplay = document.getElementById('expression');
+    const previewElement = document.getElementById('previewResult');
     const settingsModal = document.getElementById('settingsModal');
     const forceNumberInput = document.getElementById('forceNumberInput');
     const modeIndicator = document.getElementById('modeIndicator');
@@ -1098,6 +1159,37 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
                 displayElement.scrollLeft = displayElement.scrollWidth - displayElement.clientWidth;
             }
         }, 0);
+
+        updateAndroidPreview();
+    }
+
+    /* 구글 계산기처럼 입력 중 결과를 미리 보여줌.
+     * 주의: 포스 모드에서 진짜 계산값을 띄우면 = 누르기 전에 트릭이 노출되므로
+     * 반드시 handleEquals와 같은 값(포스 숫자)을 보여주고, 666 시퀀스는 단계별
+     * 연출이라 미리보기를 아예 숨긴다. */
+    function updateAndroidPreview() {
+        if (!previewElement || !document.body.classList.contains('android-mode')) return;
+
+        const expr = (fullExpression || '').replace(/,/g, '');
+        const hasOperator = /[+×÷−]/.test(expr.slice(1));
+        const endsOpen = /[+×÷−.]$/.test(expr);
+        // 계산이 끝난 뒤(expression에 '='가 떠 있는 상태)와 자동카운팅 중에는 미리보기 없음
+        const settled = expressionDisplay.classList.contains('visible');
+
+        let text = '';
+        if (hasOperator && !endsOpen && !settled && !autoCountMode) {
+            if (currentMode === '666') {
+                text = '';
+            } else if (currentMode === 'force' && forceNumber !== null) {
+                text = formatNumber(forceNumber);
+            } else {
+                const r = evaluateExpression(expr);
+                text = (r === 'Error' || isNaN(r) || !isFinite(r)) ? '' : formatNumber(r);
+            }
+        }
+
+        previewElement.textContent = text;
+        previewElement.classList.toggle('visible', text !== '');
     }
 
     function updateExpression(text) {
