@@ -370,6 +370,10 @@ body.android-mode .button.operator .button-content {
 }
 body.android-mode .button.function .button-content { font-size: calc(var(--btn-w) * 0.32); }
 body.android-mode .button:active { filter: brightness(1.35); }
+
+/* iOS26 테마가 함께 켜져 있어도 안드로이드 외형이 이기도록 광택/축소 제거 */
+body.android-mode .button { transform: scale(0.96); }
+body.android-mode .button::before { content: none; }
 </style>
 </head>
 <body>
