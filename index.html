@@ -1065,6 +1065,9 @@ body.android-mode .button:active { filter: brightness(1.35); }
             if (equalsTapCount === 3) {
                 equalsTapCount = 0;
                 clearTimeout(equalsTapTimer);
+                // 안드로이드에서는 666 모드 잠금 - 진동도 주지 않아야 제스처 존재가 드러나지 않음
+                // (isAndroid는 다른 script 블록 소속이라 클래스로 판별)
+                if (document.body.classList.contains('android-mode')) return;
                 vibrateDevice();
                 clearAllDelayTimers();
                 specialSequenceActive = false;

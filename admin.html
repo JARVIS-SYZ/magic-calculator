@@ -1439,7 +1439,10 @@ body.ios26-theme #calcIconPlusMinus { display: block; }
 
 <script>
     // ===== 플랫폼 감지 =====
-    if (/android/i.test(navigator.userAgent)) document.body.classList.add('android-mode');
+    // index.html과 동일하게 ?platform= 파라미터를 userAgent보다 우선 적용
+    const _platformParam = new URLSearchParams(location.search).get('platform');
+    const _isAndroid = _platformParam === 'android' || (!_platformParam && /android/i.test(navigator.userAgent));
+    if (_isAndroid) document.body.classList.add('android-mode');
 
     // 세로 방향 고정 (Android PWA 설치 모드에서 동작)
     if (screen.orientation && screen.orientation.lock) {
