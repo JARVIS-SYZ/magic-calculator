@@ -29,7 +29,9 @@ self.addEventListener('fetch', (event) => {
     // 오프라인일 때만 마지막으로 받은 캐시로 폴백
     if (req.mode === 'navigate' || req.destination === 'document') {
         event.respondWith(
-            fetch(req)
+            // GitHub Pages가 HTML에 max-age=600을 붙여서 그냥 fetch하면 최대 10분간
+            // 낡은 HTML이 나옴 - cache:'reload'로 HTTP 캐시를 건너뛰고 항상 원본에서 받음
+            fetch(req.url, { cache: 'reload', credentials: 'same-origin' })
                 .then((res) => {
                     const copy = res.clone();
                     caches.open(HTML_CACHE).then((c) => c.put('last-index', copy)).catch(() => {});
