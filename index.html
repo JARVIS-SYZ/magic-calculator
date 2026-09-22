@@ -190,11 +190,9 @@ body.ios26-theme .top-icon { background: #1c1c1e; border: 1px solid #2c2c2e; }
     grid-template-columns: repeat(4, var(--btn-w));
     grid-auto-rows: var(--btn-w);
     gap: 6px;
-    padding: 0 20px 4px 20px;
+    /* 홈 인디케이터 위 여백 - safe-area가 0인 기기에선 최소 14px */
+    padding: 0 20px max(14px, env(safe-area-inset-bottom)) 20px;
     width: 100%;
-}
-body.android-mode .button-grid {
-    padding-bottom: max(14px, env(safe-area-inset-bottom));
 }
 html.black-screen .calculator {
     opacity: 0 !important;
