@@ -741,7 +741,8 @@ body.android-mode #calcIconPlusMinus::after {
     position:relative; width:100%; margin-top:12px;
     border-radius:12px; overflow:hidden; background:#000;
     border:1px solid #2c2c2e; touch-action:none;
-    background-size:cover; background-position:center;
+    background-repeat:no-repeat;
+    background-size:100% auto;   /* 공연 화면과 같은 방식 */
 }
 .sp-stage-wrap .sp-empty { padding:40px 16px; text-align:center; color:#636366; font-size:13px; }
 .sp-stage-wrap.picking { cursor:crosshair; outline:2px solid #ffd60a; outline-offset:-2px; }
@@ -772,7 +773,8 @@ body.android-mode #calcIconPlusMinus::after {
 /* 실제 공연 화면 */
 #screenPickStage { position:fixed; inset:0; z-index:5000; display:none; background:#000; overflow:hidden; }
 #screenPickStage.active { display:block; }
-#spStageImg { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+/* 사진은 폭에 맞춰 놓고 위로 끌어올려, 캡쳐에 찍힌 예전 상태바를 화면 밖으로 잘라낸다 */
+#spStageImg { position:absolute; left:0; width:100%; height:auto; }
 #spStageBox { position:absolute; box-sizing:border-box; z-index:1; }
 #spStageTap { position:absolute; z-index:3; background:transparent; }
 #screenPickExit { position:absolute; top:0; left:0; width:72px; height:72px; z-index:4; }
@@ -1181,6 +1183,16 @@ body.android-mode #calcIconPlusMinus::after {
             </div>
             <div class="sp-hint">화면을 캡쳐해 두고 여기서 고르세요. 사진은 이 기기에만 저장됩니다.
             미리보기는 실제 공연 화면과 <b>같은 비율의 축소 모형</b>이라, 여기서 맞춘 자리가 그대로 나옵니다.</div>
+
+            <div class="sp-row">
+                <span class="sp-label">사진 위로 올리기 (px)</span>
+                <span style="display:flex;align-items:center;gap:8px">
+                    <input type="number" class="sp-num" id="spShiftInput" min="0" max="400" step="1" value="0">
+                    <button class="sp-btn secondary" id="spShiftAuto">자동</button>
+                </span>
+            </div>
+            <div class="sp-hint">캡쳐에 찍힌 <b>예전 시간·배터리</b>를 화면 밖으로 밀어냅니다.
+            숫자를 키우면 사진이 위로 올라갑니다. <b>자동</b>은 이 기기의 상태바 높이로 맞춰줍니다.</div>
 
             <div class="sp-tabs">
                 <button class="sp-tab active" data-target="text">글자</button>
@@ -3598,6 +3610,9 @@ body.android-mode #calcIconPlusMinus::after {
     let spLive = spBool(SP.live, false);
     let spPush = spBool(SP.push, true);
     let spLiveUnsub = null;
+    // 사진을 위로 끌어올리는 양(px). 기본값은 이 기기의 상태바 높이.
+    function spAutoShift() { return Math.max(0, Math.round((screen.height || 0) - window.innerHeight)); }
+    let spShift = spNum('sp_shift', spAutoShift());
     let spTarget = 'text';       // 지금 편집 중인 대상
     let spPicking = false;       // 스포이드 모드
 
@@ -3625,6 +3640,15 @@ body.android-mode #calcIconPlusMinus::after {
     // ===== 미리보기 =====
     function spStageAspect() { return window.innerWidth / Math.max(1, window.innerHeight); }
 
+    // 미리보기 안에서 사진이 실제로 그려지는 위치·크기.
+    // 공연 화면과 같은 규칙(폭 100%, 위로 spShift만큼 올림)을 축소 비율로 옮긴 것이다.
+    function spImgLayout(r) {
+        const k = r.width / Math.max(1, window.innerWidth);
+        const dw = r.width;
+        const dh = (spImgW && spImgH) ? dw * (spImgH / spImgW) : r.height;
+        return { k: k, dw: dw, dh: dh, ox: 0, oy: -spShift * k };
+    }
+
     function spRenderPreview() {
         const wrap = document.getElementById('spPreviewWrap');
         if (!wrap) return;
@@ -3635,6 +3659,7 @@ body.android-mode #calcIconPlusMinus::after {
             return;
         }
         wrap.style.backgroundImage = 'url(' + spImage + ')';
+        wrap.style.backgroundPosition = '0px ' + (-spShift * (wrap.clientWidth / Math.max(1, window.innerWidth))) + 'px';
         wrap.innerHTML =
             '<div class="sp-el" id="spPreviewBox"></div>' +
             '<div class="sp-overlay-text" id="spPreviewText">1,234</div>' +
@@ -3651,6 +3676,7 @@ body.android-mode #calcIconPlusMinus::after {
         const p = document.getElementById('spPreviewTap');
         if (!t || !b || !p) return;
         const scale = wrap.clientWidth / Math.max(1, window.innerWidth);
+        wrap.style.backgroundPosition = '0px ' + (-spShift * scale) + 'px';
 
         t.style.left = spX + '%'; t.style.top = spY + '%';
         spApplyTextStyle(t, Math.max(8, spSize * scale));
@@ -3701,10 +3727,8 @@ body.android-mode #calcIconPlusMinus::after {
         const cx = (atX === undefined) ? pos[0] : atX;
         const cy = (atY === undefined) ? pos[1] : atY;
         const px = (cx / 100) * r.width, py = (cy / 100) * r.height;
-        // 배경이 cover라 실제 그려지는 크기를 직접 구해야 돋보기 좌표가 맞는다
-        const cover = (spImgW && spImgH) ? Math.max(r.width / spImgW, r.height / spImgH) : 1;
-        const dw = (spImgW || r.width) * cover, dh = (spImgH || r.height) * cover;
-        const ox = (r.width - dw) / 2, oy = (r.height - dh) / 2;
+        const L = spImgLayout(r);
+        const dw = L.dw, dh = L.dh, ox = L.ox, oy = L.oy;
         l.style.backgroundImage = 'url(' + spImage + ')';
         l.style.backgroundSize = (dw * SP_ZOOM) + 'px ' + (dh * SP_ZOOM) + 'px';
         l.style.backgroundPosition =
@@ -3823,11 +3847,10 @@ body.android-mode #calcIconPlusMinus::after {
             const wrap = document.getElementById('spPreviewWrap');
             const r = wrap.getBoundingClientRect();
             const iw = spPickCanvas.width, ih = spPickCanvas.height;
-            const cover = Math.max(r.width / iw, r.height / ih);
-            const dw = iw * cover, dh = ih * cover;
-            const ox = (r.width - dw) / 2, oy = (r.height - dh) / 2;
-            const sx = Math.max(0, Math.min(iw - 1, Math.round(((clientX - r.left) - ox) / cover)));
-            const sy = Math.max(0, Math.min(ih - 1, Math.round(((clientY - r.top) - oy) / cover)));
+            const L = spImgLayout(r);
+            const sc = L.dw / iw;   // 사진 1px이 미리보기에서 차지하는 길이
+            const sx = Math.max(0, Math.min(iw - 1, Math.round(((clientX - r.left) - L.ox) / sc)));
+            const sy = Math.max(0, Math.min(ih - 1, Math.round(((clientY - r.top) - L.oy) / sc)));
             const d = spPickCanvas.getContext('2d').getImageData(sx, sy, 1, 1).data;
             const hex = '#' + [d[0], d[1], d[2]].map((n) => n.toString(16).padStart(2, '0')).join('');
             spBoxC = hex;
@@ -3914,7 +3937,9 @@ body.android-mode #calcIconPlusMinus::after {
     // ===== 공연 화면 =====
     function startScreenPick() {
         if (!spImage) { alert('먼저 배경 사진을 골라주세요.'); return; }
-        document.getElementById('spStageImg').src = spImage;
+        const si = document.getElementById('spStageImg');
+        si.src = spImage;
+        si.style.top = (-spShift) + 'px';
 
         const t = document.getElementById('spLiveText');
         t.style.left = spX + '%'; t.style.top = spY + '%';
@@ -4004,6 +4029,18 @@ body.android-mode #calcIconPlusMinus::after {
             if (e.target.files && e.target.files[0]) spLoadFile(e.target.files[0]);
             e.target.value = '';
         });
+
+        // 사진 위로 올리기
+        const shiftIn = document.getElementById('spShiftInput');
+        function setShift(v) {
+            spShift = Math.min(400, Math.max(0, Math.round(parseFloat(v) || 0)));
+            if (shiftIn) shiftIn.value = String(spShift);
+            spSave('sp_shift', spShift);
+            spApplyPreviewStyle();
+        }
+        if (shiftIn) { shiftIn.value = String(spShift); shiftIn.addEventListener('change', () => setShift(shiftIn.value)); }
+        const shiftAuto = document.getElementById('spShiftAuto');
+        if (shiftAuto) shiftAuto.addEventListener('click', () => setShift(spAutoShift()));
 
         // 편집 대상 탭
         const HINTS = {
