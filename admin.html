@@ -133,7 +133,7 @@ body.ios26-theme .top-icon { background: #1c1c1e; border: 1px solid #2c2c2e; }
 }
 .display-text::-webkit-scrollbar { display: none; }
 .buttons { flex-shrink: 0; background: #000; margin-top: auto; pointer-events: auto; }
-:root { --btn-w: calc((100vw - 58px) / 4); }
+:root { --btn-w: calc((100vw - 58px) / 4); --sa-top: env(safe-area-inset-top, 0px); }
 .button-grid {
     display: grid;
     grid-template-columns: repeat(4, var(--btn-w));
@@ -1196,6 +1196,7 @@ body.android-mode #calcIconPlusMinus::after {
                 <span style="display:flex;align-items:center;gap:8px">
                     <input type="number" class="sp-num" id="spShiftInput" min="0" max="400" step="1" value="0">
                     <button class="sp-btn secondary" id="spShiftAuto">자동</button>
+                    <button class="sp-btn secondary" id="spShiftZero">0</button>
                 </span>
             </div>
             <div class="sp-hint">사진을 위로 밀어 올려 <b>윗부분을 잘라냅니다.</b>
@@ -3636,9 +3637,11 @@ body.android-mode #calcIconPlusMinus::after {
     // 관리자 앱이 전체화면(black-translucent)으로 바뀌면서 사진을 위로 올릴 이유가 사라졌다.
     // 예전에 상태바 높이만큼 저장해 둔 값이 남아 사진 위가 잘리므로 한 번만 정리한다.
     (function spMigrateShift() {
-        if (localStorage.getItem('sp_shift_fullscreen_migrated') === '1') return;
-        if (spAutoShift() === 0 && spShift > 0) { spShift = 0; localStorage.setItem('sp_shift', '0'); }
-        localStorage.setItem('sp_shift_fullscreen_migrated', '1');
+        // 상태바 밑까지 그리는 앱(= safe-area 상단 여백이 있는 전체화면)에서는 자를 이유가 없다.
+        // 이전 판은 플래그를 먼저 세워버려서, 재설치 전에 한 번 열어본 기기는 값이 남았다.
+        const fullscreen = parseFloat(getComputedStyle(document.documentElement)
+            .getPropertyValue('--sa-top') || '0') > 0 || spAutoShift() === 0;
+        if (fullscreen && spShift > 0) { spShift = 0; localStorage.setItem('sp_shift', '0'); }
     })();
     let spTarget = 'text';       // 지금 편집 중인 대상
     let spPicking = false;       // 스포이드 모드
@@ -4084,6 +4087,8 @@ body.android-mode #calcIconPlusMinus::after {
         if (shiftIn) { shiftIn.value = String(spShift); shiftIn.addEventListener('change', () => setShift(shiftIn.value)); }
         const shiftAuto = document.getElementById('spShiftAuto');
         if (shiftAuto) shiftAuto.addEventListener('click', () => setShift(spAutoShift()));
+        const shiftZero = document.getElementById('spShiftZero');
+        if (shiftZero) shiftZero.addEventListener('click', () => setShift(0));
 
         // 편집 대상 탭
         const HINTS = {
