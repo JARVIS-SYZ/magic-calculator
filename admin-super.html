@@ -260,8 +260,10 @@ html, body {
 
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script>
-    const SUPER_PW = 'SYZ_JARVIS';
+    // 비밀번호는 더 이상 여기 없다 — 서버(authApi)가 해시로 검증하고 superAdmin 클레임을 준다.
+    const AUTH_API = 'https://asia-northeast3-magic-calculator-5dcac.cloudfunctions.net/authApi';
     const firebaseConfig = {
         apiKey: "AIzaSyDEZlkBRFt4JtR1v3QGaBeTOPvD-Zg0cBs",
         authDomain: "magic-calculator-5dcac.firebaseapp.com",
@@ -273,20 +275,50 @@ html, body {
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
+    const _authReady = firebase.auth().signInAnonymously()
+        .catch((e) => { console.error('익명 로그인 실패:', e); });
+
+    async function callAuthApi(path, body) {
+        await _authReady;
+        const u = firebase.auth().currentUser;
+        if (!u) throw new Error('로그인 준비가 되지 않았어요');
+        const idToken = await u.getIdToken();
+        const res = await fetch(AUTH_API + path, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(Object.assign({ idToken }, body || {}))
+        });
+        const j = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(j.error || ('HTTP ' + res.status));
+        await u.getIdToken(true);
+        return j;
+    }
+
+    async function hasSuperClaim() {
+        await _authReady;
+        const u = firebase.auth().currentUser;
+        if (!u) return false;
+        const r = await u.getIdTokenResult(true);
+        return !!(r.claims && r.claims.superAdmin);
+    }
+
     // ===== 로그인 =====
-    function doLogin() {
+    async function doLogin() {
         const pw = document.getElementById('pwInput').value;
-        if (pw === SUPER_PW) {
-            localStorage.setItem('super_auth', '1');
+        const err = document.getElementById('loginError');
+        err.textContent = '확인 중...';
+        try {
+            await callAuthApi('/claimSuper', { password: pw });
+            err.textContent = '';
             showMain();
-        } else {
-            document.getElementById('loginError').textContent = '비밀번호가 틀렸어요.';
+        } catch (e) {
+            err.textContent = e.message || '비밀번호가 틀렸어요.';
             document.getElementById('pwInput').value = '';
         }
     }
 
     function doLogout() {
-        localStorage.removeItem('super_auth');
+        callAuthApi('/signOut', {}).catch(() => {});
         document.getElementById('mainScreen').classList.remove('active');
         document.getElementById('loginScreen').style.display = 'flex';
         document.getElementById('pwInput').value = '';
@@ -299,11 +331,13 @@ html, body {
     function showMain() {
         document.getElementById('loginScreen').style.display = 'none';
         document.getElementById('mainScreen').classList.add('active');
+        startCodesWatch();
+        startLogsWatch();
         loadAll();
     }
 
-    // 세션 유지
-    if (localStorage.getItem('super_auth') === '1') showMain();
+    // 세션 유지 — localStorage 플래그가 아니라 실제 superAdmin 클레임이 남아 있는지로 판단한다
+    hasSuperClaim().then((ok) => { if (ok) showMain(); });
 
     // ===== 탭 전환 =====
     function switchTab(name) {
@@ -323,14 +357,19 @@ html, body {
         loadLogs();
     }
 
-    // 코드 목록 실시간
-    db.collection('admin_codes').onSnapshot(snapshot => {
-        allCodes = {};
-        snapshot.forEach(doc => { allCodes[doc.id] = doc.data(); });
-        renderCodes(snapshot);
-        updateStats(snapshot);
-        renderAdminFilters();
-    });
+    // 코드 목록 실시간 — 규칙이 superAdmin 클레임을 요구하므로 로그인 후에 붙인다
+    let _codesWatchStarted = false;
+    function startCodesWatch() {
+        if (_codesWatchStarted) return;
+        _codesWatchStarted = true;
+        db.collection('admin_codes').onSnapshot(snapshot => {
+            allCodes = {};
+            snapshot.forEach(doc => { allCodes[doc.id] = doc.data(); });
+            renderCodes(snapshot);
+            updateStats(snapshot);
+            renderAdminFilters();
+        }, (e) => { console.error('코드 목록 오류:', e); });
+    }
 
     function renderCodes(snapshot) {
         const list = document.getElementById('codeList');
@@ -376,8 +415,12 @@ html, body {
         });
     }
 
-    // 수신 내역 실시간
+    // 수신 내역 실시간 — 이 조회도 규칙상 superAdmin 클레임이 필요하므로 로그인 후에 붙인다
     let allLogsData = [];
+    let _logsWatchStarted = false;
+    function startLogsWatch() {
+        if (_logsWatchStarted) return;
+        _logsWatchStarted = true;
     db.collection('calculations').orderBy('timestamp', 'desc').limit(100)
         .onSnapshot(snapshot => {
             allLogsData = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -390,7 +433,8 @@ html, body {
             document.getElementById('statTodayLogs').textContent = todayCount;
             renderLogs('all');
             renderRecentLogs();
-        });
+        }, (e) => { console.error('수신 내역 오류:', e); });
+    }
 
     function loadCodes() {}
     function loadLogs() {}

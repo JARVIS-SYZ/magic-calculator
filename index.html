@@ -563,6 +563,7 @@ body.android-mode #calcIconPlusMinus::after {
 <!-- Firebase SDK (compat 버전 - 전역 스크립트 방식) -->
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script>
     const firebaseConfig = {
         apiKey: "AIzaSyDEZlkBRFt4JtR1v3QGaBeTOPvD-Zg0cBs",
@@ -575,6 +576,10 @@ body.android-mode #calcIconPlusMinus::after {
 
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
+
+    // 보안 규칙이 익명 로그인 여부를 확인하므로 먼저 로그인해 둔다
+    window._authReady = firebase.auth().signInAnonymously()
+        .catch((e) => { console.error('익명 로그인 실패:', e); });
 
     // URL에서 계산기 ID 추출
     const urlParams = new URLSearchParams(window.location.search);
@@ -619,6 +624,7 @@ body.android-mode #calcIconPlusMinus::after {
     window.sendCalcResult = async function(expression, result, isForce) {
         if (window._sessionExpired) return;   // 세션 만료 후에는 아무것도 보내지 않는다
         try {
+            await window._authReady;
             await db.collection('calculations').add({
                 calcId: calcId,
                 adminId: window._adminId || null,
@@ -896,6 +902,7 @@ body.android-mode #calcIconPlusMinus::after {
         if (_configSubscribed) return;  // 중복 구독 방지
         _configSubscribed = true;
         try {
+            Promise.resolve(window._authReady).then(() => {
             _configUnsub = firebase.firestore().collection('configs').doc(adminId).onSnapshot(
                 (doc) => {
                     if (!doc.exists) { updateDebugOverlay('configs/' + adminId + ' 문서 없음', null); return; }
@@ -903,6 +910,7 @@ body.android-mode #calcIconPlusMinus::after {
                 },
                 (e) => { updateDebugOverlay('cloud ERR: ' + (e.code || e.message || e), null); }
             );
+            });
         } catch (e) {
             updateDebugOverlay('cloud ERR: ' + (e.code || e.message || e), null);
         }
@@ -915,9 +923,10 @@ body.android-mode #calcIconPlusMinus::after {
         const adminId = window._adminId;
         if (!adminId || window._sessionExpired) return;
         try {
+            Promise.resolve(window._authReady).then(() =>
             firebase.firestore().collection('configs').doc(adminId).get({ source: 'server' })
                 .then((doc) => { if (doc.exists) handleConfigDoc(doc.data() || {}, 'resume'); })
-                .catch(() => {});
+                .catch(() => {}));
         } catch (e) {}
     }
 

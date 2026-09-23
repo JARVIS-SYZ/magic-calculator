@@ -1572,6 +1572,7 @@ body.android-mode #calcIconPlusMinus::after {
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging-compat.js"></script>
 
 
@@ -1634,6 +1635,37 @@ body.android-mode #calcIconPlusMinus::after {
     // ===== 코드 인증 시스템 =====
     const db_auth = firebase.firestore();
     let currentAdminId = null;
+    // ===== 익명 인증 =====
+    // 규칙이 "누가 요청했는지"를 알 수 있도록 모든 기기가 익명으로 로그인한다.
+    // 권한(adminId/superAdmin)은 서버 함수가 커스텀 클레임으로 붙여준다.
+    const AUTH_API = 'https://asia-northeast3-magic-calculator-5dcac.cloudfunctions.net/authApi';
+    window._authReady = firebase.auth().signInAnonymously()
+        .catch((e) => { console.error('익명 로그인 실패:', e); });
+
+    async function authClaims(force) {
+        await window._authReady;
+        const u = firebase.auth().currentUser;
+        if (!u) return {};
+        const r = await u.getIdTokenResult(!!force);
+        return r.claims || {};
+    }
+
+    async function callAuthApi(path, body) {
+        await window._authReady;
+        const u = firebase.auth().currentUser;
+        if (!u) throw new Error('로그인 준비가 되지 않았어요');
+        const idToken = await u.getIdToken();
+        const res = await fetch(AUTH_API + path, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(Object.assign({ idToken }, body || {}))
+        });
+        const j = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(j.error || ('HTTP ' + res.status));
+        await u.getIdToken(true);   // 새 클레임을 토큰에 반영
+        return j;
+    }
+
     let recentCalcs = [];
 
     // deviceId 생성 또는 로드
@@ -1653,7 +1685,7 @@ body.android-mode #calcIconPlusMinus::after {
     async function forceLogout(reason) {
         try { if (_authWatchUnsub) _authWatchUnsub(); } catch (e) {}
         _authWatchUnsub = null;
-        try { await db_auth.collection('admin_sessions').doc(getDeviceId()).delete(); } catch (e) {}
+        try { await callAuthApi('/signOut', { deviceId: getDeviceId() }); } catch (e) {}
         // ?aid= 자동 인증으로 곧바로 되돌아가 다른 기기를 다시 튕겨내는 것을 막는다
         localStorage.setItem('admin_kicked', '1');
         try { history.replaceState(null, '', location.pathname); } catch (e) {}
@@ -1678,30 +1710,24 @@ body.android-mode #calcIconPlusMinus::after {
     async function checkExistingSession() {
         const deviceId = getDeviceId();
 
-        // 1. localStorage 세션 확인
+        // 1. 세션 복원 — 아직 이 기기가 코드의 주인인지 서버가 판정한다
         try {
-            const sessionDoc = await db_auth.collection('admin_sessions').doc(deviceId).get();
-            if (sessionDoc.exists) {
-                const sd = sessionDoc.data() || {};
-                // 저장된 세션이 있어도 코드가 정지됐거나 다른 기기가 주인이면 통과시키지 않는다
-                if (sd.code) {
-                    const cDoc = await db_auth.collection('admin_codes').doc(sd.code).get();
-                    const cd = cDoc.exists ? (cDoc.data() || {}) : null;
-                    if (!cd || cd.revoked || (cd.activeDeviceId && cd.activeDeviceId !== deviceId)) {
-                        try { await db_auth.collection('admin_sessions').doc(deviceId).delete(); } catch (e) {}
-                        localStorage.setItem('admin_kicked', '1');
-                        document.getElementById('authScreen').classList.remove('hidden');
-                        document.getElementById('authError').textContent =
-                            !cd ? '권한이 삭제된 코드예요' : (cd.revoked ? '사용이 정지된 코드예요' : '다른 기기에서 로그인되어 해제되었어요');
-                        return false;
-                    }
-                }
-                currentAdminId = sd.adminId;
-                showAdminApp();
-                startAuthWatch(sd.code, deviceId);
-                return true;
+            const r = await callAuthApi('/resumeAdmin', { deviceId });
+            const claims = await authClaims(false);
+            currentAdminId = r.adminId;
+            showAdminApp();
+            startAuthWatch(claims.code, deviceId);
+            return true;
+        } catch (e) {
+            const msg = String(e.message || '');
+            // 세션이 아예 없는 경우는 조용히 다음 단계로, 그 외(정지·기기 교체)는 사유를 보여준다
+            if (msg && msg.indexOf('세션이 없습니다') === -1) {
+                localStorage.setItem('admin_kicked', '1');
+                document.getElementById('authScreen').classList.remove('hidden');
+                document.getElementById('authError').textContent = msg;
+                return false;
             }
-        } catch(e) { console.error('세션 확인 오류:', e); }
+        }
 
         // 2. URL 파라미터 ?aid= 로 자동 인증 (웹→웹앱 전환 대응)
         const urlAdminId = new URLSearchParams(location.search).get('aid');
@@ -1713,30 +1739,17 @@ body.android-mode #calcIconPlusMinus::after {
         }
         if (urlAdminId) {
             try {
-                const snap = await db_auth.collection('admin_codes')
-                    .where('adminId', '==', urlAdminId).limit(1).get();
-                if (!snap.empty) {
-                    const codeId = snap.docs[0].id;
-                    if (snap.docs[0].data().revoked) {
-                        document.getElementById('authScreen').classList.remove('hidden');
-                        document.getElementById('authError').textContent = '사용이 정지된 코드예요';
-                        return false;
-                    }
-                    await db_auth.collection('admin_sessions').doc(deviceId).set({
-                        adminId: urlAdminId,
-                        code: codeId,
-                        name: snap.docs[0].data().name || '',
-                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                    });
-                    // 이 기기가 새 주인이 된다 → 이전 기기는 감시 리스너가 알아채고 로그아웃
-                    await db_auth.collection('admin_codes').doc(codeId)
-                        .update({ activeDeviceId: deviceId, activeAt: firebase.firestore.FieldValue.serverTimestamp() });
-                    currentAdminId = urlAdminId;
-                    showAdminApp();
-                    startAuthWatch(codeId, deviceId);
-                    return true;
-                }
-            } catch(e) { console.error('URL 인증 오류:', e); }
+                const r = await callAuthApi('/claimAid', { aid: urlAdminId, deviceId });
+                const claims = await authClaims(false);
+                currentAdminId = r.adminId;
+                showAdminApp();
+                startAuthWatch(claims.code, deviceId);
+                return true;
+            } catch(e) {
+                document.getElementById('authScreen').classList.remove('hidden');
+                document.getElementById('authError').textContent = e.message || '자동 인증에 실패했어요';
+                return false;
+            }
         }
 
         // 세션 없음 → auth 화면 표시
@@ -1761,47 +1774,20 @@ body.android-mode #calcIconPlusMinus::after {
 
         errEl.textContent = '확인 중...';
         try {
-            const codeDoc = await db_auth.collection('admin_codes').doc(code).get();
-            if (!codeDoc.exists) {
-                errEl.textContent = '유효하지 않은 코드예요';
-                return;
-            }
-            const codeData = codeDoc.data();
-            if (codeData.revoked) {
-                errEl.textContent = '사용이 정지된 코드예요';
-                return;
-            }
-            const useCount = codeData.useCount || 0;
-            // 사용횟수 상한(2회) 차단은 없앴다. 이제 같은 코드로 새 기기에 로그인하면
-            // 이전 기기가 자동으로 풀리므로, 횟수 제한은 기기 교체만 막는 꼴이 된다.
-            // 횟수는 슈퍼관리자 화면에서 보이도록 계속 센다.
-
+            // 코드 검증·기기 점유·권한 부여는 모두 서버(authApi)가 한다.
+            // 클라이언트는 admin_codes를 직접 읽거나 쓰지 않는다.
             const deviceId = getDeviceId();
-            const batch = db_auth.batch();
-            batch.update(db_auth.collection('admin_codes').doc(code), {
-                used: true,
-                useCount: useCount + 1,
-                name: name,
-                activeDeviceId: deviceId,
-                activeAt: firebase.firestore.FieldValue.serverTimestamp()
-            });
-            batch.set(db_auth.collection('admin_sessions').doc(deviceId), {
-                adminId: codeData.adminId,
-                code: code,
-                name: name,
-                createdAt: firebase.firestore.FieldValue.serverTimestamp()
-            });
-            await batch.commit();
+            const r = await callAuthApi('/claimAdmin', { code, name, deviceId });
 
             localStorage.removeItem('admin_kicked');
-            currentAdminId = codeData.adminId;
+            currentAdminId = r.adminId;
             // URL에 adminId 포함 → 이 URL로 홈 화면 추가하면 웹앱에서도 자동 인증
-            history.replaceState(null, '', location.pathname + '?aid=' + codeData.adminId);
+            history.replaceState(null, '', location.pathname + '?aid=' + r.adminId);
             showAdminApp();
             startAuthWatch(code, deviceId);
         } catch(e) {
             console.error('인증 오류:', e);
-            errEl.textContent = '오류: ' + e.message;
+            errEl.textContent = e.message || '인증에 실패했어요';
         }
     }
 

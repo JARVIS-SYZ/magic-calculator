@@ -371,3 +371,139 @@ exports.calculationsApi = onRequest(
         }
     }
 );
+
+// ===================================================================
+// 인증 API — 로그인 판정과 기기 점유를 서버로 옮긴다.
+//
+// 브라우저는 익명 로그인만 하고, 여기서 코드를 검증한 뒤 커스텀 클레임
+// (adminId / deviceId / code, 또는 superAdmin)을 붙여준다. Firestore 규칙은
+// 그 클레임만 보고 판정하므로, 클라이언트가 스스로 권한을 주장할 수 없다.
+// ===================================================================
+
+// 슈퍼관리자 비밀번호는 해시로만 둔다 (예전에는 admin-super.html에 그대로 적혀 있었다)
+const SUPER_PW_SHA256 = sha256("SYZ_JARVIS");
+
+async function verifyIdToken(req) {
+    const idToken = (req.body && req.body.idToken) || getBearerToken(req);
+    if (!idToken) throw new Error("로그인 정보가 없습니다.");
+    return admin.auth().verifyIdToken(idToken);
+}
+
+// 코드 문서를 이 기기 소유로 만들고 세션을 기록한다.
+async function grantAdmin(uid, code, codeData, deviceId, name) {
+    const db = admin.firestore();
+    const patch = {
+        activeDeviceId: deviceId,
+        activeAt: admin.firestore.FieldValue.serverTimestamp(),
+        used: true,
+        useCount: (codeData.useCount || 0) + 1,
+    };
+    if (name) patch.name = name;
+
+    await db.collection("admin_codes").doc(code).update(patch);
+    await db.collection("admin_sessions").doc(deviceId).set({
+        adminId: codeData.adminId,
+        code,
+        name: name || codeData.name || "",
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+    await admin.auth().setCustomUserClaims(uid, {
+        adminId: codeData.adminId,
+        deviceId,
+        code,
+    });
+    return { adminId: codeData.adminId, name: name || codeData.name || "" };
+}
+
+exports.authApi = onRequest(
+    { region: API_REGION, timeoutSeconds: 30 },
+    async (req, res) => {
+        const path = req.path.replace(/\/+$/, "") || "/";
+        setCorsHeaders(res, "*");
+        if (req.method === "OPTIONS") { res.status(204).send(""); return; }
+        if (req.method !== "POST") { res.status(405).json({ error: "지원하지 않는 요청입니다." }); return; }
+
+        const db = admin.firestore();
+        try {
+            const decoded = await verifyIdToken(req);
+            const uid = decoded.uid;
+            const body = req.body || {};
+            const deviceId = String(body.deviceId || "").slice(0, 64);
+
+            // --- 코드로 로그인: 이 기기가 새 주인이 된다 ---
+            if (path === "/claimAdmin") {
+                const code = String(body.code || "").replace(/\D/g, "");
+                const name = String(body.name || "").slice(0, 40);
+                if (code.length !== 6 || !deviceId) {
+                    res.status(400).json({ error: "코드와 기기 정보가 필요합니다." });
+                    return;
+                }
+                const doc = await db.collection("admin_codes").doc(code).get();
+                if (!doc.exists) { res.status(404).json({ error: "유효하지 않은 코드예요" }); return; }
+                const d = doc.data() || {};
+                if (d.revoked) { res.status(403).json({ error: "사용이 정지된 코드예요" }); return; }
+                res.json(await grantAdmin(uid, code, d, deviceId, name));
+                return;
+            }
+
+            // --- ?aid= URL로 로그인 (웹 → 웹앱 전환용): 역시 주인이 바뀐다 ---
+            if (path === "/claimAid") {
+                const aid = String(body.aid || "").slice(0, 64);
+                if (!aid || !deviceId) { res.status(400).json({ error: "정보가 부족합니다." }); return; }
+                const snap = await db.collection("admin_codes").where("adminId", "==", aid).limit(1).get();
+                if (snap.empty) { res.status(404).json({ error: "유효하지 않은 주소예요" }); return; }
+                const d = snap.docs[0].data() || {};
+                if (d.revoked) { res.status(403).json({ error: "사용이 정지된 코드예요" }); return; }
+                res.json(await grantAdmin(uid, snap.docs[0].id, d, deviceId, d.name || ""));
+                return;
+            }
+
+            // --- 세션 복원: 아직 주인인 경우에만 클레임을 다시 준다 (점유를 뺏지 않는다) ---
+            if (path === "/resumeAdmin") {
+                if (!deviceId) { res.status(400).json({ error: "기기 정보가 필요합니다." }); return; }
+                const sess = await db.collection("admin_sessions").doc(deviceId).get();
+                if (!sess.exists) { res.status(401).json({ error: "세션이 없습니다." }); return; }
+                const sd = sess.data() || {};
+                const doc = sd.code ? await db.collection("admin_codes").doc(sd.code).get() : null;
+                const d = doc && doc.exists ? (doc.data() || {}) : null;
+                if (!d) { res.status(403).json({ error: "권한이 삭제된 코드예요" }); return; }
+                if (d.revoked) { res.status(403).json({ error: "사용이 정지된 코드예요" }); return; }
+                if (d.activeDeviceId && d.activeDeviceId !== deviceId) {
+                    res.status(409).json({ error: "다른 기기에서 로그인되어 해제되었어요" });
+                    return;
+                }
+                await admin.auth().setCustomUserClaims(uid, {
+                    adminId: sd.adminId, deviceId, code: sd.code,
+                });
+                res.json({ adminId: sd.adminId, name: sd.name || "" });
+                return;
+            }
+
+            // --- 슈퍼관리자 ---
+            if (path === "/claimSuper") {
+                if (sha256(String(body.password || "")) !== SUPER_PW_SHA256) {
+                    res.status(403).json({ error: "비밀번호가 틀렸어요." });
+                    return;
+                }
+                await admin.auth().setCustomUserClaims(uid, { superAdmin: true });
+                res.json({ ok: true });
+                return;
+            }
+
+            // --- 로그아웃: 이 기기의 클레임을 비운다 ---
+            if (path === "/signOut") {
+                await admin.auth().setCustomUserClaims(uid, {});
+                if (deviceId) {
+                    await db.collection("admin_sessions").doc(deviceId).delete().catch(() => {});
+                }
+                res.json({ ok: true });
+                return;
+            }
+
+            res.status(404).json({ error: "알 수 없는 경로입니다." });
+        } catch (error) {
+            console.error("authApi 오류:", error);
+            res.status(401).json({ error: "인증에 실패했습니다." });
+        }
+    }
+);
