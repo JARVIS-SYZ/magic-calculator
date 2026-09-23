@@ -1191,7 +1191,7 @@ body.android-mode #calcIconPlusMinus::after {
             <div class="sp-stage-wrap" id="spPreviewWrap">
                 <div class="sp-empty" id="spEmptyMsg">사진을 고르면 여기에 미리보기가 나옵니다</div>
             </div>
-            <div class="sp-hint" id="spTargetHint">글자를 끌어서 놓으세요. 끄는 동안 돋보기가 뜹니다.</div>
+            <div class="sp-hint" id="spTargetHint">글자를 <b>직접 집어서</b> 끌어 놓으세요. 빈 곳을 눌러도 움직이지 않습니다.</div>
             <div class="sp-dpad">
                 <button class="sp-dbtn" data-dx="0" data-dy="-1">▲</button>
                 <div class="sp-dpad-mid">
@@ -1269,7 +1269,8 @@ body.android-mode #calcIconPlusMinus::after {
                     <button class="sp-btn secondary" id="spEyedropper">💧 스포이드</button>
                 </span>
             </div>
-            <div class="sp-hint">스포이드를 누른 뒤 미리보기에서 <b>가리려는 배경과 같은 색</b>을 찍으면 그 색이 들어갑니다.</div>
+            <div class="sp-hint">스포이드를 켠 뒤 미리보기를 <b>누른 채로 끌면</b> 돋보기와 버튼에 색이 계속 바뀌어 보이고,
+            손을 떼는 순간 확정됩니다. 이 색은 공연 중 <b>상태바 색</b>으로도 함께 쓰여 사진과 이어 보이게 합니다.</div>
         </div>
 
         <!-- 터치 영역 -->
@@ -3684,7 +3685,7 @@ body.android-mode #calcIconPlusMinus::after {
     // ===== 돋보기 =====
     const SP_LOUPE = 128, SP_ZOOM = 3;
     let spLoupeTimer = null;
-    function spUpdateLoupe(show) {
+    function spUpdateLoupe(show, atX, atY) {
         const wrap = document.getElementById('spPreviewWrap');
         if (!wrap || !spImage) return;
         let l = wrap.querySelector('.sp-loupe');
@@ -3696,7 +3697,9 @@ body.android-mode #calcIconPlusMinus::after {
         }
         if (!show) { l.classList.remove('show'); return; }
         const r = wrap.getBoundingClientRect();
-        const [cx, cy] = spGetPos();
+        const pos = spGetPos();
+        const cx = (atX === undefined) ? pos[0] : atX;
+        const cy = (atY === undefined) ? pos[1] : atY;
         const px = (cx / 100) * r.width, py = (cy / 100) * r.height;
         // 배경이 cover라 실제 그려지는 크기를 직접 구해야 돋보기 좌표가 맞는다
         const cover = (spImgW && spImgH) ? Math.max(r.width / spImgW, r.height / spImgH) : 1;
@@ -3726,63 +3729,124 @@ body.android-mode #calcIconPlusMinus::after {
 
     // ===== 드래그 / 스포이드 =====
     function spBindDrag(wrap) {
-        let dragging = false;
+        let dragging = false, picking = false;
+        let startX = 0, startY = 0, baseX = 0, baseY = 0;
+
         function at(clientX, clientY) {
             const r = wrap.getBoundingClientRect();
             return [((clientX - r.left) / r.width) * 100, ((clientY - r.top) / r.height) * 100];
         }
+        // 선택된 대상을 실제로 집었을 때만 끌리게 한다.
+        // 아무 데나 누르면 그 자리로 순간이동해 버려서 미세 조정이 불가능했다.
+        function grabbed(clientX, clientY) {
+            const id = spTarget === 'box' ? 'spPreviewBox' : (spTarget === 'tap' ? 'spPreviewTap' : 'spPreviewText');
+            const el = document.getElementById(id);
+            if (!el || el.style.display === 'none') return false;
+            const b = el.getBoundingClientRect();
+            const pad = 14;   // 손가락 여유
+            return clientX >= b.left - pad && clientX <= b.right + pad
+                && clientY >= b.top - pad && clientY <= b.bottom + pad;
+        }
         function down(clientX, clientY, e) {
-            if (spPicking) { spPickColorAt(clientX, clientY); return; }
+            if (spPicking) {
+                picking = true;
+                if (e) e.preventDefault();
+                spPreviewColorAt(clientX, clientY, false);
+                return;
+            }
+            if (!grabbed(clientX, clientY)) return;   // 빈 곳을 누르면 아무 일도 없다
             dragging = true;
             if (e) e.preventDefault();
-            const [x, y] = at(clientX, clientY);
-            spSetPos(x, y);
+            startX = clientX; startY = clientY;
+            const pos = spGetPos(); baseX = pos[0]; baseY = pos[1];
             spUpdateLoupe(true);
         }
         function move(clientX, clientY, e) {
+            if (picking) {
+                if (e) e.preventDefault();
+                spPreviewColorAt(clientX, clientY, false);
+                return;
+            }
             if (!dragging) return;
             if (e) e.preventDefault();
-            const [x, y] = at(clientX, clientY);
-            spSetPos(x, y);
+            const r = wrap.getBoundingClientRect();
+            // 누른 지점 기준 이동량만 반영 — 잡은 위치가 유지된다
+            spSetPos(baseX + ((clientX - startX) / r.width) * 100,
+                     baseY + ((clientY - startY) / r.height) * 100);
             spUpdateLoupe(true);
         }
-        function end() {
+        function end(clientX, clientY) {
+            if (picking) {
+                picking = false;
+                if (clientX !== undefined) spPreviewColorAt(clientX, clientY, true);
+                spUpdateLoupe(false);
+                return;
+            }
             if (!dragging) return;
             dragging = false;
             if (spLoupeTimer) clearTimeout(spLoupeTimer);
             spLoupeTimer = setTimeout(() => spUpdateLoupe(false), 600);
         }
-        wrap.addEventListener('touchstart', (e) => down(e.touches[0].clientX, e.touches[0].clientY, e), { passive: false });
-        wrap.addEventListener('touchmove', (e) => move(e.touches[0].clientX, e.touches[0].clientY, e), { passive: false });
-        wrap.addEventListener('touchend', end);
+        let lastX = 0, lastY = 0;
+        wrap.addEventListener('touchstart', (e) => {
+            lastX = e.touches[0].clientX; lastY = e.touches[0].clientY;
+            down(lastX, lastY, e);
+        }, { passive: false });
+        wrap.addEventListener('touchmove', (e) => {
+            lastX = e.touches[0].clientX; lastY = e.touches[0].clientY;
+            move(lastX, lastY, e);
+        }, { passive: false });
+        wrap.addEventListener('touchend', () => end(lastX, lastY));
         wrap.addEventListener('mousedown', (e) => down(e.clientX, e.clientY, e));
-        window.addEventListener('mousemove', (e) => move(e.clientX, e.clientY, null));
-        window.addEventListener('mouseup', end);
+        window.addEventListener('mousemove', (e) => { lastX = e.clientX; lastY = e.clientY; move(e.clientX, e.clientY, null); });
+        window.addEventListener('mouseup', (e) => end(e.clientX, e.clientY));
     }
 
-    // 스포이드 — 미리보기에서 찍은 지점의 실제 사진 픽셀 색을 읽는다
-    function spPickColorAt(clientX, clientY) {
-        const wrap = document.getElementById('spPreviewWrap');
-        const r = wrap.getBoundingClientRect();
+    // 스포이드 — 누른 채로 끌면서 색을 고르고, 손을 떼면 확정한다.
+    // 사진 원본을 캔버스에 한 번만 올려두고 픽셀을 읽는다 (매번 디코딩하면 끊긴다).
+    let spPickCanvas = null;
+    function spPreparePickCanvas(cb) {
+        if (spPickCanvas) { cb(); return; }
         const img = new Image();
         img.onload = () => {
-            const cover = Math.max(r.width / img.width, r.height / img.height);
-            const dw = img.width * cover, dh = img.height * cover;
-            const ox = (r.width - dw) / 2, oy = (r.height - dh) / 2;
-            const sx = Math.round(((clientX - r.left) - ox) / cover);
-            const sy = Math.round(((clientY - r.top) - oy) / cover);
             const cv = document.createElement('canvas');
-            cv.width = 1; cv.height = 1;
-            cv.getContext('2d').drawImage(img, sx, sy, 1, 1, 0, 0, 1, 1);
-            const d = cv.getContext('2d').getImageData(0, 0, 1, 1).data;
-            const hex = '#' + [d[0], d[1], d[2]].map((n) => n.toString(16).padStart(2, '0')).join('');
-            spBoxC = hex; spSave(SP.boxC, hex);
-            const ci = document.getElementById('spBoxColor');
-            if (ci) ci.value = hex;
-            spSetPicking(false);
-            spApplyPreviewStyle();
+            cv.width = img.width; cv.height = img.height;
+            cv.getContext('2d').drawImage(img, 0, 0);
+            spPickCanvas = cv;
+            cb();
         };
         img.src = spImage;
+    }
+    function spPreviewColorAt(clientX, clientY, commit) {
+        if (!spImage) return;
+        spPreparePickCanvas(() => {
+            const wrap = document.getElementById('spPreviewWrap');
+            const r = wrap.getBoundingClientRect();
+            const iw = spPickCanvas.width, ih = spPickCanvas.height;
+            const cover = Math.max(r.width / iw, r.height / ih);
+            const dw = iw * cover, dh = ih * cover;
+            const ox = (r.width - dw) / 2, oy = (r.height - dh) / 2;
+            const sx = Math.max(0, Math.min(iw - 1, Math.round(((clientX - r.left) - ox) / cover)));
+            const sy = Math.max(0, Math.min(ih - 1, Math.round(((clientY - r.top) - oy) / cover)));
+            const d = spPickCanvas.getContext('2d').getImageData(sx, sy, 1, 1).data;
+            const hex = '#' + [d[0], d[1], d[2]].map((n) => n.toString(16).padStart(2, '0')).join('');
+            spBoxC = hex;
+            const ci = document.getElementById('spBoxColor');
+            if (ci) ci.value = hex;
+            const b = document.getElementById('spPreviewBox');
+            if (b) b.style.background = hex;
+            const eye = document.getElementById('spEyedropper');
+            if (eye) eye.textContent = commit ? '💧 스포이드' : ('💧 ' + hex);
+            // 찍는 동안 그 지점을 확대해서 보여준다
+            const px = ((clientX - r.left) / r.width) * 100;
+            const py = ((clientY - r.top) / r.height) * 100;
+            spUpdateLoupe(!commit, px, py);
+            if (commit) {
+                spSave(SP.boxC, hex);
+                spSetPicking(false);
+                spApplyPreviewStyle();
+            }
+        });
     }
     function spSetPicking(on) {
         spPicking = !!on;
@@ -3835,6 +3899,7 @@ body.android-mode #calcIconPlusMinus::after {
                 try {
                     localStorage.setItem(SP.img, data);
                     spImage = data; spImgW = cw; spImgH = ch;
+                    spPickCanvas = null;
                     spRenderPreview();
                     console.log('화면 픽 사진:', cw + 'x' + ch, 'q=' + q, Math.round(data.length / 1024) + 'KB');
                 } catch (e) {
@@ -3865,13 +3930,24 @@ body.android-mode #calcIconPlusMinus::after {
         spPlaceRect(p, spTapX, spTapY, spTapW, spTapH);
         p.style.display = spTapOn ? 'block' : 'none';
 
+        // 웹앱은 상태바 아래에서 시작하므로 사진이 그 위까지 올라가지 못한다.
+        // 상태바 색을 가림 박스 색(= 사진에서 찍은 색)으로 칠해 이어 보이게 한다.
+        const tc = document.querySelector('meta[name="theme-color"]');
+        if (tc) {
+            if (!spPrevThemeColor) spPrevThemeColor = tc.getAttribute('content') || '#0a0a0a';
+            tc.setAttribute('content', spBoxOn ? spBoxC : spPrevThemeColor);
+        }
+
         document.getElementById('screenPickStage').classList.add('active');
         window.closePage();
         window.closeSideMenu();
         spStartLiveWatch();
     }
+    let spPrevThemeColor = '';
     function stopScreenPick() {
         document.getElementById('screenPickStage').classList.remove('active');
+        const tc = document.querySelector('meta[name="theme-color"]');
+        if (tc && spPrevThemeColor) tc.setAttribute('content', spPrevThemeColor);
         spStopLiveWatch();
     }
 
@@ -3931,9 +4007,9 @@ body.android-mode #calcIconPlusMinus::after {
 
         // 편집 대상 탭
         const HINTS = {
-            text: '글자를 끌어서 놓으세요. 끄는 동안 돋보기가 뜹니다.',
-            box: '가림 박스를 끌어서 시간·배터리 위에 올리세요. 크기는 아래에서 조절합니다.',
-            tap: '터치 영역을 끌어서 계산기 아이콘 위에 올리세요. 공연 화면에서는 보이지 않습니다.'
+            text: '글자를 <b>직접 집어서</b> 끌어 놓으세요. 빈 곳을 눌러도 움직이지 않습니다.',
+            box: '가림 박스를 <b>직접 집어서</b> 시간·배터리 위로 끌어 놓으세요. 크기는 아래에서 조절합니다.',
+            tap: '터치 영역을 <b>직접 집어서</b> 계산기 아이콘 위로 끌어 놓으세요. 공연 화면에서는 보이지 않습니다.'
         };
         document.querySelectorAll('.sp-tab').forEach((tab) => {
             tab.addEventListener('click', () => {
@@ -3942,7 +4018,7 @@ body.android-mode #calcIconPlusMinus::after {
                 document.getElementById('spPanelText').style.display = spTarget === 'text' ? '' : 'none';
                 document.getElementById('spPanelBox').style.display = spTarget === 'box' ? '' : 'none';
                 document.getElementById('spPanelTap').style.display = spTarget === 'tap' ? '' : 'none';
-                document.getElementById('spTargetHint').textContent = HINTS[spTarget];
+                document.getElementById('spTargetHint').innerHTML = HINTS[spTarget];
                 if (spTarget !== 'box') spSetPicking(false);
                 spApplyPreviewStyle();
             });
