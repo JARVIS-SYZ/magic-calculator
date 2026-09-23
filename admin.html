@@ -3628,6 +3628,7 @@ body.android-mode #calcIconPlusMinus::after {
     // 사진이 닿지 못하는 맨 위 띠(불투명 상태바)의 색
     let spBarC = localStorage.getItem('sp_bar_color') || '#000000';
     let spPrevThemeColor = '';
+    let spPrevBodyBg = null, spPrevHtmlBg = null;
 
     let spTapOn = spBool(SP.tapOn, false);
     let spTapX = spNum(SP.tapX, 50), spTapY = spNum(SP.tapY, 90);
@@ -4008,11 +4009,19 @@ body.android-mode #calcIconPlusMinus::after {
 
         console.log('화면 픽 시작 — 터치영역', spTapOn ? ('켜짐 ' + spTapX + '%,' + spTapY + '% ' + spTapW + 'x' + spTapH) : '꺼짐',
                     '/ 가림박스', spBoxOn ? '켜짐' : '꺼짐');
+        // iOS 웹앱은 상태바 배경을 theme-color가 아니라 문서 배경색에서 가져온다.
+        // theme-color는 안드로이드용으로 같이 바꿔 둔다.
         const tc = document.querySelector('meta[name="theme-color"]');
         if (tc) {
             if (!spPrevThemeColor) spPrevThemeColor = tc.getAttribute('content') || '#0a0a0a';
             tc.setAttribute('content', spBarC);
         }
+        if (spPrevBodyBg === null) {
+            spPrevBodyBg = document.body.style.backgroundColor || '';
+            spPrevHtmlBg = document.documentElement.style.backgroundColor || '';
+        }
+        document.documentElement.style.backgroundColor = spBarC;
+        document.body.style.backgroundColor = spBarC;
 
         document.getElementById('screenPickStage').classList.add('active');
         window.closePage();
@@ -4023,6 +4032,11 @@ body.android-mode #calcIconPlusMinus::after {
         document.getElementById('screenPickStage').classList.remove('active');
         const tc = document.querySelector('meta[name="theme-color"]');
         if (tc && spPrevThemeColor) tc.setAttribute('content', spPrevThemeColor);
+        if (spPrevBodyBg !== null) {
+            document.documentElement.style.backgroundColor = spPrevHtmlBg;
+            document.body.style.backgroundColor = spPrevBodyBg;
+            spPrevBodyBg = spPrevHtmlBg = null;
+        }
         spStopLiveWatch();
         spShieldClicks();
         // 계산기 화면으로 깨끗하게 돌아간다 — 설정/메뉴가 열린 채로 드러나면 안 된다
@@ -4177,7 +4191,13 @@ body.android-mode #calcIconPlusMinus::after {
         const eye = document.getElementById('spEyedropper');
         if (eye) eye.addEventListener('click', () => spSetPicking(!(spPicking && spPickKey === 'box'), 'box'));
         const barC = document.getElementById('spBarColor');
-        if (barC) { barC.value = spBarC; barC.addEventListener('input', () => { spBarC = barC.value; spSave('sp_bar_color', spBarC); }); }
+        if (barC) { barC.value = spBarC; barC.addEventListener('input', () => {
+            spBarC = barC.value; spSave('sp_bar_color', spBarC);
+            if (document.getElementById('screenPickStage').classList.contains('active')) {
+                document.documentElement.style.backgroundColor = spBarC;
+                document.body.style.backgroundColor = spBarC;
+            }
+        }); }
         const barEye = document.getElementById('spBarEyedropper');
         if (barEye) barEye.addEventListener('click', () => spSetPicking(!(spPicking && spPickKey === 'bar'), 'bar'));
 
