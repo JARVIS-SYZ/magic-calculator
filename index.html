@@ -355,7 +355,10 @@ body.android-mode .display { justify-content: flex-start; padding: 26px 24px 26p
 body.android-mode .preview-text { margin-top: auto; }
 body.android-mode .display-text     { font-weight: 300; color: #3c3c3c; }
 body.android-mode .display-text .op { color: #00a32e; }
-body.android-mode .expression-text  { color: #9a9a9a; font-size: clamp(20px, 5vw, 27px); }
+/* One UI는 = 를 누르면 수식이 사라지고 결과만 위에 남는다 */
+body.android-mode .expression-text { display: none; }
+/* 그 결과는 다음 입력이 시작될 때까지 초록색 (visible = 계산 끝난 상태를 뜻하는 기존 플래그) */
+body.android-mode .expression-text.visible ~ .display-text { color: #00a32e; }
 body.android-mode .preview-text     { display: block; color: #5c5c5c; font-weight: 300; }
 
 /* 디스플레이 아래 도구줄 + 구분선 (android-mode에서만 보임) */
