@@ -4,9 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <!-- 관리자 앱만 상태바 밑까지 그린다. 화면 픽 사진이 화면 끝까지 가야 하기 때문.
-         대가로 iOS 26+ 에서 상단에 흐림 띠가 생긴다 (관객용 index.html은 불투명 유지). -->
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#0a0a0a">
     <title>관리자</title>
@@ -1200,8 +1197,8 @@ body.android-mode #calcIconPlusMinus::after {
                 </span>
             </div>
             <div class="sp-hint">사진을 위로 밀어 올려 <b>윗부분을 잘라냅니다.</b>
-            관리자 앱은 이제 상태바 밑까지 그리므로 자를 이유가 없어 <b>0</b>이 기본입니다.
-            캡쳐에 찍힌 예전 시간·배터리는 자르지 말고 <b>가림 박스</b>로 덮으세요.</div>
+            캡쳐에 찍힌 예전 시간·배터리를 화면 밖으로 밀어내는 용도입니다.
+            <b>자동</b>이 이 기기에 맞는 값을 넣어주고, 몇 px씩 직접 조정하셔도 됩니다.</div>
 
             <div class="sp-tabs">
                 <button class="sp-tab active" data-target="text">글자</button>
@@ -1294,14 +1291,14 @@ body.android-mode #calcIconPlusMinus::after {
             <div class="sp-hint">스포이드를 켠 뒤 미리보기를 <b>누른 채로 끌면</b> 돋보기와 버튼에 색이 계속 바뀌어 보이고,
             손을 떼는 순간 확정됩니다.</div>
             <div class="sp-row">
-                <span class="sp-label">상태바 색 (안드로이드)</span>
+                <span class="sp-label">상태바 색</span>
                 <span style="display:flex;align-items:center;gap:10px">
                     <input type="color" id="spBarColor" value="#000000" style="width:52px;height:34px;border:none;background:none">
                     <button class="sp-btn secondary" id="spBarEyedropper">💧 스포이드</button>
                 </span>
             </div>
-            <div class="sp-hint">안드로이드는 시스템이 상태바를 칠하므로 그 색을 여기서 정합니다.
-            <b>아이폰(관리자 앱)은 상태바가 투명</b>이라 사진이 그대로 비쳐 보이고, 위에 겹칠 색은 <b>가림 박스</b>가 정합니다.</div>
+            <div class="sp-hint">사진이 닿지 못하는 <b>맨 위 띠</b>의 색입니다.
+            스포이드로 사진 맨 윗부분과 같은 색을 찍으면 이어 보입니다. 아이폰·안드로이드 모두 적용됩니다.</div>
         </div>
 
         <!-- 터치 영역 -->
@@ -3634,14 +3631,16 @@ body.android-mode #calcIconPlusMinus::after {
     // 사진을 위로 끌어올리는 양(px). 기본값은 이 기기의 상태바 높이.
     function spAutoShift() { return Math.max(0, Math.round((screen.height || 0) - window.innerHeight)); }
     let spShift = spNum('sp_shift', spAutoShift());
-    // 관리자 앱이 전체화면(black-translucent)으로 바뀌면서 사진을 위로 올릴 이유가 사라졌다.
-    // 예전에 상태바 높이만큼 저장해 둔 값이 남아 사진 위가 잘리므로 한 번만 정리한다.
-    (function spMigrateShift() {
-        // 상태바 밑까지 그리는 앱(= safe-area 상단 여백이 있는 전체화면)에서는 자를 이유가 없다.
-        // 이전 판은 플래그를 먼저 세워버려서, 재설치 전에 한 번 열어본 기기는 값이 남았다.
-        const fullscreen = parseFloat(getComputedStyle(document.documentElement)
-            .getPropertyValue('--sa-top') || '0') > 0 || spAutoShift() === 0;
-        if (fullscreen && spShift > 0) { spShift = 0; localStorage.setItem('sp_shift', '0'); }
+    (function spSyncShiftToMode() {
+        // 상태바를 불투명/투명 중 어느 쪽으로 쓰느냐에 따라 자를 양이 완전히 달라진다.
+        // 마지막으로 맞춰둔 모드를 기억해 두고, 모드가 바뀌면 그 모드의 기본값으로 다시 잡는다.
+        // (예전에는 한 번 쓴 플래그로만 판단해서, 모드를 되돌리면 값이 어긋난 채 남았다.)
+        const auto = spAutoShift();
+        const mode = auto === 0 ? 'fullscreen' : 'inset';
+        if (localStorage.getItem('sp_shift_mode') === mode) return;
+        spShift = auto;
+        localStorage.setItem('sp_shift', String(spShift));
+        localStorage.setItem('sp_shift_mode', mode);
     })();
     let spTarget = 'text';       // 지금 편집 중인 대상
     let spPicking = false;       // 스포이드 모드
