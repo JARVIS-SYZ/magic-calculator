@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
+    <!-- 관리자 앱만 상태바 밑까지 그린다. 화면 픽 사진이 화면 끝까지 가야 하기 때문.
+         대가로 iOS 26+ 에서 상단에 흐림 띠가 생긴다 (관객용 index.html은 불투명 유지). -->
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#0a0a0a">
     <title>관리자</title>
@@ -136,8 +139,9 @@ body.ios26-theme .top-icon { background: #1c1c1e; border: 1px solid #2c2c2e; }
     grid-template-columns: repeat(4, var(--btn-w));
     grid-auto-rows: var(--btn-w);
     gap: 6px;
-    /* 하단 여백: 불투명 상태바 모드에선 env()가 0이라 고정값을 반드시 더해줌 */
-    padding: 0 20px calc(env(safe-area-inset-bottom, 0px) + 24px) 20px;
+    /* 전체화면일 땐 safe-area가 곧 홈 인디케이터 높이라 그걸 쓰고,
+       0으로 나오는 기기에선 최소 24px을 보장한다 */
+    padding: 0 20px max(24px, env(safe-area-inset-bottom, 0px)) 20px;
     width: 100%;
 }
 .button {
@@ -1195,7 +1199,8 @@ body.android-mode #calcIconPlusMinus::after {
                 </span>
             </div>
             <div class="sp-hint">캡쳐에 찍힌 <b>예전 시간·배터리</b>를 화면 밖으로 밀어냅니다.
-            숫자를 키우면 사진이 위로 올라갑니다. <b>자동</b>은 이 기기의 상태바 높이로 맞춰줍니다.</div>
+            숫자를 키우면 사진이 위로 올라갑니다. <b>자동</b>은 이 기기에 맞는 값을 넣어줍니다.
+            관리자 앱은 상태바 밑까지 그리므로 보통 <b>0</b>이 맞습니다 — 재설치 후 한 번 <b>자동</b>을 눌러주세요.</div>
 
             <div class="sp-tabs">
                 <button class="sp-tab active" data-target="text">글자</button>
