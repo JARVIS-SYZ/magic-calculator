@@ -1,54 +1,67 @@
 rules_version = '2';
 
-// 이 앱에는 아직 Firebase 인증이 없어서 규칙이 "누가 요청했는지"를 알 수 없다.
-// 그래서 지금 단계에서는 (1) 클라이언트가 애초에 만질 일 없는 컬렉션을 완전히 닫고,
-// (2) 만지는 컬렉션은 허용 동작과 필드 모양을 최소로 좁히는 데까지만 한다.
-// admin_codes / admin_sessions의 진짜 잠금은 익명 인증 + 커스텀 클레임 도입 후에 가능하다.
-// Cloud Functions는 Admin SDK라 아래 규칙을 우회하므로 서버 동작에는 영향이 없다.
+// 모든 클라이언트는 익명 로그인을 하고, 권한은 Cloud Function(authApi)이 커스텀 클레임으로 준다.
+//   관리자  → { adminId, deviceId, code }
+//   슈퍼관리자 → { superAdmin: true }
+// 클라이언트는 스스로 클레임을 만들 수 없으므로, 아래 판정은 우회할 수 없다.
+// Cloud Functions는 Admin SDK라 이 규칙을 우회한다 (로그인·푸시 처리에 필요).
 
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // ===== 서버 전용 — 클라이언트 접근 전면 차단 =====
-    // API 키와 뷰어 토큰이 그동안 누구에게나 읽혔다.
+    function signedIn() { return request.auth != null; }
+    // 클레임이 없는 토큰에서 키를 바로 꺼내면 평가 오류가 나므로 존재 여부를 먼저 본다
+    function isSuper()  { return signedIn() && ('superAdmin' in request.auth.token) && request.auth.token.superAdmin == true; }
+    function myAdmin()  { return signedIn() && ('adminId' in request.auth.token) ? request.auth.token.adminId : ''; }
+    function myCode()   { return signedIn() && ('code' in request.auth.token) ? request.auth.token.code : ''; }
+
+    // ===== 서버 전용 =====
     match /api_keys/{doc}      { allow read, write: if false; }
     match /viewer_tokens/{doc} { allow read, write: if false; }
     match /router_latest/{doc} { allow read, write: if false; }
 
-    // ===== 푸시 토큰 — 관리자 기기가 등록만 한다 =====
-    // 읽기를 막아 토큰 수집을 차단한다. 실패 토큰 삭제는 함수가 한다.
+    // ===== 푸시 토큰 — 본인 adminId로만 등록, 읽기는 불가 =====
     match /fcm_tokens/{doc} {
       allow read, delete: if false;
-      allow create, update: if request.resource.data.keys().hasOnly(['token', 'adminId', 'platform', 'updatedAt'])
+      allow create, update: if signedIn()
+                            && request.resource.data.keys().hasOnly(['token', 'adminId', 'platform', 'updatedAt'])
+                            && request.resource.data.adminId == myAdmin()
                             && request.resource.data.token is string
                             && request.resource.data.token.size() < 1000;
     }
 
-    // ===== 계산 내역 — 관객 앱이 추가만 한다 =====
-    // 수정·삭제를 막아 기록을 지우지 못하게 한다.
+    // ===== 계산 내역 — 관객이 쓰고, 담당 관리자만 읽는다 =====
     match /calculations/{doc} {
-      allow read: if true;   // TODO(2단계): 인증 도입 후 본인 adminId 문서만
-      allow create: if request.resource.data.keys().hasOnly(['calcId', 'adminId', 'expression', 'result', 'isForce', 'timestamp'])
+      allow read: if isSuper() || (signedIn() && resource.data.adminId == myAdmin());
+      allow create: if signedIn()
+                    && request.resource.data.keys().hasOnly(['calcId', 'adminId', 'expression', 'result', 'isForce', 'timestamp'])
                     && request.resource.data.expression is string
                     && request.resource.data.expression.size() < 200;
       allow update, delete: if false;
     }
 
-    // ===== 설정 — 관객 앱이 읽고 관리자 앱이 쓴다 =====
+    // ===== 설정 — 관객은 읽기만, 쓰기는 본인 관리자만 =====
     match /configs/{adminId} {
-      allow get: if true;
-      allow list: if false;              // 전체 관리자 설정 나열 차단
-      allow create, update: if true;     // TODO(2단계): 본인 adminId만
+      allow get: if signedIn();
+      allow list: if false;
+      allow create, update: if isSuper() || myAdmin() == adminId;
       allow delete: if false;
     }
 
-    // ===== 아직 못 잠그는 부분 =====
-    // 슈퍼관리자가 코드 전체를 나열하고, 관리자 앱이 코드로 로그인한다.
-    // 둘 다 클라이언트라 인증 없이는 구분이 불가능하다.
-    match /admin_codes/{code}   { allow read, write: if true; }
-    match /admin_sessions/{doc} { allow read, write: if true; }
+    // ===== 관리자 코드 — 목록·수정은 슈퍼관리자만 =====
+    // 관리자는 자기 코드 문서 하나만 읽는다 (정지·기기 교체 감시용).
+    // 로그인 시 쓰기는 authApi가 Admin SDK로 처리한다.
+    match /admin_codes/{code} {
+      allow get: if isSuper() || myCode() == code;
+      allow list: if isSuper();
+      allow write: if isSuper();
+    }
 
-    // 그 외 새 컬렉션은 기본 차단
+    // ===== 세션 — 전부 서버가 관리 =====
+    match /admin_sessions/{doc} {
+      allow read, write: if isSuper();
+    }
+
     match /{document=**} { allow read, write: if false; }
   }
 }
