@@ -790,6 +790,23 @@ body.android-mode #calcIconPlusMinus::after {
     // Firestore 실시간 리스너 — admin에서 저장하는 즉시 관객 앱에 반영됨
     let _configSubscribed = false;
     let _lastPushAt = undefined;  // 푸시 결과값 중복/초기로드 방지
+    let _lastPushLagMs = null;    // 진단용: 관리자가 누른 시각 → 관객 화면 반영까지 걸린 시간
+
+    // 실시간 리스너와 '복귀 시 강제 조회'가 똑같은 처리를 쓰도록 분리
+    function handleConfigDoc(c, via) {
+        applyCloudConfig(c);
+        // 푸시된 결과값: 앱이 켜진 뒤 새로 들어온 푸시만 표시 (최초 로드의 기존 값은 무시)
+        if (_lastPushAt === undefined) {
+            _lastPushAt = c.pushAt || null;
+        } else if (c.pushAt && c.pushAt !== _lastPushAt) {
+            _lastPushAt = c.pushAt;
+            const sentAt = Date.parse(c.pushAt);
+            _lastPushLagMs = isNaN(sentAt) ? null : (Date.now() - sentAt);
+            if (typeof c.pushValue === 'number') showPushedResult(c.pushValue);
+        }
+        updateDebugOverlay('cloud OK (' + via + ')', c);
+    }
+
     function loadConfigFromCloud() {
         const adminId = window._adminId;
         if (!adminId) { updateDebugOverlay('adminId 없음 → 클라우드 조회 안 함', null); return; }
@@ -799,22 +816,26 @@ body.android-mode #calcIconPlusMinus::after {
             firebase.firestore().collection('configs').doc(adminId).onSnapshot(
                 (doc) => {
                     if (!doc.exists) { updateDebugOverlay('configs/' + adminId + ' 문서 없음', null); return; }
-                    const c = doc.data() || {};
-                    applyCloudConfig(c);
-                    // 푸시된 결과값: 앱이 켜진 뒤 새로 들어온 푸시만 표시 (최초 로드의 기존 값은 무시)
-                    if (_lastPushAt === undefined) {
-                        _lastPushAt = c.pushAt || null;
-                    } else if (c.pushAt && c.pushAt !== _lastPushAt) {
-                        _lastPushAt = c.pushAt;
-                        if (typeof c.pushValue === 'number') showPushedResult(c.pushValue);
-                    }
-                    updateDebugOverlay('cloud OK (live)', c);
+                    handleConfigDoc(doc.data() || {}, 'live');
                 },
                 (e) => { updateDebugOverlay('cloud ERR: ' + (e.code || e.message || e), null); }
             );
         } catch (e) {
             updateDebugOverlay('cloud ERR: ' + (e.code || e.message || e), null);
         }
+    }
+
+    // 안드로이드 PWA는 백그라운드로 가면 Firestore 스트림이 끊기고, 다시 붙는 데
+    // 백오프 때문에 수 초가 걸린다. 화면이 돌아오면 서버에서 직접 한 번 읽어
+    // 그 사이 밀린 푸시를 즉시 반영한다.
+    function refetchConfigNow() {
+        const adminId = window._adminId;
+        if (!adminId) return;
+        try {
+            firebase.firestore().collection('configs').doc(adminId).get({ source: 'server' })
+                .then((doc) => { if (doc.exists) handleConfigDoc(doc.data() || {}, 'resume'); })
+                .catch(() => {});
+        } catch (e) {}
     }
 
     // 진단용 오버레이 (?dbg=1 또는 localStorage 플래그가 있을 때 표시)
@@ -846,7 +867,8 @@ body.android-mode #calcIconPlusMinus::after {
             'cloud d1/d2/d3: ' + (c ? (c.d1+'/'+c.d2+'/'+c.d3) : '-') + '\n' +
             'cloud ctd/ios: ' + (c ? (c.ctd+'/'+c.ios) : '-') + '\n' +
             '적용된 STAGE(ms): ' + DELAY_666_STAGE1 + '/' + DELAY_666_STAGE2 + '/' + DELAY_666_STAGE3 + '\n' +
-            'ios26Mode: ' + ios26Mode;
+            'ios26Mode: ' + ios26Mode + '\n' +
+            '마지막 푸시 지연: ' + (_lastPushLagMs === null ? '-' : (_lastPushLagMs / 1000).toFixed(2) + '초');
     }
 
     const displayElement = document.getElementById('display');
@@ -1665,7 +1687,7 @@ body.android-mode #calcIconPlusMinus::after {
     // 홈화면 앱은 다시 열 때 페이지를 새로 로드하지 않고 복귀하는 경우가 많음
     // → 포그라운드로 돌아올 때마다 최신 설정을 다시 읽어옴
     document.addEventListener('visibilitychange', () => {
-        if (!document.hidden) loadConfigFromCloud();
+        if (!document.hidden) { loadConfigFromCloud(); refetchConfigNow(); }
     });
 
     // id 파라미터가 있으면 왼쪽 하단 두 번 탭으로 계산기 표시
