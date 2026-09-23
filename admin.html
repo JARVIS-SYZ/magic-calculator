@@ -4,10 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <!-- 관리자 앱만 상태바 밑까지 그린다. 화면 픽 사진이 화면 끝까지 가야 하기 때문.
-         사진에 찍힌 예전 시간·배터리는 화면 픽의 '가림 박스'로 덮는다.
-         대가로 iOS 26+ 상단에 흐림 띠가 생긴다 (관객용 index.html은 불투명 유지). -->
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#0a0a0a">
     <title>관리자</title>
@@ -1197,6 +1193,16 @@ body.android-mode #calcIconPlusMinus::after {
             <div class="sp-hint">화면을 캡쳐해 두고 여기서 고르세요. 사진은 이 기기에만 저장됩니다.
             미리보기는 실제 공연 화면과 <b>같은 비율의 축소 모형</b>이라, 여기서 맞춘 자리가 그대로 나옵니다.</div>
 
+            <div class="sp-row">
+                <span class="sp-label">사진 위로 올리기 (px)</span>
+                <span style="display:flex;align-items:center;gap:8px">
+                    <input type="number" class="sp-num" id="spShiftInput" min="0" max="400" step="1" value="54">
+                    <button class="sp-btn secondary" id="spShiftAuto">자동</button>
+                </span>
+            </div>
+            <div class="sp-hint">사진을 위로 밀어 올려 <b>캡쳐에 찍힌 예전 시간·배터리</b>를 화면 밖으로 잘라냅니다.
+            <b>자동</b>은 이 기기의 상태바 높이를 넣어줍니다 (홈 화면 앱에서 눌러야 정확합니다).</div>
+
             <div class="sp-tabs">
                 <button class="sp-tab active" data-target="text">글자</button>
                 <button class="sp-tab" data-target="box">가림 박스</button>
@@ -1270,6 +1276,14 @@ body.android-mode #calcIconPlusMinus::after {
                     <span class="toggle-slider"></span>
                 </label>
             </div>
+            <div class="sp-row">
+                <span class="sp-label">상태바 색</span>
+                <span style="display:flex;align-items:center;gap:10px">
+                    <input type="color" id="spBarColor" value="#000000" style="width:52px;height:34px;border:none;background:none">
+                    <button class="sp-btn secondary" id="spBarEyedropper">💧 스포이드</button>
+                </span>
+            </div>
+            <div class="sp-hint">사진이 닿지 못하는 <b>맨 위 띠</b>의 색입니다. 스포이드로 사진 맨 윗부분과 같은 색을 찍으면 이어 보입니다.</div>
             <div class="sp-row">
                 <span class="sp-label">상태바 자리에 맞추기</span>
                 <button class="sp-btn secondary" id="spBoxPreset">자동 맞춤</button>
@@ -3611,6 +3625,9 @@ body.android-mode #calcIconPlusMinus::after {
     let spBoxX = spNum(SP.boxX, 50), spBoxY = spNum(SP.boxY, 3);
     let spBoxW = spNum(SP.boxW, 100), spBoxH = spNum(SP.boxH, 6);
     let spBoxC = localStorage.getItem(SP.boxC) || '#000000';
+    // 사진이 닿지 못하는 맨 위 띠(불투명 상태바)의 색
+    let spBarC = localStorage.getItem('sp_bar_color') || '#000000';
+    let spPrevThemeColor = '';
 
     let spTapOn = spBool(SP.tapOn, false);
     let spTapX = spNum(SP.tapX, 50), spTapY = spNum(SP.tapY, 90);
@@ -3619,11 +3636,17 @@ body.android-mode #calcIconPlusMinus::after {
     let spLive = spBool(SP.live, false);
     let spPush = spBool(SP.push, true);
     let spLiveUnsub = null;
-    // 사진은 자르지 않는다. 관리자 앱이 상태바 밑까지 그리므로 위를 잘라낼 이유가 없고,
-    // 캡쳐에 찍힌 예전 시간·배터리는 가림 박스로 덮는다.
-    const spShift = 0;
+    // 사진을 위로 끌어올려 캡쳐에 찍힌 예전 시간·배터리를 화면 밖으로 잘라낸다.
+    // 자동값은 홈 화면 앱에서만 정확하다 — Safari에서는 브라우저 툴바까지 더해져
+    // 엉뚱하게 큰 값이 나오므로 그때는 건드리지 않는다.
+    function spAutoShift() {
+        if (window.navigator.standalone !== true) return spNum('sp_shift', 54);
+        return Math.max(0, Math.round((screen.height || 0) - window.innerHeight));
+    }
+    let spShift = spNum('sp_shift', 54);
     let spTarget = 'text';       // 지금 편집 중인 대상
     let spPicking = false;       // 스포이드 모드
+    let spPickKey = 'box';       // 스포이드가 칠할 대상: 'box' | 'bar'
 
     const SP_FONTS = {
         system: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', Roboto, sans-serif",
@@ -3862,33 +3885,43 @@ body.android-mode #calcIconPlusMinus::after {
             const sy = Math.max(0, Math.min(ih - 1, Math.round(((clientY - r.top) - L.oy) / sc)));
             const d = spPickCanvas.getContext('2d').getImageData(sx, sy, 1, 1).data;
             const hex = '#' + [d[0], d[1], d[2]].map((n) => n.toString(16).padStart(2, '0')).join('');
-            spBoxC = hex;
-            const ci = document.getElementById('spBoxColor');
-            if (ci) ci.value = hex;
-            const b = document.getElementById('spPreviewBox');
-            if (b) b.style.background = hex;
-            const eye = document.getElementById('spEyedropper');
+            const forBar = (spPickKey === 'bar');
+            if (forBar) {
+                spBarC = hex;
+                const bi = document.getElementById('spBarColor');
+                if (bi) bi.value = hex;
+            } else {
+                spBoxC = hex;
+                const ci = document.getElementById('spBoxColor');
+                if (ci) ci.value = hex;
+                const b = document.getElementById('spPreviewBox');
+                if (b) b.style.background = hex;
+            }
+            const eye = document.getElementById(forBar ? 'spBarEyedropper' : 'spEyedropper');
             if (eye) eye.textContent = commit ? '💧 스포이드' : ('💧 ' + hex);
             // 찍는 동안 그 지점을 확대해서 보여준다
             const px = ((clientX - r.left) / r.width) * 100;
             const py = ((clientY - r.top) / r.height) * 100;
             spUpdateLoupe(!commit, px, py);
             if (commit) {
-                spSave(SP.boxC, hex);
+                spSave(forBar ? 'sp_bar_color' : SP.boxC, hex);
                 spSetPicking(false);
                 spApplyPreviewStyle();
             }
         });
     }
-    function spSetPicking(on) {
+    function spSetPicking(on, key) {
         spPicking = !!on;
+        if (key) spPickKey = key;
         const wrap = document.getElementById('spPreviewWrap');
         if (wrap) wrap.classList.toggle('picking', spPicking);
-        const b = document.getElementById('spEyedropper');
-        if (b) {
-            b.classList.toggle('on', spPicking);
-            if (!spPicking) b.textContent = '💧 스포이드';
-        }
+        ['spEyedropper', 'spBarEyedropper'].forEach((id) => {
+            const b = document.getElementById(id);
+            if (!b) return;
+            const mine = spPicking && ((id === 'spBarEyedropper') === (spPickKey === 'bar'));
+            b.classList.toggle('on', mine);
+            if (!mine) b.textContent = '💧 스포이드';
+        });
     }
 
     // ===== 사진 불러오기 =====
@@ -3975,6 +4008,12 @@ body.android-mode #calcIconPlusMinus::after {
 
         console.log('화면 픽 시작 — 터치영역', spTapOn ? ('켜짐 ' + spTapX + '%,' + spTapY + '% ' + spTapW + 'x' + spTapH) : '꺼짐',
                     '/ 가림박스', spBoxOn ? '켜짐' : '꺼짐');
+        const tc = document.querySelector('meta[name="theme-color"]');
+        if (tc) {
+            if (!spPrevThemeColor) spPrevThemeColor = tc.getAttribute('content') || '#0a0a0a';
+            tc.setAttribute('content', spBarC);
+        }
+
         document.getElementById('screenPickStage').classList.add('active');
         window.closePage();
         window.closeSideMenu();
@@ -3982,12 +4021,25 @@ body.android-mode #calcIconPlusMinus::after {
     }
     function stopScreenPick() {
         document.getElementById('screenPickStage').classList.remove('active');
+        const tc = document.querySelector('meta[name="theme-color"]');
+        if (tc && spPrevThemeColor) tc.setAttribute('content', spPrevThemeColor);
         spStopLiveWatch();
+        spShieldClicks();
         // 계산기 화면으로 깨끗하게 돌아간다 — 설정/메뉴가 열린 채로 드러나면 안 된다
         try { window.closeSettings && window.closeSettings(); } catch (e) {}
         try { window.closePage && window.closePage(); } catch (e) {}
         try { window.closeSideMenu && window.closeSideMenu(); } catch (e) {}
         try { window.closeMenuOverlay && window.closeMenuOverlay(); } catch (e) {}
+    }
+
+    // 스테이지가 touchstart에 사라지면, 이어지는 click이 그 아래 계산기로 떨어진다.
+    // 하필 사진의 계산기 아이콘 자리가 관리자 헤더의 메뉴 아이콘과 겹쳐 설정창이 열렸다.
+    // 잠깐 투명 방패를 덮어 그 한 번을 삼킨다.
+    function spShieldClicks() {
+        const sh = document.createElement('div');
+        sh.style.cssText = 'position:fixed;inset:0;z-index:6000;background:transparent';
+        document.body.appendChild(sh);
+        setTimeout(() => { try { sh.remove(); } catch (e) {} }, 500);
     }
 
     window.screenPickShow = function (text) {
@@ -4043,6 +4095,18 @@ body.android-mode #calcIconPlusMinus::after {
             if (e.target.files && e.target.files[0]) spLoadFile(e.target.files[0]);
             e.target.value = '';
         });
+
+        // 사진 위로 올리기
+        const shiftIn = document.getElementById('spShiftInput');
+        function setShift(v) {
+            spShift = Math.min(400, Math.max(0, Math.round(parseFloat(v) || 0)));
+            if (shiftIn) shiftIn.value = String(spShift);
+            spSave('sp_shift', spShift);
+            spApplyPreviewStyle();
+        }
+        if (shiftIn) { shiftIn.value = String(spShift); shiftIn.addEventListener('change', () => setShift(shiftIn.value)); }
+        const shiftAuto = document.getElementById('spShiftAuto');
+        if (shiftAuto) shiftAuto.addEventListener('click', () => setShift(spAutoShift()));
 
         // 편집 대상 탭
         const HINTS = {
@@ -4111,7 +4175,11 @@ body.android-mode #calcIconPlusMinus::after {
         const bC = document.getElementById('spBoxColor');
         if (bC) { bC.value = spBoxC; bC.addEventListener('input', () => { spBoxC = bC.value; spSave(SP.boxC, spBoxC); spApplyPreviewStyle(); }); }
         const eye = document.getElementById('spEyedropper');
-        if (eye) eye.addEventListener('click', () => spSetPicking(!spPicking));
+        if (eye) eye.addEventListener('click', () => spSetPicking(!(spPicking && spPickKey === 'box'), 'box'));
+        const barC = document.getElementById('spBarColor');
+        if (barC) { barC.value = spBarC; barC.addEventListener('input', () => { spBarC = barC.value; spSave('sp_bar_color', spBarC); }); }
+        const barEye = document.getElementById('spBarEyedropper');
+        if (barEye) barEye.addEventListener('click', () => spSetPicking(!(spPicking && spPickKey === 'bar'), 'bar'));
 
         // 터치 영역
         const pOn = document.getElementById('spTapToggle');
