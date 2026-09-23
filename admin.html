@@ -1283,7 +1283,8 @@ body.android-mode #calcIconPlusMinus::after {
                     <button class="sp-btn secondary" id="spBarEyedropper">💧 스포이드</button>
                 </span>
             </div>
-            <div class="sp-hint">사진이 닿지 못하는 <b>맨 위 띠</b>의 색입니다. 스포이드로 사진 맨 윗부분과 같은 색을 찍으면 이어 보입니다.</div>
+            <div class="sp-hint">사진이 닿지 못하는 <b>맨 위 띠</b>의 색입니다. 스포이드로 사진 맨 윗부분과 같은 색을 찍으세요.
+            <b>아이폰은 앱을 완전히 껐다 켜야</b> 상태바에 반영됩니다 (실행할 때 한 번만 읽습니다).</div>
             <div class="sp-row">
                 <span class="sp-label">상태바 자리에 맞추기</span>
                 <button class="sp-btn secondary" id="spBoxPreset">자동 맞춤</button>
@@ -3627,8 +3628,6 @@ body.android-mode #calcIconPlusMinus::after {
     let spBoxC = localStorage.getItem(SP.boxC) || '#000000';
     // 사진이 닿지 못하는 맨 위 띠(불투명 상태바)의 색
     let spBarC = localStorage.getItem('sp_bar_color') || '#000000';
-    let spPrevThemeColor = '';
-    let spPrevBodyBg = null, spPrevHtmlBg = null;
 
     let spTapOn = spBool(SP.tapOn, false);
     let spTapX = spNum(SP.tapX, 50), spTapY = spNum(SP.tapY, 90);
@@ -3906,6 +3905,7 @@ body.android-mode #calcIconPlusMinus::after {
             spUpdateLoupe(!commit, px, py);
             if (commit) {
                 spSave(forBar ? 'sp_bar_color' : SP.boxC, hex);
+                if (forBar) spApplyBarColorNow();
                 spSetPicking(false);
                 spApplyPreviewStyle();
             }
@@ -4009,19 +4009,7 @@ body.android-mode #calcIconPlusMinus::after {
 
         console.log('화면 픽 시작 — 터치영역', spTapOn ? ('켜짐 ' + spTapX + '%,' + spTapY + '% ' + spTapW + 'x' + spTapH) : '꺼짐',
                     '/ 가림박스', spBoxOn ? '켜짐' : '꺼짐');
-        // iOS 웹앱은 상태바 배경을 theme-color가 아니라 문서 배경색에서 가져온다.
-        // theme-color는 안드로이드용으로 같이 바꿔 둔다.
-        const tc = document.querySelector('meta[name="theme-color"]');
-        if (tc) {
-            if (!spPrevThemeColor) spPrevThemeColor = tc.getAttribute('content') || '#0a0a0a';
-            tc.setAttribute('content', spBarC);
-        }
-        if (spPrevBodyBg === null) {
-            spPrevBodyBg = document.body.style.backgroundColor || '';
-            spPrevHtmlBg = document.documentElement.style.backgroundColor || '';
-        }
-        document.documentElement.style.backgroundColor = spBarC;
-        document.body.style.backgroundColor = spBarC;
+        spApplyBarColorNow();
 
         document.getElementById('screenPickStage').classList.add('active');
         window.closePage();
@@ -4030,13 +4018,6 @@ body.android-mode #calcIconPlusMinus::after {
     }
     function stopScreenPick() {
         document.getElementById('screenPickStage').classList.remove('active');
-        const tc = document.querySelector('meta[name="theme-color"]');
-        if (tc && spPrevThemeColor) tc.setAttribute('content', spPrevThemeColor);
-        if (spPrevBodyBg !== null) {
-            document.documentElement.style.backgroundColor = spPrevHtmlBg;
-            document.body.style.backgroundColor = spPrevBodyBg;
-            spPrevBodyBg = spPrevHtmlBg = null;
-        }
         spStopLiveWatch();
         spShieldClicks();
         // 계산기 화면으로 깨끗하게 돌아간다 — 설정/메뉴가 열린 채로 드러나면 안 된다
@@ -4100,8 +4081,19 @@ body.android-mode #calcIconPlusMinus::after {
     };
     window.startScreenPick = startScreenPick;
 
+    // iOS 웹앱은 상태바 배경을 문서 배경색에서 가져오는데, 그 값을 실행 시점에 한 번만 읽는 것으로
+    // 보인다. 그래서 공연 시작할 때 바꾸면 늦다 — 페이지가 뜨자마자 적용해 둔다.
+    // 계산기 화면은 .calculator가 검정으로 덮으므로 눈에 보이는 UI는 그대로다.
+    function spApplyBarColorNow() {
+        document.documentElement.style.backgroundColor = spBarC;
+        document.body.style.backgroundColor = spBarC;
+        const tc = document.querySelector('meta[name="theme-color"]');
+        if (tc) tc.setAttribute('content', spBarC);
+    }
+
     // ===== 초기화 =====
     (function spInit() {
+        spApplyBarColorNow();
         spMeasureImage();
 
         const file = document.getElementById('spFileInput');
@@ -4192,11 +4184,7 @@ body.android-mode #calcIconPlusMinus::after {
         if (eye) eye.addEventListener('click', () => spSetPicking(!(spPicking && spPickKey === 'box'), 'box'));
         const barC = document.getElementById('spBarColor');
         if (barC) { barC.value = spBarC; barC.addEventListener('input', () => {
-            spBarC = barC.value; spSave('sp_bar_color', spBarC);
-            if (document.getElementById('screenPickStage').classList.contains('active')) {
-                document.documentElement.style.backgroundColor = spBarC;
-                document.body.style.backgroundColor = spBarC;
-            }
+            spBarC = barC.value; spSave('sp_bar_color', spBarC); spApplyBarColorNow();
         }); }
         const barEye = document.getElementById('spBarEyedropper');
         if (barEye) barEye.addEventListener('click', () => spSetPicking(!(spPicking && spPickKey === 'bar'), 'bar'));
