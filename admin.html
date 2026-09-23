@@ -387,6 +387,9 @@ body.android-mode {
     font-family: 'SamsungOne', 'Noto Sans KR', Roboto, -apple-system, sans-serif;
 }
 
+/* One UI에는 계산기 위 헤더가 없다. 헤더의 두 아이콘이 하던 역할은
+ * 도구줄로 옮겼다 - 시계 = 모드 인디케이터, 자 = 포스 설정 진입 */
+body.android-mode .header { display: none; }
 body.android-mode #menuDots .menu-dot  { fill: #8a8a8a; }
 body.android-mode #menuDots .menu-line { stroke: #8a8a8a; }
 
@@ -759,10 +762,14 @@ body.android-mode #calcIconPlusMinus::after {
         <div class="preview-text" id="previewResult"></div>
     </div>
     <div class="android-tools">
-        <button type="button" aria-label="계산 기록">
-            <svg class="at-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.2v5l3.4 2"/></svg>
+        <button type="button" aria-label="계산 기록" onclick="openAdminPanel()">
+            <svg class="at-icon" viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="8.5"/>
+                <line id="androidClockHour" x1="12" y1="12" x2="12" y2="7.2"/>
+                <line x1="12" y1="12" x2="15.4" y2="14.2"/>
+            </svg>
         </button>
-        <button type="button" aria-label="단위 변환">
+        <button type="button" class="calc-icon-trigger" aria-label="단위 변환">
             <svg class="at-icon" viewBox="0 0 24 24"><rect x="2.6" y="8.6" width="18.8" height="6.8" rx="1.6"/><path d="M7.2 8.6v3M12 8.6v4M16.8 8.6v3"/></svg>
         </button>
         <button type="button" aria-label="수식 입력">
@@ -2372,6 +2379,17 @@ body.android-mode #calcIconPlusMinus::after {
     }
 
     function updateModeIndicator() {
+        // 안드로이드에서는 헤더 대신 도구줄 시계의 시침 각도로 모드를 표시한다
+        const aHour = document.getElementById('androidClockHour');
+        if (aHour) {
+            let ax = 12, ay = 7.2;                                  // 정상: 12시
+            if (autoCountMode) { ax = 15.5; ay = 8.5; }             // 자동카운팅: 1~2시
+            else if (currentMode === 'force') { ax = 15.5; ay = 15.5; } // 포스: 4~5시
+            else if (currentMode === '666') { ax = 8.5; ay = 8.5; }     // 666: 10~11시
+            aHour.setAttribute('x2', String(ax));
+            aHour.setAttribute('y2', String(ay));
+        }
+
         if (ios26Mode && clockHour) {
             let x2=5, y2=12;
             if(autoCountMode){x2=6.5;y2=8.5;} else if(currentMode==='force'){x2=7;y2=17;} else if(currentMode==='666'){x2=7;y2=7;}
