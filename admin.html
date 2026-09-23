@@ -3017,13 +3017,24 @@ body.android-mode #calcIconPlusMinus::after {
     updateModeIndicator();
     applyLayoutMode();
 
-        // adminId가 없으면 잠시 대기
+        // 로그인이 끝날 때까지 기다린다.
+        // 예전에는 Firestore를 직접 읽어 5초면 충분했지만, 이제는 authApi 왕복과 토큰 갱신이
+        // 끼어들어 콜드 스타트 때 그보다 오래 걸린다. 여기서 먼저 포기하면 구독이 아예 생기지
+        // 않아 수신 내역이 조용히 멈춘다. 규칙이 요구하는 adminId 클레임까지 확인하고 붙는다.
         let waited = 0;
-        while (!currentAdminId && waited < 5000) {
+        let claimReady = false;
+        while (waited < 30000) {
+            if (currentAdminId) {
+                try {
+                    const c = await authClaims(false);
+                    if (c && c.adminId) { claimReady = true; break; }
+                } catch (e) {}
+            }
             await new Promise(r => setTimeout(r, 200));
             waited += 200;
         }
         if (!currentAdminId) return;
+        if (!claimReady) console.warn('adminId 클레임 없이 수신 내역 구독을 시도합니다');
 
         db2.collection('calculations')
             .where('adminId', '==', currentAdminId)
@@ -3091,6 +3102,11 @@ body.android-mode #calcIconPlusMinus::after {
             document.getElementById('countBadge').style.display = 'inline-block';
         }, error => {
             console.error('Firestore 구독 오류:', error);
+            // 권한 오류면 토큰이 낡았을 수 있으니 갱신해두고, 사용자가 새로고침하면 곧바로 붙는다
+            if (error && error.code === 'permission-denied') {
+                const u = firebase.auth().currentUser;
+                if (u) u.getIdToken(true).catch(() => {});
+            }
             document.getElementById('logList').innerHTML = '<div class="empty-msg">수신 오류: ' + error.message + '</div>';
         });
 
