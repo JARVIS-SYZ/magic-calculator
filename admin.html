@@ -746,6 +746,27 @@ body.android-mode #calcIconPlusMinus::after {
 }
 .sp-range { width:100%; }
 
+/* 위치 미세조정: 돋보기 + 십자 방향키 */
+.sp-loupe {
+    position:absolute; width:128px; height:128px; border-radius:50%;
+    border:2px solid rgba(255,255,255,0.85); box-shadow:0 4px 14px rgba(0,0,0,0.5);
+    background-repeat:no-repeat; pointer-events:none;
+    opacity:0; transition:opacity 0.12s; z-index:3;
+}
+.sp-loupe.show { opacity:1; }
+.sp-loupe-cross-h, .sp-loupe-cross-v { position:absolute; background:rgba(255,80,80,0.9); }
+.sp-loupe-cross-h { left:0; right:0; top:50%; height:1px; margin-top:-0.5px; }
+.sp-loupe-cross-v { top:0; bottom:0; left:50%; width:1px; margin-left:-0.5px; }
+.sp-dpad { display:flex; flex-direction:column; align-items:center; gap:6px; margin-top:14px; }
+.sp-dpad-mid { display:flex; align-items:center; gap:6px; }
+.sp-dpad-label { font-size:12px; color:#8e8e93; width:56px; text-align:center; }
+.sp-dbtn {
+    width:46px; height:40px; border:none; border-radius:10px;
+    background:#2c2c2e; color:#fff; font-size:16px; cursor:pointer;
+    -webkit-user-select:none; user-select:none;
+}
+.sp-dbtn:active { background:#0a84ff; }
+
 /* 실제 공연 화면 */
 #screenPickStage {
     position:fixed; inset:0; z-index:5000; display:none;
@@ -1166,7 +1187,16 @@ body.android-mode #calcIconPlusMinus::after {
             <div class="sp-stage-wrap" id="spPreviewWrap">
                 <div class="sp-empty" id="spEmptyMsg">사진을 고르면 여기에 미리보기가 나옵니다</div>
             </div>
-            <div class="sp-hint">미리보기의 글자를 <b>끌어서</b> 원하는 위치에 놓으세요.</div>
+            <div class="sp-hint">미리보기의 글자를 <b>끌어서</b> 놓으세요. 끄는 동안 돋보기가 떠서 손가락에 가려진 부분을 보여줍니다.</div>
+            <div class="sp-dpad">
+                <button class="sp-dbtn" data-dx="0" data-dy="-1">▲</button>
+                <div class="sp-dpad-mid">
+                    <button class="sp-dbtn" data-dx="-1" data-dy="0">◀</button>
+                    <span class="sp-dpad-label">1px씩</span>
+                    <button class="sp-dbtn" data-dx="1" data-dy="0">▶</button>
+                </div>
+                <button class="sp-dbtn" data-dx="0" data-dy="1">▼</button>
+            </div>
         </div>
 
         <div class="admin-section">
@@ -3527,6 +3557,51 @@ body.android-mode #calcIconPlusMinus::after {
         spApplyTextStyle(t, Math.max(8, spSize * scale));
     }
 
+    // 손가락이 가린 자리를 보여주는 돋보기. 미리보기 위에 겹쳐 띄우고 십자선이 글자 기준점이다.
+    const SP_LOUPE = 128, SP_ZOOM = 3;
+    let spLoupeTimer = null;
+    function spUpdateLoupe(show) {
+        const wrap = document.getElementById('spPreviewWrap');
+        if (!wrap || !spImage) return;
+        let l = wrap.querySelector('.sp-loupe');
+        if (!l) {
+            l = document.createElement('div');
+            l.className = 'sp-loupe';
+            l.innerHTML = '<div class="sp-loupe-cross-h"></div><div class="sp-loupe-cross-v"></div>';
+            wrap.appendChild(l);
+        }
+        if (!show) { l.classList.remove('show'); return; }
+        const r = wrap.getBoundingClientRect();
+        const px = (spX / 100) * r.width;
+        const py = (spY / 100) * r.height;
+        l.style.backgroundImage = 'url(' + spImage + ')';
+        l.style.backgroundSize = (r.width * SP_ZOOM) + 'px ' + (r.height * SP_ZOOM) + 'px';
+        l.style.backgroundPosition =
+            (-(px * SP_ZOOM - SP_LOUPE / 2)) + 'px ' + (-(py * SP_ZOOM - SP_LOUPE / 2)) + 'px';
+        // 손가락 반대쪽 모서리로 비켜준다
+        l.style.left = (spX > 50 ? 8 : Math.max(8, r.width - SP_LOUPE - 8)) + 'px';
+        l.style.top  = (spY > 50 ? 8 : Math.max(8, r.height - SP_LOUPE - 8)) + 'px';
+        l.classList.add('show');
+    }
+    function spFlashLoupe() {
+        spUpdateLoupe(true);
+        if (spLoupeTimer) clearTimeout(spLoupeTimer);
+        spLoupeTimer = setTimeout(() => spUpdateLoupe(false), 1400);
+    }
+
+    // 방향키 한 번 = 실제 공연 화면 기준 1px
+    function spNudge(dx, dy) {
+        const stepX = 100 / Math.max(1, window.innerWidth);
+        const stepY = 100 / Math.max(1, window.innerHeight);
+        spX = Math.min(100, Math.max(0, spX + dx * stepX));
+        spY = Math.min(100, Math.max(0, spY + dy * stepY));
+        localStorage.setItem(SP_KEYS.x, String(spX));
+        localStorage.setItem(SP_KEYS.y, String(spY));
+        const t = document.getElementById('spPreviewText');
+        if (t) { t.style.left = spX + '%'; t.style.top = spY + '%'; }
+        spFlashLoupe();
+    }
+
     function spBindDrag(wrap, t) {
         let dragging = false;
         function move(clientX, clientY) {
@@ -3535,21 +3610,24 @@ body.android-mode #calcIconPlusMinus::after {
             spY = Math.min(100, Math.max(0, ((clientY - r.top) / r.height) * 100));
             t.style.left = spX + '%';
             t.style.top = spY + '%';
+            spUpdateLoupe(true);
         }
         function end() {
             if (!dragging) return;
             dragging = false;
             localStorage.setItem(SP_KEYS.x, String(spX));
             localStorage.setItem(SP_KEYS.y, String(spY));
+            if (spLoupeTimer) clearTimeout(spLoupeTimer);
+            spLoupeTimer = setTimeout(() => spUpdateLoupe(false), 600);
         }
-        t.addEventListener('touchstart', (e) => { dragging = true; e.preventDefault(); }, { passive:false });
+        t.addEventListener('touchstart', (e) => { dragging = true; spUpdateLoupe(true); e.preventDefault(); }, { passive:false });
         wrap.addEventListener('touchmove', (e) => {
             if (!dragging) return;
             e.preventDefault();
             move(e.touches[0].clientX, e.touches[0].clientY);
         }, { passive:false });
         wrap.addEventListener('touchend', end);
-        t.addEventListener('mousedown', (e) => { dragging = true; e.preventDefault(); });
+        t.addEventListener('mousedown', (e) => { dragging = true; spUpdateLoupe(true); e.preventDefault(); });
         window.addEventListener('mousemove', (e) => { if (dragging) move(e.clientX, e.clientY); });
         window.addEventListener('mouseup', end);
     }
@@ -3714,6 +3792,31 @@ body.android-mode #calcIconPlusMinus::after {
         if (lt) lt.checked = spLive;
         const pt = document.getElementById('spPushToggle');
         if (pt) pt.checked = spPush;
+
+        // 방향키: 한 번 누르면 1px, 길게 누르면 반복
+        document.querySelectorAll('.sp-dbtn').forEach((btn) => {
+            const dx = parseInt(btn.dataset.dx, 10) || 0;
+            const dy = parseInt(btn.dataset.dy, 10) || 0;
+            let holdTimer = null, repeatTimer = null;
+            const stop = () => {
+                if (holdTimer) clearTimeout(holdTimer);
+                if (repeatTimer) clearInterval(repeatTimer);
+                holdTimer = repeatTimer = null;
+            };
+            const start = (e) => {
+                e.preventDefault();
+                spNudge(dx, dy);
+                holdTimer = setTimeout(() => {
+                    repeatTimer = setInterval(() => spNudge(dx, dy), 90);
+                }, 350);
+            };
+            btn.addEventListener('touchstart', start, { passive:false });
+            btn.addEventListener('touchend', stop);
+            btn.addEventListener('touchcancel', stop);
+            btn.addEventListener('mousedown', start);
+            btn.addEventListener('mouseup', stop);
+            btn.addEventListener('mouseleave', stop);
+        });
 
         // 나가기: 왼쪽 위 모서리를 1.5초 길게 누르기
         const exit = document.getElementById('screenPickExit');
