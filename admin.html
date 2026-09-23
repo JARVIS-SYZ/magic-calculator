@@ -771,7 +771,10 @@ body.android-mode #calcIconPlusMinus::after {
 .sp-dbtn:active { background:#0a84ff; }
 
 /* 실제 공연 화면 */
-#screenPickStage { position:fixed; inset:0; z-index:5000; display:none; background:#000; overflow:hidden; }
+/* 공연 화면에서는 두 번 탭 확대가 걸리면 안 된다 */
+#screenPickStage { position:fixed; inset:0; z-index:5000; display:none; background:#000; overflow:hidden;
+    touch-action:manipulation; -webkit-user-select:none; user-select:none; }
+#screenPickStage * { touch-action:manipulation; -webkit-touch-callout:none; }
 #screenPickStage.active { display:block; }
 /* 사진은 폭에 맞춰 놓고 위로 끌어올려, 캡쳐에 찍힌 예전 상태바를 화면 밖으로 잘라낸다 */
 #spStageImg { position:absolute; left:0; width:100%; height:auto; }
@@ -1282,7 +1285,15 @@ body.android-mode #calcIconPlusMinus::after {
                 </span>
             </div>
             <div class="sp-hint">스포이드를 켠 뒤 미리보기를 <b>누른 채로 끌면</b> 돋보기와 버튼에 색이 계속 바뀌어 보이고,
-            손을 떼는 순간 확정됩니다. 이 색은 공연 중 <b>상태바 색</b>으로도 함께 쓰여 사진과 이어 보이게 합니다.</div>
+            손을 떼는 순간 확정됩니다.</div>
+            <div class="sp-row">
+                <span class="sp-label">상태바 색</span>
+                <span style="display:flex;align-items:center;gap:10px">
+                    <input type="color" id="spBarColor" value="#000000" style="width:52px;height:34px;border:none;background:none">
+                    <button class="sp-btn secondary" id="spBarEyedropper">💧 스포이드</button>
+                </span>
+            </div>
+            <div class="sp-hint">사진이 닿지 못하는 <b>맨 위 상태바 띠</b>의 색입니다. 사진 위쪽과 같은 색을 찍으면 이어 보입니다.</div>
         </div>
 
         <!-- 터치 영역 -->
@@ -3602,6 +3613,8 @@ body.android-mode #calcIconPlusMinus::after {
     let spBoxX = spNum(SP.boxX, 50), spBoxY = spNum(SP.boxY, 3);
     let spBoxW = spNum(SP.boxW, 100), spBoxH = spNum(SP.boxH, 6);
     let spBoxC = localStorage.getItem(SP.boxC) || '#000000';
+    // 사진이 못 올라가는 맨 위 띠의 색. 가림 박스와 따로 고를 수 있어야 한다.
+    let spBarC = localStorage.getItem('sp_bar_color') || '#000000';
 
     let spTapOn = spBool(SP.tapOn, false);
     let spTapX = spNum(SP.tapX, 50), spTapY = spNum(SP.tapY, 90);
@@ -3615,6 +3628,7 @@ body.android-mode #calcIconPlusMinus::after {
     let spShift = spNum('sp_shift', spAutoShift());
     let spTarget = 'text';       // 지금 편집 중인 대상
     let spPicking = false;       // 스포이드 모드
+    let spPickKey = 'box';       // 스포이드가 칠할 대상: 'box' | 'bar'
 
     const SP_FONTS = {
         system: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', Roboto, sans-serif",
@@ -3853,30 +3867,43 @@ body.android-mode #calcIconPlusMinus::after {
             const sy = Math.max(0, Math.min(ih - 1, Math.round(((clientY - r.top) - L.oy) / sc)));
             const d = spPickCanvas.getContext('2d').getImageData(sx, sy, 1, 1).data;
             const hex = '#' + [d[0], d[1], d[2]].map((n) => n.toString(16).padStart(2, '0')).join('');
-            spBoxC = hex;
-            const ci = document.getElementById('spBoxColor');
-            if (ci) ci.value = hex;
-            const b = document.getElementById('spPreviewBox');
-            if (b) b.style.background = hex;
-            const eye = document.getElementById('spEyedropper');
+            const forBar = (spPickKey === 'bar');
+            if (forBar) {
+                spBarC = hex;
+                const bi = document.getElementById('spBarColor');
+                if (bi) bi.value = hex;
+            } else {
+                spBoxC = hex;
+                const ci = document.getElementById('spBoxColor');
+                if (ci) ci.value = hex;
+                const b = document.getElementById('spPreviewBox');
+                if (b) b.style.background = hex;
+            }
+            const eye = document.getElementById(forBar ? 'spBarEyedropper' : 'spEyedropper');
             if (eye) eye.textContent = commit ? '💧 스포이드' : ('💧 ' + hex);
             // 찍는 동안 그 지점을 확대해서 보여준다
             const px = ((clientX - r.left) / r.width) * 100;
             const py = ((clientY - r.top) / r.height) * 100;
             spUpdateLoupe(!commit, px, py);
             if (commit) {
-                spSave(SP.boxC, hex);
+                spSave(forBar ? 'sp_bar_color' : SP.boxC, hex);
                 spSetPicking(false);
                 spApplyPreviewStyle();
             }
         });
     }
-    function spSetPicking(on) {
+    function spSetPicking(on, key) {
         spPicking = !!on;
+        if (key) spPickKey = key;
         const wrap = document.getElementById('spPreviewWrap');
-        const btn = document.getElementById('spEyedropper');
         if (wrap) wrap.classList.toggle('picking', spPicking);
-        if (btn) btn.classList.toggle('on', spPicking);
+        ['spEyedropper', 'spBarEyedropper'].forEach((id) => {
+            const b = document.getElementById(id);
+            if (!b) return;
+            const mine = spPicking && ((id === 'spBarEyedropper') === (spPickKey === 'bar'));
+            b.classList.toggle('on', mine);
+            if (!mine) b.textContent = '💧 스포이드';
+        });
     }
 
     // ===== 사진 불러오기 =====
@@ -3960,7 +3987,7 @@ body.android-mode #calcIconPlusMinus::after {
         const tc = document.querySelector('meta[name="theme-color"]');
         if (tc) {
             if (!spPrevThemeColor) spPrevThemeColor = tc.getAttribute('content') || '#0a0a0a';
-            tc.setAttribute('content', spBoxOn ? spBoxC : spPrevThemeColor);
+            tc.setAttribute('content', spBarC);
         }
 
         document.getElementById('screenPickStage').classList.add('active');
@@ -4091,7 +4118,11 @@ body.android-mode #calcIconPlusMinus::after {
         const bC = document.getElementById('spBoxColor');
         if (bC) { bC.value = spBoxC; bC.addEventListener('input', () => { spBoxC = bC.value; spSave(SP.boxC, spBoxC); spApplyPreviewStyle(); }); }
         const eye = document.getElementById('spEyedropper');
-        if (eye) eye.addEventListener('click', () => spSetPicking(!spPicking));
+        if (eye) eye.addEventListener('click', () => spSetPicking(!(spPicking && spPickKey === 'box'), 'box'));
+        const barC = document.getElementById('spBarColor');
+        if (barC) { barC.value = spBarC; barC.addEventListener('input', () => { spBarC = barC.value; spSave('sp_bar_color', spBarC); }); }
+        const barEye = document.getElementById('spBarEyedropper');
+        if (barEye) barEye.addEventListener('click', () => spSetPicking(!(spPicking && spPickKey === 'bar'), 'bar'));
 
         // 터치 영역
         const pOn = document.getElementById('spTapToggle');
@@ -4125,8 +4156,29 @@ body.android-mode #calcIconPlusMinus::after {
         });
 
         // 터치 영역을 누르면 계산기 화면으로
+        // 터치 영역: click은 iOS에서 한 박자 늦고 두 번 탭이 확대로 새기도 해서
+        // 손이 닿는 즉시 반응하도록 touchstart를 쓴다.
         const tapZone = document.getElementById('spStageTap');
-        if (tapZone) tapZone.addEventListener('click', () => { if (spTapOn) stopScreenPick(); });
+        if (tapZone) {
+            const fire = (e) => {
+                if (!spTapOn) return;
+                e.preventDefault();
+                stopScreenPick();
+            };
+            tapZone.addEventListener('touchstart', fire, { passive: false });
+            tapZone.addEventListener('click', fire);
+        }
+        // 공연 화면에서 두 번 탭 확대 차단
+        const stageEl = document.getElementById('screenPickStage');
+        if (stageEl) {
+            let lastTap = 0;
+            stageEl.addEventListener('touchend', (e) => {
+                const now = Date.now();
+                if (now - lastTap < 350) e.preventDefault();
+                lastTap = now;
+            }, { passive: false });
+            stageEl.addEventListener('gesturestart', (e) => e.preventDefault());
+        }
 
         // 나가기: 왼쪽 위 모서리를 1.5초 길게 누르기
         const exit = document.getElementById('screenPickExit');
