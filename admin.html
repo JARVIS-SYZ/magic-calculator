@@ -387,6 +387,13 @@ body.android-mode {
     font-family: 'SamsungOne', 'Noto Sans KR', Roboto, -apple-system, sans-serif;
 }
 
+/* 설명글의 플랫폼별 문구 전환 - 안드로이드는 헤더가 없어 조작 위치가 달라진다 */
+.android-only { display: none; }
+body.android-mode .ios-only { display: none; }
+body.android-mode .android-only { display: inline; }
+/* 고스트 입력 신호: iOS는 상단 도트가 사라지고, 안드로이드는 헤더가 없으니 도구줄 시계가 사라진다 */
+body.android-mode.dots-hidden .android-tools .at-clock { opacity: 0; }
+
 /* One UI에는 계산기 위 헤더가 없다. 헤더의 두 아이콘이 하던 역할은
  * 도구줄로 옮겼다 - 시계 = 모드 인디케이터, 자 = 포스 설정 진입 */
 body.android-mode .header { display: none; }
@@ -762,7 +769,7 @@ body.android-mode #calcIconPlusMinus::after {
         <div class="preview-text" id="previewResult"></div>
     </div>
     <div class="android-tools">
-        <button type="button" aria-label="계산 기록" onclick="openAdminPanel()">
+        <button type="button" class="at-clock" aria-label="계산 기록" onclick="openAdminPanel()">
             <svg class="at-icon" viewBox="0 0 24 24">
                 <circle cx="12" cy="12" r="8.5"/>
                 <line id="androidClockHour" x1="12" y1="12" x2="12" y2="7.2"/>
@@ -1081,7 +1088,7 @@ body.android-mode #calcIconPlusMinus::after {
             </div>
             <div class="how-to-row">
                 <div class="how-to-step">2</div>
-                <div class="how-to-desc">좌상단 도트가 숨겨지고, 설정된 딜레이 후</div>
+                <div class="how-to-desc"><span class="ios-only">좌상단 도트가</span><span class="android-only">키패드 위 시계 아이콘이</span> 숨겨지고, 설정된 딜레이 후</div>
             </div>
             <div class="how-to-row">
                 <div class="how-to-step">3</div>
@@ -1156,6 +1163,7 @@ body.android-mode #calcIconPlusMinus::after {
     <div class="admin-page-content">
         <div class="admin-section">
             <div class="admin-section-title">🔮 동작 방법</div>
+            <div class="android-only" style="font-size:12px;color:#ff9f0a;margin-bottom:12px;line-height:1.6">⚠️ 666 모드는 안드로이드 관객용 기기에서는 잠겨 있습니다 (진입 제스처 무시).</div>
             <div class="how-to-row">
                 <div class="how-to-step">1</div>
                 <div class="how-to-desc"><span class="key-badge">'='</span> 을 <b>빠르게 세 번</b> 탭하면 666 모드 켜짐</div>
@@ -1222,7 +1230,7 @@ body.android-mode #calcIconPlusMinus::after {
             <div class="admin-section-title">🍎 동작 방법</div>
             <div class="how-to-row">
                 <div class="how-to-step">1</div>
-                <div class="how-to-desc">화면 우하단 <span class="key-badge">계산기 아이콘</span>을 <b>빠르게 세 번</b> 탭<br>또는 <b>3초 길게</b> 누르기</div>
+                <div class="how-to-desc"><span class="ios-only">화면 우하단 <span class="key-badge">계산기 아이콘</span></span><span class="android-only">키패드 위 <span class="key-badge">자 아이콘</span> 또는 <span class="key-badge">'+/−'</span> 버튼</span>을 <b>빠르게 세 번</b> 탭<br>또는 <b>3초 길게</b> 누르기</div>
             </div>
             <div class="how-to-row">
                 <div class="how-to-step">2</div>
