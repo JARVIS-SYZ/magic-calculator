@@ -775,7 +775,7 @@ body.android-mode #calcIconPlusMinus::after {
                 localStorage.setItem('calc_ios_version', iosParam);
             } else {
                 const storedIos = localStorage.getItem('calc_ios_version');
-                ios26Mode = (storedIos === null) ? true : resolveIos26(storedIos);
+                ios26Mode = resolveIos26(storedIos === null ? 'auto' : storedIos);
             }
 
         } catch (e) {}

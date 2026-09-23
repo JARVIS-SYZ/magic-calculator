@@ -865,8 +865,8 @@ body.android-mode #calcIconPlusMinus::after {
         <div class="setting-item">
             <div class="setting-label">iOS 버전</div>
             <select class="version-select" id="iosVersionSelect" onchange="onIosVersionChange(this.value)">
-                <option value="auto">자동 (관객 기기 감지)</option>
-                <option value="18">iOS 18 (기본)</option>
+                <option value="auto">자동 (관객 기기 감지 · 기본)</option>
+                <option value="18">iOS 18</option>
                 <option value="26">iOS 26</option>
             </select>
         </div>
@@ -1984,7 +1984,7 @@ body.android-mode #calcIconPlusMinus::after {
                 d2:  parseFloat(localStorage.getItem('delay666_s2')) || 10,
                 d3:  parseFloat(localStorage.getItem('delay666_s3')) || 5,
                 ctd: parseFloat(localStorage.getItem('admin_counting_trigger_delay')) || 1,
-                ios: localStorage.getItem('admin_ios_version') || '26',
+                ios: localStorage.getItem('admin_ios_version') || 'auto',
                 updatedAt: new Date().toISOString()
             }, { merge: true });
         } catch (e) { console.error('config sync', e); }
@@ -2110,7 +2110,7 @@ body.android-mode #calcIconPlusMinus::after {
         const d3  = localStorage.getItem('delay666_s3') || '5';
         const ctd = localStorage.getItem('admin_counting_trigger_delay') || '1';
 
-        const ios = localStorage.getItem('admin_ios_version') || '26';
+        const ios = localStorage.getItem('admin_ios_version') || 'auto';
 
         const params = new URLSearchParams({
             id: 'magic2024',
@@ -2650,7 +2650,7 @@ body.android-mode #calcIconPlusMinus::after {
     };
 
     // iOS 버전 초기 로드
-    const savedIosVersion = localStorage.getItem('admin_ios_version') || '18';
+    const savedIosVersion = localStorage.getItem('admin_ios_version') || 'auto';
     ios26Mode = resolveIos26(savedIosVersion);
     const iosVersionSelect = document.getElementById('iosVersionSelect');
     const iosVersionSelectMenu = document.getElementById('iosVersionSelectMenu');
