@@ -4,10 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <!-- 관리자 앱만 상태바 밑까지 그린다. 그래야 그 자리 띠를 우리가 원하는 색으로 칠할 수 있다.
-         불투명으로 두면 iOS가 실행 시점에 색을 한 번만 읽어, 바꿀 때마다 앱을 껐다 켜야 했다.
-         (관객용 index.html은 불투명 유지 — iOS 26 흐림 띠를 피하기 위해) -->
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#0a0a0a">
     <title>관리자</title>
@@ -784,9 +780,7 @@ body.android-mode #calcIconPlusMinus::after {
 /* 사진은 폭에 맞춰 놓고 위로 끌어올려, 캡쳐에 찍힌 예전 상태바를 화면 밖으로 잘라낸다 */
 #spStageImg { position:absolute; left:0; width:100%; height:auto; }
 #spStageBox { position:absolute; box-sizing:border-box; z-index:1; }
-/* 상태바 자리에 우리가 칠하는 띠 — 그 위에 OS가 시간·배터리만 그린다 */
-#spStageBar { position:absolute; top:0; left:0; right:0; height:env(safe-area-inset-top, 0px); z-index:1; display:none; }
-#spPreviewBar { position:absolute; top:0; left:0; right:0; display:none; z-index:1; }
+
 #spStageTap { position:absolute; z-index:3; background:transparent; }
 /* 테스트 모드에서만 잠깐 드러낸다 */
 #spStageTap.reveal {
@@ -1201,14 +1195,15 @@ body.android-mode #calcIconPlusMinus::after {
             미리보기는 실제 공연 화면과 <b>같은 비율의 축소 모형</b>이라, 여기서 맞춘 자리가 그대로 나옵니다.</div>
 
             <div class="sp-row">
-                <span class="sp-label">사진 위로 올리기 (px)</span>
+                <span class="sp-label">위치 미세조정 (px)</span>
                 <span style="display:flex;align-items:center;gap:8px">
-                    <input type="number" class="sp-num" id="spShiftInput" min="0" max="400" step="1" value="54">
-                    <button class="sp-btn secondary" id="spShiftAuto">자동</button>
+                    <input type="number" class="sp-num" id="spShiftInput" min="-60" max="200" step="1" value="0">
+                    <button class="sp-btn secondary" id="spShiftAuto">0</button>
                 </span>
             </div>
-            <div class="sp-hint">사진을 위로 밀어 올려 <b>캡쳐에 찍힌 예전 시간·배터리</b>를 화면 밖으로 잘라냅니다.
-            <b>자동</b>은 이 기기의 상태바 높이를 넣어줍니다 (홈 화면 앱에서 눌러야 정확합니다).</div>
+            <div class="sp-hint">잘라낼 양은 <b>기기에 맞춰 자동으로</b> 정해집니다 — 캡쳐의 예전 시간·배터리 줄만
+            화면 밖으로 밀리고, 나머지는 원래 있던 자리에 그대로 붙습니다.
+            한두 px 어긋나 보일 때만 여기서 조정하세요.</div>
 
             <div class="sp-tabs">
                 <button class="sp-tab active" data-target="text">글자</button>
@@ -1284,21 +1279,21 @@ body.android-mode #calcIconPlusMinus::after {
                 </label>
             </div>
             <div class="sp-row">
-                <span class="sp-label">상단 띠 사용</span>
+                <span class="sp-label">상태바 색 사용</span>
                 <label class="toggle-switch">
                     <input type="checkbox" id="spBarToggle">
                     <span class="toggle-slider"></span>
                 </label>
             </div>
             <div class="sp-row">
-                <span class="sp-label">상단 띠 색</span>
+                <span class="sp-label">상태바 색</span>
                 <span style="display:flex;align-items:center;gap:10px">
                     <input type="color" id="spBarColor" value="#000000" style="width:52px;height:34px;border:none;background:none">
                     <button class="sp-btn secondary" id="spBarEyedropper">💧 스포이드</button>
                 </span>
             </div>
-            <div class="sp-hint">시간·배터리가 뜨는 <b>맨 윗줄</b>을 이 색으로 칠합니다. 사진에 찍힌 예전 시간·배터리도 같이 가려집니다.
-            스포이드로 사진 맨 윗부분과 같은 색을 찍으면 이어 보입니다. <b>즉시 반영되고, 화면 픽에서만 나타납니다.</b></div>
+            <div class="sp-hint">시간·배터리가 뜨는 <b>맨 윗줄</b>의 색입니다. 스포이드로 사진 맨 윗부분과 같은 색을 찍으면 이어 보입니다.
+            iOS가 이 색을 <b>앱 실행 시점에 한 번만</b> 읽기 때문에, 바꾼 뒤에는 앱을 완전히 껐다 켜야 반영됩니다.</div>
             <div class="sp-row">
                 <span class="sp-label">상태바 자리에 맞추기</span>
                 <button class="sp-btn secondary" id="spBoxPreset">자동 맞춤</button>
@@ -1368,7 +1363,6 @@ body.android-mode #calcIconPlusMinus::after {
 <!-- 화면 픽 공연 화면 -->
 <div id="screenPickStage">
     <img id="spStageImg" alt="">
-    <div id="spStageBar"></div>
     <div id="spStageBox"></div>
     <div id="spLiveText"></div>
     <div id="spStageTap"></div>
@@ -3652,14 +3646,19 @@ body.android-mode #calcIconPlusMinus::after {
     let spLive = spBool(SP.live, false);
     let spPush = spBool(SP.push, true);
     let spLiveUnsub = null;
-    // 사진을 위로 끌어올려 캡쳐에 찍힌 예전 시간·배터리를 화면 밖으로 잘라낸다.
-    // 자동값은 홈 화면 앱에서만 정확하다 — Safari에서는 브라우저 툴바까지 더해져
-    // 엉뚱하게 큰 값이 나오므로 그때는 건드리지 않는다.
-    function spAutoShift() {
-        if (window.navigator.standalone !== true) return spNum('sp_shift', 54);
+    // 사진을 얼마나 위로 올려야 하는지는 화면 모드가 정한다. 저장해 두면 모드가 바뀌었을 때
+    // 값이 어긋나 사진 전체가 밀려 올라갔다. 그래서 매번 계산한다.
+    //   상태바 밑까지 그리는 앱 → safe-area 상단 여백이 있음 → 0 (자를 필요 없음)
+    //   상태바 아래에서 시작하는 앱 → 상태바 높이만큼 잘라야 정확히 제자리에 붙는다
+    function spBaseShift() {
+        const saTop = parseFloat(getComputedStyle(document.documentElement)
+            .getPropertyValue('--sa-top')) || 0;
+        if (saTop > 0) return 0;
+        if (window.navigator.standalone !== true) return 0;   // 브라우저에서는 측정 불가
         return Math.max(0, Math.round((screen.height || 0) - window.innerHeight));
     }
-    let spShift = spNum('sp_shift', 54);
+    let spShiftAdj = spNum('sp_shift_adj', 0);   // 손으로 더하는 미세조정
+    function spEffShift() { return Math.max(0, spBaseShift() + spShiftAdj); }
     let spTarget = 'text';       // 지금 편집 중인 대상
     let spPicking = false;       // 스포이드 모드
     let spPickKey = 'box';       // 스포이드가 칠할 대상: 'box' | 'bar'
@@ -3694,7 +3693,7 @@ body.android-mode #calcIconPlusMinus::after {
         const k = r.width / Math.max(1, window.innerWidth);
         const dw = r.width;
         const dh = (spImgW && spImgH) ? dw * (spImgH / spImgW) : r.height;
-        return { k: k, dw: dw, dh: dh, ox: 0, oy: -spShift * k };
+        return { k: k, dw: dw, dh: dh, ox: 0, oy: -spEffShift() * k };
     }
 
     function spRenderPreview() {
@@ -3707,9 +3706,8 @@ body.android-mode #calcIconPlusMinus::after {
             return;
         }
         wrap.style.backgroundImage = 'url(' + spImage + ')';
-        wrap.style.backgroundPosition = '0px ' + (-spShift * (wrap.clientWidth / Math.max(1, window.innerWidth))) + 'px';
+        wrap.style.backgroundPosition = '0px ' + (-spEffShift() * (wrap.clientWidth / Math.max(1, window.innerWidth))) + 'px';
         wrap.innerHTML =
-            '<div id="spPreviewBar"></div>' +
             '<div class="sp-el" id="spPreviewBox"></div>' +
             '<div class="sp-overlay-text" id="spPreviewText">1,234</div>' +
             '<div class="sp-el" id="spPreviewTap"></div>';
@@ -3725,13 +3723,8 @@ body.android-mode #calcIconPlusMinus::after {
         const p = document.getElementById('spPreviewTap');
         if (!t || !b || !p) return;
         const scale = wrap.clientWidth / Math.max(1, window.innerWidth);
-        wrap.style.backgroundPosition = '0px ' + (-spShift * scale) + 'px';
-        const pvBar = document.getElementById('spPreviewBar');
-        if (pvBar) {
-            const saTop = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--sa-top')) || 0;
-            pvBar.style.height = (saTop * scale) + 'px';
-        }
-        spApplyBarColorNow();
+        wrap.style.backgroundPosition = '0px ' + (-spEffShift() * scale) + 'px';
+
 
         t.style.left = spX + '%'; t.style.top = spY + '%';
         spApplyTextStyle(t, Math.max(8, spSize * scale));
@@ -4012,7 +4005,7 @@ body.android-mode #calcIconPlusMinus::after {
         }
         const si = document.getElementById('spStageImg');
         si.src = spImage;
-        si.style.top = (-spShift) + 'px';
+        si.style.top = (-spEffShift()) + 'px';
 
         const t = document.getElementById('spLiveText');
         t.style.left = spX + '%'; t.style.top = spY + '%';
@@ -4031,7 +4024,7 @@ body.android-mode #calcIconPlusMinus::after {
         if (testMode) setTimeout(() => p.classList.remove('reveal'), 3000);
 
         console.log('화면 픽 시작 — 터치영역', spTapOn ? ('켜짐 ' + spTapX + '%,' + spTapY + '% ' + spTapW + 'x' + spTapH) : '꺼짐',
-                    '/ 가림박스', spBoxOn ? '켜짐' : '꺼짐');
+                    '/ 가림박스', spBoxOn ? '켜짐' : '꺼짐', '/ 자르기', spEffShift() + 'px');
         spApplyBarColorNow();
 
         document.getElementById('screenPickStage').classList.add('active');
@@ -4104,25 +4097,20 @@ body.android-mode #calcIconPlusMinus::after {
     };
     window.startScreenPick = startScreenPick;
 
-    // 상단 띠는 공연 화면 안에 우리가 직접 그린다 (OS 상태바는 투명).
-    // 문서 배경을 바꾸던 예전 방식은 앱 전체에 색이 남고 재시작해야만 반영됐다.
+    // 불투명 상태바의 색은 iOS가 문서 배경색에서, 그것도 앱 실행 시점에 한 번만 읽는다.
+    // 그래서 페이지가 뜨자마자 적용해 둔다. 계산기 화면은 .calculator가 검정으로 덮으므로
+    // 눈에 보이는 UI는 그대로고, 상태바 영역만 이 색이 된다.
     function spApplyBarColorNow() {
-        const bar = document.getElementById('spStageBar');
-        if (bar) {
-            bar.style.background = spBarC;
-            bar.style.display = spBarOn ? 'block' : 'none';
-        }
-        const pv = document.getElementById('spPreviewBar');
-        if (pv) {
-            pv.style.background = spBarC;
-            pv.style.display = spBarOn ? 'block' : 'none';
-        }
+        const c = spBarOn ? spBarC : '#000000';
+        document.documentElement.style.backgroundColor = c;
+        document.body.style.backgroundColor = c;
         const tc = document.querySelector('meta[name="theme-color"]');
-        if (tc) tc.setAttribute('content', spBarOn ? spBarC : '#0a0a0a');
+        if (tc) tc.setAttribute('content', c);
     }
 
     // ===== 초기화 =====
     (function spInit() {
+        spApplyBarColorNow();
         spMeasureImage();
 
         const file = document.getElementById('spFileInput');
@@ -4134,14 +4122,14 @@ body.android-mode #calcIconPlusMinus::after {
         // 사진 위로 올리기
         const shiftIn = document.getElementById('spShiftInput');
         function setShift(v) {
-            spShift = Math.min(400, Math.max(0, Math.round(parseFloat(v) || 0)));
-            if (shiftIn) shiftIn.value = String(spShift);
-            spSave('sp_shift', spShift);
+            spShiftAdj = Math.min(200, Math.max(-60, Math.round(parseFloat(v) || 0)));
+            if (shiftIn) shiftIn.value = String(spShiftAdj);
+            spSave('sp_shift_adj', spShiftAdj);
             spApplyPreviewStyle();
         }
-        if (shiftIn) { shiftIn.value = String(spShift); shiftIn.addEventListener('change', () => setShift(shiftIn.value)); }
+        if (shiftIn) { shiftIn.value = String(spShiftAdj); shiftIn.addEventListener('change', () => setShift(shiftIn.value)); }
         const shiftAuto = document.getElementById('spShiftAuto');
-        if (shiftAuto) shiftAuto.addEventListener('click', () => setShift(spAutoShift()));
+        if (shiftAuto) shiftAuto.addEventListener('click', () => setShift(0));
 
         // 편집 대상 탭
         const HINTS = {
