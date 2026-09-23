@@ -773,7 +773,7 @@ body.android-mode #calcIconPlusMinus::after {
 
 /* 실제 공연 화면 */
 /* 공연 화면에서는 두 번 탭 확대가 걸리면 안 된다 */
-#screenPickStage { position:fixed; inset:0; z-index:5000; display:none; background:#000; overflow:hidden;
+#screenPickStage { position:fixed; inset:0; z-index:5000; display:none; overflow:hidden;
     touch-action:manipulation; -webkit-user-select:none; user-select:none; }
 #screenPickStage * { touch-action:manipulation; -webkit-touch-callout:none; }
 #screenPickStage.active { display:block; }
@@ -4027,6 +4027,7 @@ body.android-mode #calcIconPlusMinus::after {
                     '/ 가림박스', spBoxOn ? '켜짐' : '꺼짐', '/ 자르기', spEffShift() + 'px');
         spApplyBarColorNow();
 
+        spApplyBarColorNow();
         document.getElementById('screenPickStage').classList.add('active');
         window.closePage();
         window.closeSideMenu();
@@ -4097,15 +4098,14 @@ body.android-mode #calcIconPlusMinus::after {
     };
     window.startScreenPick = startScreenPick;
 
-    // 불투명 상태바의 색은 iOS가 문서 배경색에서, 그것도 앱 실행 시점에 한 번만 읽는다.
-    // 그래서 페이지가 뜨자마자 적용해 둔다. 계산기 화면은 .calculator가 검정으로 덮으므로
-    // 눈에 보이는 UI는 그대로고, 상태바 영역만 이 색이 된다.
+    // iOS는 불투명 상태바의 색을 '화면 맨 위를 덮고 있는 것'의 배경색에서 실시간으로 읽는다.
+    // 문서 배경을 칠했더니 계산기로 돌아갔을 때만 그 색이 뜨고, 공연 화면에서는 스테이지의
+    // 검정이 읽혀서 정반대로 동작했다. 그래서 스테이지 자체를 그 색으로 칠한다.
     function spApplyBarColorNow() {
-        const c = spBarOn ? spBarC : '#000000';
-        document.documentElement.style.backgroundColor = c;
-        document.body.style.backgroundColor = c;
+        const stage = document.getElementById('screenPickStage');
+        if (stage) stage.style.backgroundColor = spBarOn ? spBarC : '#000000';
         const tc = document.querySelector('meta[name="theme-color"]');
-        if (tc) tc.setAttribute('content', c);
+        if (tc) tc.setAttribute('content', spBarOn ? spBarC : '#0a0a0a');
     }
 
     // ===== 초기화 =====
@@ -4255,23 +4255,40 @@ body.android-mode #calcIconPlusMinus::after {
                 return x >= spTapX - spTapW / 2 - PAD && x <= spTapX + spTapW / 2 + PAD
                     && y >= spTapY - spTapH / 2 - PAD && y <= spTapY + spTapH / 2 + PAD;
             };
-            let lastFire = 0;
-            const onDown = (clientX, clientY, e) => {
-                // 왼쪽 위 나가기 영역은 길게 누르기 전용이라 여기서 건드리지 않는다
+            // 스테이지를 touchstart에 없애면, 이어지는 click이 그 아래 계산기로 떨어져
+            // 헤더 메뉴 아이콘을 눌러 설정창이 열렸다. 그래서 touchstart에서는 기본 동작만
+            // 막아 두고(= click 자체가 만들어지지 않게), 실제로 나가는 건 touchend에서 한다.
+            let armed = false, lastFire = 0;
+            const hit = (clientX, clientY) => {
                 const r = stageEl.getBoundingClientRect();
-                if (clientX - r.left < 72 && clientY - r.top < 72) return;
-                if (!inTapZone(clientX, clientY)) return;
-                const now = Date.now();
-                if (now - lastFire < 500) return;   // touch/pointer/mouse 중복 방지
-                lastFire = now;
-                if (e && e.cancelable) e.preventDefault();
-                stopScreenPick();
+                if (clientX - r.left < 72 && clientY - r.top < 72) return false;  // 나가기 모서리
+                return inTapZone(clientX, clientY);
             };
             stageEl.addEventListener('touchstart', (e) => {
-                if (e.touches && e.touches[0]) onDown(e.touches[0].clientX, e.touches[0].clientY, e);
+                const t = e.touches && e.touches[0];
+                if (!t) return;
+                armed = hit(t.clientX, t.clientY);
+                if (armed && e.cancelable) e.preventDefault();
             }, { passive: false });
-            stageEl.addEventListener('pointerdown', (e) => onDown(e.clientX, e.clientY, e));
-            stageEl.addEventListener('mousedown', (e) => onDown(e.clientX, e.clientY, e));
+            stageEl.addEventListener('touchend', (e) => {
+                if (!armed) return;
+                armed = false;
+                if (e.cancelable) e.preventDefault();
+                const now = Date.now();
+                if (now - lastFire < 600) return;
+                lastFire = now;
+                stopScreenPick();
+            }, { passive: false });
+            stageEl.addEventListener('touchcancel', () => { armed = false; });
+            // 마우스(데스크톱)에서는 click 한 번이면 충분하다
+            stageEl.addEventListener('click', (e) => {
+                if (!hit(e.clientX, e.clientY)) return;
+                const now = Date.now();
+                if (now - lastFire < 600) return;
+                lastFire = now;
+                e.preventDefault();
+                stopScreenPick();
+            });
 
             // 두 번 탭 확대 / 핀치 확대 차단
             let lastTap = 0;
