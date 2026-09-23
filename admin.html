@@ -4054,7 +4054,6 @@ body.android-mode #calcIconPlusMinus::after {
         document.getElementById('screenPickStage').classList.remove('active');
         spStopLiveWatch();
         spShieldClicks();
-        spApplyBarColorNow();
         spCloseAllPanels();
         // 앞서 예약돼 있던 openSideMenu 타이머가 남아 있을 수 있어 한 번 더 쓸어낸다
         setTimeout(spCloseAllPanels, 250);
@@ -4117,17 +4116,17 @@ body.android-mode #calcIconPlusMinus::after {
     // iOS는 불투명 상태바의 색을 '화면 맨 위를 덮고 있는 것'의 배경색에서 실시간으로 읽는다.
     // 문서 배경을 칠했더니 계산기로 돌아갔을 때만 그 색이 뜨고, 공연 화면에서는 스테이지의
     // 검정이 읽혀서 정반대로 동작했다. 그래서 스테이지 자체를 그 색으로 칠한다.
+    // 불투명 상태바의 색은 iOS가 정하고, 실험해 보니 '페이지가 뜰 때부터 칠해져 있을 때'만
+    // 확실히 먹혔다. 공연 시작 시점에 바꾸면 반영되지 않는다. 그래서 로드 때부터 계속 칠해 둔다.
+    // 계산기 화면 UI는 .calculator가 덮으므로 눈에 보이는 건 상태바뿐이다.
     function spApplyBarColorNow() {
         const c = spBarOn ? spBarC : '#000000';
         const stage = document.getElementById('screenPickStage');
-        const active = !!(stage && stage.classList.contains('active'));
-        // iOS는 상태바 색을 문서 배경에서 읽는데, 화면을 덮은 스테이지가 검정이면 그게 이긴다.
-        // 그래서 둘 다 칠한다. 계산기로 돌아가면 되돌려 색이 남지 않게 한다.
         if (stage) stage.style.backgroundColor = c;
-        document.documentElement.style.backgroundColor = active ? c : '';
-        document.body.style.backgroundColor = active ? c : '';
+        document.documentElement.style.backgroundColor = c;
+        document.body.style.backgroundColor = c;
         const tc = document.querySelector('meta[name="theme-color"]');
-        if (tc) tc.setAttribute('content', active ? c : '#0a0a0a');
+        if (tc) tc.setAttribute('content', c);
     }
 
     // ===== 초기화 =====
@@ -4288,20 +4287,21 @@ body.android-mode #calcIconPlusMinus::after {
                 if (clientX - r.left < 72 && clientY - r.top < 72) return false;  // 나가기 모서리
                 return inTapZone(clientX, clientY);
             };
+            // 손이 닿는 순간 바로 나간다. 뒤따르는 click은 preventDefault와 방패가 막는다.
+            // (설정창이 뜨던 건 통과 클릭이 아니라 closePage의 메뉴 재열기가 원인이었다.)
             stageEl.addEventListener('touchstart', (e) => {
                 const t = e.touches && e.touches[0];
-                if (!t) return;
-                armed = hit(t.clientX, t.clientY);
-                if (armed && e.cancelable) e.preventDefault();
-            }, { passive: false });
-            stageEl.addEventListener('touchend', (e) => {
-                if (!armed) return;
-                armed = false;
+                if (!t || !hit(t.clientX, t.clientY)) return;
+                armed = true;
                 if (e.cancelable) e.preventDefault();
                 const now = Date.now();
                 if (now - lastFire < 600) return;
                 lastFire = now;
                 stopScreenPick();
+            }, { passive: false });
+            stageEl.addEventListener('touchend', (e) => {
+                if (armed && e.cancelable) e.preventDefault();
+                armed = false;
             }, { passive: false });
             stageEl.addEventListener('touchcancel', () => { armed = false; });
             // 마우스(데스크톱)에서는 click 한 번이면 충분하다
