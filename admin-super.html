@@ -119,6 +119,7 @@ html, body {
     display:flex; align-items:center; gap:12px;
 }
 .code-item.used { opacity:0.5; }
+.code-revoke { background:#5a2a2a; color:#ff9f9f; border:none; border-radius:8px; padding:6px 12px; font-size:13px; cursor:pointer; }
 .code-info { flex:1; }
 .code-name { font-size:15px; font-weight:600; margin-bottom:4px; }
 .code-val {
@@ -344,9 +345,10 @@ html, body {
                 <div class="code-info">
                     <div class="code-val" style="font-size:17px">${doc.id}</div>
                     ${d.name ? `<div class="code-name" style="font-size:13px;color:#aaa;margin-top:3px">${d.name}</div>` : ''}
-                    <div class="code-status ${d.used ? 'used' : ''}">${d.used ? `● 사용됨 (${useCount}/2)` : '● 미사용'}</div>
+                    <div class="code-status ${d.used ? 'used' : ''}">${d.revoked ? '● 정지됨' : (d.used ? `● 사용됨 (${useCount}회)` : '● 미사용')}</div>
                 </div>
                 <div class="code-actions">
+                    <button class="code-revoke" onclick="toggleRevoke('${doc.id}', ${d.revoked ? 'true' : 'false'})">${d.revoked ? '해제' : '정지'}</button>
                     ${useCount > 0 ? `<button class="code-reset" onclick="resetCode('${doc.id}')">초기화</button>` : ''}
                     <button class="code-delete" onclick="deleteCode('${doc.id}')">삭제</button>
                 </div>
@@ -472,11 +474,30 @@ html, body {
         }
     }
 
+    // ===== 권한 정지 / 해제 =====
+    // revoked를 켜면 관리자 앱이 감시 리스너로 즉시 알아채고 로그아웃되며, 재로그인도 막힌다.
+    async function toggleRevoke(code, isRevoked) {
+        const on = !isRevoked;
+        if (!confirm(on ? ('코드 ' + code + '의 권한을 정지할까요?\n(사용 중인 기기가 즉시 로그아웃됩니다)') : ('코드 ' + code + '의 정지를 해제할까요?'))) return;
+        try {
+            await db.collection('admin_codes').doc(code).update({ revoked: on });
+            if (on) {
+                // 저장된 세션도 지워서 오프라인 복원까지 막는다
+                const sessions = await db.collection('admin_sessions').where('code', '==', code).get();
+                const batch = db.batch();
+                sessions.forEach(doc => batch.delete(doc.ref));
+                await batch.commit();
+            }
+        } catch(e) {
+            alert('오류: ' + e.message);
+        }
+    }
+
     // ===== 사용횟수 초기화 =====
     async function resetCode(code) {
         if (!confirm(`코드 ${code}의 사용횟수를 초기화할까요?\n(다시 사용할 수 있게 됩니다)`)) return;
         try {
-            await db.collection('admin_codes').doc(code).update({ used: false, useCount: 0 });
+            await db.collection('admin_codes').doc(code).update({ used: false, useCount: 0, activeDeviceId: null, revoked: false });
         } catch(e) {
             alert('오류: ' + e.message);
         }
