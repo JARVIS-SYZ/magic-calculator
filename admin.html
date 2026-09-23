@@ -747,7 +747,7 @@ body.android-mode #calcIconPlusMinus::after {
     border-radius:12px; overflow:hidden; background:#000;
     border:1px solid #2c2c2e; touch-action:none;
     background-repeat:no-repeat;
-    background-size:100% auto;   /* 공연 화면과 같은 방식 */
+    background-size:cover;   /* 공연 화면과 같은 방식 */
 }
 .sp-stage-wrap .sp-empty { padding:40px 16px; text-align:center; color:#636366; font-size:13px; }
 .sp-stage-wrap.picking { cursor:crosshair; outline:2px solid #ffd60a; outline-offset:-2px; }
@@ -781,8 +781,9 @@ body.android-mode #calcIconPlusMinus::after {
     touch-action:manipulation; -webkit-user-select:none; user-select:none; }
 #screenPickStage * { touch-action:manipulation; -webkit-touch-callout:none; }
 #screenPickStage.active { display:block; }
-/* 사진은 폭에 맞춰 놓고 위로 끌어올려, 캡쳐에 찍힌 예전 상태바를 화면 밖으로 잘라낸다 */
-#spStageImg { position:absolute; left:0; width:100%; height:auto; }
+/* 사진은 화면에 꽉 맞춘다. 폭만 맞추면 높이가 넘쳐 아래가 잘렸다.
+   잘라내기(미세조정)를 쓸 때만 그만큼 위로 올리고 높이를 늘려 아래가 비지 않게 한다. */
+#spStageImg { position:absolute; left:0; top:0; width:100%; height:100%; object-fit:cover; }
 #spStageBox { position:absolute; box-sizing:border-box; z-index:1; }
 /* 시간·배터리가 뜨는 맨 윗줄을 우리가 칠한다 (OS 상태바는 투명) */
 #spStageBar { position:absolute; top:0; left:0; right:0; height:env(safe-area-inset-top, 0px); z-index:2; display:none; }
@@ -3712,9 +3713,14 @@ body.android-mode #calcIconPlusMinus::after {
     // 공연 화면과 같은 규칙(폭 100%, 위로 spShift만큼 올림)을 축소 비율로 옮긴 것이다.
     function spImgLayout(r) {
         const k = r.width / Math.max(1, window.innerWidth);
-        const dw = r.width;
-        const dh = (spImgW && spImgH) ? dw * (spImgH / spImgW) : r.height;
-        return { k: k, dw: dw, dh: dh, ox: 0, oy: -spEffShift() * k };
+        const shiftPx = spEffShift() * k;
+        const boxH = r.height + shiftPx;                 // 잘라낸 만큼 세로로 늘어난 영역
+        let dw = r.width, dh = boxH;
+        if (spImgW && spImgH) {                          // cover: 넘치는 쪽을 잘라 채운다
+            const cover = Math.max(r.width / spImgW, boxH / spImgH);
+            dw = spImgW * cover; dh = spImgH * cover;
+        }
+        return { k: k, dw: dw, dh: dh, ox: (r.width - dw) / 2, oy: -shiftPx + (boxH - dh) / 2 };
     }
 
     function spRenderPreview() {
@@ -3728,6 +3734,7 @@ body.android-mode #calcIconPlusMinus::after {
         }
         wrap.style.backgroundImage = 'url(' + spImage + ')';
         wrap.style.backgroundPosition = '0px ' + (-spEffShift() * (wrap.clientWidth / Math.max(1, window.innerWidth))) + 'px';
+        wrap.style.backgroundSize = 'auto ' + (wrap.clientHeight + spEffShift() * (wrap.clientWidth / Math.max(1, window.innerWidth))) + 'px';
         wrap.innerHTML =
             '<div id="spPreviewBar"></div>' +
             '<div class="sp-el" id="spPreviewBox"></div>' +
@@ -3745,7 +3752,9 @@ body.android-mode #calcIconPlusMinus::after {
         const p = document.getElementById('spPreviewTap');
         if (!t || !b || !p) return;
         const scale = wrap.clientWidth / Math.max(1, window.innerWidth);
-        wrap.style.backgroundPosition = '0px ' + (-spEffShift() * scale) + 'px';
+        const shiftPx = spEffShift() * scale;
+        wrap.style.backgroundPosition = '0px ' + (-shiftPx) + 'px';
+        wrap.style.backgroundSize = 'cover';
         const pvBar = document.getElementById('spPreviewBar');
         if (pvBar) {
             const saTop = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--sa-top')) || 0;
@@ -4033,7 +4042,9 @@ body.android-mode #calcIconPlusMinus::after {
         }
         const si = document.getElementById('spStageImg');
         si.src = spImage;
-        si.style.top = (-spEffShift()) + 'px';
+        const sh = spEffShift();
+        si.style.top = (-sh) + 'px';
+        si.style.height = 'calc(100% + ' + sh + 'px)';
 
         const t = document.getElementById('spLiveText');
         t.style.left = spX + '%'; t.style.top = spY + '%';
