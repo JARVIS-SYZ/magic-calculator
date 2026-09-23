@@ -654,6 +654,26 @@ body.android-mode #calcIconPlusMinus::after {
     const TAP_TIMEOUT = 500;
 
     let ios26Mode = false;
+    // iOS 메이저 버전 추출 — Safari UA는 "iPhone OS 26_0 like Mac OS X" / "Version/26.0 Mobile" 형태
+    function detectIosMajor() {
+        const ua = navigator.userAgent || '';
+        let m = ua.match(/(?:iPhone|iPad|iPod)[^)]*?OS (\d+)[_\d]*/);
+        if (m) return parseInt(m[1], 10);
+        m = ua.match(/Version\/(\d+)[.\d]*\s+Mobile/);
+        if (m) return parseInt(m[1], 10);
+        return null;
+    }
+
+    // 설정값이 'auto'면 기기의 iOS 버전으로 판단한다 (26 이상 → iOS 26 스타일).
+    // 안드로이드에선 android-mode CSS가 어차피 덮으므로 어느 쪽이든 화면은 같다.
+    function resolveIos26(val) {
+        if (String(val) === 'auto') {
+            const major = detectIosMajor();
+            return (major === null) ? true : (major >= 26);
+        }
+        return String(val) === '26';
+    }
+
     let displayTapCount = 0;
     let displayTapTimer = null;
     const DISPLAY_TAP_TIMEOUT = 500;
@@ -751,11 +771,11 @@ body.android-mode #calcIconPlusMinus::after {
             // iOS 버전: URL에 있으면 적용 후 기억, 없으면 저장된 값(없으면 기본 26) 복원
             const iosParam = params.get('ios');
             if (iosParam !== null) {
-                ios26Mode = (iosParam === '26');
+                ios26Mode = resolveIos26(iosParam);
                 localStorage.setItem('calc_ios_version', iosParam);
             } else {
                 const storedIos = localStorage.getItem('calc_ios_version');
-                ios26Mode = (storedIos === null) ? true : (storedIos === '26');
+                ios26Mode = (storedIos === null) ? true : resolveIos26(storedIos);
             }
 
         } catch (e) {}
@@ -784,7 +804,7 @@ body.android-mode #calcIconPlusMinus::after {
         if (typeof c.ctd === 'number') { COUNTING_TRIGGER_DELAY = c.ctd * 1000; localStorage.setItem('calc_ctd', c.ctd); }
         if (c.ios !== undefined && c.ios !== null) {
             const iosStr = String(c.ios);
-            const want26 = (iosStr === '26');
+            const want26 = resolveIos26(iosStr);
             localStorage.setItem('calc_ios_version', iosStr);
             if (want26 !== ios26Mode) { ios26Mode = want26; applyLayoutMode(); }
         }
