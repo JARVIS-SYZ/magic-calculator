@@ -2049,6 +2049,31 @@ body.android-mode #calcIconPlusMinus::after {
         document.getElementById('notifyStatus').className = 'notify-status ok';
     }
 
+    // FCM은 앱이 화면에 떠 있는 동안에는 시스템 알림을 띄우지 않고 페이지의 onMessage로만
+    // 넘긴다. 그 핸들러가 없어서 메시지가 그냥 버려졌고, 진동(수신 내역 리스너가 울리는 것)만
+    // 오고 알림은 안 보였다. 포그라운드에서는 직접 띄워준다.
+    (async function enableForegroundNotifications() {
+        try {
+            if (!('Notification' in window) || Notification.permission !== 'granted') return;
+            if (!navigator.serviceWorker) return;
+            const swReg = await navigator.serviceWorker.ready;
+            firebase.messaging().onMessage((payload) => {
+                const n = (payload && payload.notification) || {};
+                const d = (payload && payload.data) || {};
+                swReg.showNotification(n.title || '계산기 입력', {
+                    body: n.body || d.expression || '',
+                    icon: 'icon-192.png',
+                    badge: 'icon-192.png',
+                    tag: 'calc-' + (d.calcId || Date.now()),
+                    renotify: true,
+                    data: d
+                });
+            });
+        } catch (e) {
+            console.error('포그라운드 알림 설정 오류:', e);
+        }
+    })();
+
     // ===== URL 생성 =====
     function buildCalcUrl() {
         const d1  = localStorage.getItem('delay666_s1') || '5';
