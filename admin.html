@@ -4034,21 +4034,30 @@ body.android-mode #calcIconPlusMinus::after {
                     '/ 가림박스', spBoxOn ? '켜짐' : '꺼짐', '/ 자르기', spEffShift() + 'px');
         spApplyBarColorNow();
 
-        spApplyBarColorNow();
+        spCloseAllPanels();
         document.getElementById('screenPickStage').classList.add('active');
-        window.closePage();
-        window.closeSideMenu();
+        spApplyBarColorNow();
+        setTimeout(spCloseAllPanels, 250);
         spStartLiveWatch();
     }
+    // closePage()는 닫은 뒤 150ms 후에 사이드 메뉴를 다시 연다.
+    // 정리하려고 불렀다가 오히려 설정창이 뜨는 원인이 됐으므로 직접 닫는다.
+    function spCloseAllPanels() {
+        document.querySelectorAll('.admin-page.active').forEach((el) => el.classList.remove('active'));
+        ['sideMenu', 'menuOverlay', 'settingsModal'].forEach((id) => {
+            const el = document.getElementById(id);
+            if (el) el.classList.remove('active');
+        });
+    }
+
     function stopScreenPick() {
         document.getElementById('screenPickStage').classList.remove('active');
         spStopLiveWatch();
         spShieldClicks();
-        // 계산기 화면으로 깨끗하게 돌아간다 — 설정/메뉴가 열린 채로 드러나면 안 된다
-        try { window.closeSettings && window.closeSettings(); } catch (e) {}
-        try { window.closePage && window.closePage(); } catch (e) {}
-        try { window.closeSideMenu && window.closeSideMenu(); } catch (e) {}
-        try { window.closeMenuOverlay && window.closeMenuOverlay(); } catch (e) {}
+        spApplyBarColorNow();
+        spCloseAllPanels();
+        // 앞서 예약돼 있던 openSideMenu 타이머가 남아 있을 수 있어 한 번 더 쓸어낸다
+        setTimeout(spCloseAllPanels, 250);
     }
 
     // 스테이지가 touchstart에 사라지면, 이어지는 click이 그 아래 계산기로 떨어진다.
@@ -4109,10 +4118,16 @@ body.android-mode #calcIconPlusMinus::after {
     // 문서 배경을 칠했더니 계산기로 돌아갔을 때만 그 색이 뜨고, 공연 화면에서는 스테이지의
     // 검정이 읽혀서 정반대로 동작했다. 그래서 스테이지 자체를 그 색으로 칠한다.
     function spApplyBarColorNow() {
+        const c = spBarOn ? spBarC : '#000000';
         const stage = document.getElementById('screenPickStage');
-        if (stage) stage.style.backgroundColor = spBarOn ? spBarC : '#000000';
+        const active = !!(stage && stage.classList.contains('active'));
+        // iOS는 상태바 색을 문서 배경에서 읽는데, 화면을 덮은 스테이지가 검정이면 그게 이긴다.
+        // 그래서 둘 다 칠한다. 계산기로 돌아가면 되돌려 색이 남지 않게 한다.
+        if (stage) stage.style.backgroundColor = c;
+        document.documentElement.style.backgroundColor = active ? c : '';
+        document.body.style.backgroundColor = active ? c : '';
         const tc = document.querySelector('meta[name="theme-color"]');
-        if (tc) tc.setAttribute('content', spBarOn ? spBarC : '#0a0a0a');
+        if (tc) tc.setAttribute('content', active ? c : '#0a0a0a');
     }
 
     // ===== 초기화 =====
