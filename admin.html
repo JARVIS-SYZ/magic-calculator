@@ -3799,24 +3799,46 @@ body.android-mode #calcIconPlusMinus::after {
         im.onload = () => { spImgW = im.width; spImgH = im.height; };
         im.src = spImage;
     }
+    // 사진은 화면을 가득 채워 쓰므로 해상도가 곧 화질이다.
+    // 예전에는 긴 변을 1080으로 맞춰서, 세로 스크린샷이 폭 기준으로 절반 이하로 깎였다.
+    // 이제는 이 기기 화면을 물리 픽셀로 채우는 데 필요한 크기를 기준으로 삼고,
+    // 용량은 화질을 단계적으로 낮춰가며 맞춘다.
+    const SP_DATA_LIMIT = 2.5 * 1024 * 1024;   // data URL 문자열 기준
     function spLoadFile(file) {
         const reader = new FileReader();
         reader.onload = () => {
             const img = new Image();
             img.onload = () => {
-                const max = 1080;
-                const ratio = Math.min(1, max / Math.max(img.width, img.height));
-                const cw = Math.round(img.width * ratio), ch = Math.round(img.height * ratio);
-                const cv = document.createElement('canvas');
-                cv.width = cw; cv.height = ch;
-                cv.getContext('2d').drawImage(img, 0, 0, cw, ch);
-                const data = cv.toDataURL('image/jpeg', 0.75);
+                const dpr = window.devicePixelRatio || 1;
+                const needW = Math.round(window.innerWidth * dpr);
+                const needH = Math.round(window.innerHeight * dpr);
+                // cover로 채우니 두 축 중 더 크게 늘어나는 쪽에 맞춘다. 원본보다 키우지는 않는다.
+                const scale = Math.min(1, Math.max(needW / img.width, needH / img.height));
+                let cw = Math.max(1, Math.round(img.width * scale));
+                let ch = Math.max(1, Math.round(img.height * scale));
+
+                let data = '', q = 0.92, guard = 0;
+                while (guard++ < 20) {
+                    const cv = document.createElement('canvas');
+                    cv.width = cw; cv.height = ch;
+                    const ctx = cv.getContext('2d');
+                    ctx.imageSmoothingEnabled = true;
+                    ctx.imageSmoothingQuality = 'high';
+                    ctx.drawImage(img, 0, 0, cw, ch);
+                    data = cv.toDataURL('image/jpeg', q);
+                    if (data.length <= SP_DATA_LIMIT) break;
+                    if (q > 0.62) { q = Math.round((q - 0.1) * 100) / 100; continue; }
+                    if (cw > 640) { cw = Math.round(cw * 0.85); ch = Math.round(ch * 0.85); q = 0.85; continue; }
+                    break;
+                }
+
                 try {
                     localStorage.setItem(SP.img, data);
                     spImage = data; spImgW = cw; spImgH = ch;
                     spRenderPreview();
+                    console.log('화면 픽 사진:', cw + 'x' + ch, 'q=' + q, Math.round(data.length / 1024) + 'KB');
                 } catch (e) {
-                    alert('사진이 너무 큽니다. 더 작은 캡쳐를 사용해주세요.');
+                    alert('사진 저장에 실패했습니다. 저장 공간이 부족할 수 있어요.');
                 }
             };
             img.src = reader.result;
