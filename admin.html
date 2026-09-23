@@ -2392,6 +2392,8 @@ body.android-mode #calcIconPlusMinus::after {
             let num = parseInt(currentValue); if(isNaN(num))num=0; num++;
             currentValue = num.toString(); fullExpression = num.toString();
             updateDisplay(currentValue); updateClearButtonState();
+            // 자동카운팅은 숫자가 올라가는 이 순간에만 아주 약한 틱을 준다
+            if ('vibrate' in navigator) navigator.vibrate(COUNT_TICK_VIBRATE_MS);
         }, 1000);
         vibrateDevice();
     }
@@ -2634,7 +2636,12 @@ body.android-mode #calcIconPlusMinus::after {
         settingsModal.classList.remove('active');
         if (forceNumber !== null && !isNaN(forceNumber)) { currentMode='force'; updateModeIndicator(); }
     }
-    function vibrateDevice() { if('vibrate' in navigator) navigator.vibrate(50); }
+    // 자동카운팅 중에는 숫자가 올라가는 순간의 약한 틱만 남기고 나머지 진동은 모두 끈다
+    const COUNT_TICK_VIBRATE_MS = 12;
+    function vibrateDevice() {
+        if (autoCountMode) return;
+        if ('vibrate' in navigator) navigator.vibrate(50);
+    }
 
     // ===== 디스플레이 =====
     function updateDisplay(value) {
