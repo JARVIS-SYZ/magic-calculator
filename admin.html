@@ -1040,6 +1040,18 @@ body.android-mode #calcIconPlusMinus::after {
             <button class="notify-btn" id="notifyBtn" onclick="subscribeNotification()">이 기기에서 알림 받기</button>
             <div class="notify-status" id="notifyStatus"></div>
         </div>
+
+        <div class="admin-section">
+            <div class="admin-section-title">🔕 배너 표시</div>
+            <div class="sp-row">
+                <span class="sp-label">배너 알림</span>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="spPushToggle" onchange="onSpPushChange(this.checked)">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+            <div class="sp-hint">끄면 관객이 계산해도 이 기기에 알림 배너가 뜨지 않습니다. 수신 내역과 화면 픽은 그대로 동작합니다.</div>
+        </div>
     </div>
 </div>
 
@@ -1198,7 +1210,7 @@ body.android-mode #calcIconPlusMinus::after {
         </div>
 
         <div class="admin-section">
-            <div class="admin-section-title">📡 수신 방식</div>
+            <div class="admin-section-title">📡 실시간 수신</div>
             <div class="sp-row">
                 <span class="sp-label">실시간 수신</span>
                 <label class="toggle-switch">
@@ -1208,14 +1220,6 @@ body.android-mode #calcIconPlusMinus::after {
             </div>
             <div class="sp-hint">관객 폰은 항상 값을 보냅니다. 이 스위치는 <b>이 기기가 그걸 계속 받을지</b>만 정합니다.
             켜면 누르는 대로 실시간으로, 끄면 <b>= 를 누른 결과값만</b> 나타납니다. 관객 폰을 새로고침할 필요가 없습니다.</div>
-            <div class="sp-row">
-                <span class="sp-label">배너 알림</span>
-                <label class="toggle-switch">
-                    <input type="checkbox" id="spPushToggle" onchange="onSpPushChange(this.checked)">
-                    <span class="toggle-slider"></span>
-                </label>
-            </div>
-            <div class="sp-hint">끄면 관객이 계산해도 이 기기에 알림 배너가 뜨지 않습니다. 수신 내역과 화면 픽은 그대로 동작합니다.</div>
         </div>
 
         <div class="admin-section">
