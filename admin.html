@@ -401,7 +401,10 @@ body.android-mode #menuDots .menu-dot  { fill: #8a8a8a; }
 body.android-mode #menuDots .menu-line { stroke: #8a8a8a; }
 
 /* 디스플레이: 수식이 크게(연산자만 초록), 결과 미리보기가 그 아래 작게 */
-body.android-mode .display { padding: 0 24px 4px 24px; }
+/* One UI는 수식이 디스플레이 위쪽에 붙고 결과 미리보기가 아래로 내려간다.
+ * 기본값은 flex-end라 둘 다 바닥에 몰려 있었다. */
+body.android-mode .display { justify-content: flex-start; padding: 26px 24px 26px 24px; }
+body.android-mode .preview-text { margin-top: auto; }
 body.android-mode .display-text     { font-weight: 300; color: #3c3c3c; }
 body.android-mode .display-text .op { color: #00a32e; }
 body.android-mode .expression-text  { color: #9a9a9a; font-size: clamp(20px, 5vw, 27px); }
