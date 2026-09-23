@@ -1161,13 +1161,40 @@ body.android-mode #calcIconPlusMinus::after {
             <div class="admin-section-title">🔤 표시 설정</div>
             <div class="sp-row">
                 <span class="sp-label">글자 크기</span>
-                <span class="sp-label" id="spSizeVal">40</span>
+                <input type="number" id="spSizeInput" min="10" max="240" step="1" value="40"
+                       style="width:76px;padding:8px;border-radius:8px;border:1px solid #2c2c2e;background:#1c1c1e;color:#fff;font-size:15px;text-align:right">
             </div>
-            <input class="sp-range" type="range" id="spSizeRange" min="14" max="120" step="1" value="40">
+            <input class="sp-range" type="range" id="spSizeRange" min="10" max="240" step="1" value="40">
             <div class="sp-row">
                 <span class="sp-label">글자 색</span>
                 <input type="color" id="spColorInput" value="#ffffff" style="width:52px;height:34px;border:none;background:none">
             </div>
+            <div class="sp-row">
+                <span class="sp-label">굵기</span>
+                <select class="version-select" id="spWeightSelect" style="width:auto;padding:8px 30px 8px 12px;font-size:14px;border-radius:8px">
+                    <option value="300">가늘게</option>
+                    <option value="400">보통</option>
+                    <option value="600">약간 굵게</option>
+                    <option value="700">굵게</option>
+                    <option value="800">아주 굵게</option>
+                </select>
+            </div>
+            <div class="sp-row">
+                <span class="sp-label">글꼴</span>
+                <select class="version-select" id="spFontSelect" style="width:auto;padding:8px 30px 8px 12px;font-size:14px;border-radius:8px">
+                    <option value="system">기본 (계산기와 동일)</option>
+                    <option value="mono">고정폭</option>
+                    <option value="rounded">둥근 고딕</option>
+                </select>
+            </div>
+            <div class="sp-row">
+                <span class="sp-label">글자 그림자</span>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="spShadowToggle">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+            <div class="sp-hint">밝은 배경 사진에서 글자가 묻히면 그림자를 켜세요.</div>
         </div>
 
         <div class="admin-section">
@@ -1179,7 +1206,8 @@ body.android-mode #calcIconPlusMinus::after {
                     <span class="toggle-slider"></span>
                 </label>
             </div>
-            <div class="sp-hint">켜면 관객이 누르는 숫자가 실시간으로 올라옵니다. 끄면 <b>= 를 누른 결과값만</b> 나타납니다.</div>
+            <div class="sp-hint">관객 폰은 항상 값을 보냅니다. 이 스위치는 <b>이 기기가 그걸 계속 받을지</b>만 정합니다.
+            켜면 누르는 대로 실시간으로, 끄면 <b>= 를 누른 결과값만</b> 나타납니다. 관객 폰을 새로고침할 필요가 없습니다.</div>
             <div class="sp-row">
                 <span class="sp-label">배너 알림</span>
                 <label class="toggle-switch">
@@ -3448,6 +3476,21 @@ body.android-mode #calcIconPlusMinus::after {
     let spY = parseFloat(localStorage.getItem(SP_KEYS.y) || '50');
     let spSize = parseInt(localStorage.getItem(SP_KEYS.size) || '40', 10);
     let spColor = localStorage.getItem(SP_KEYS.color) || '#ffffff';
+    let spWeight = localStorage.getItem('sp_weight') || '600';
+    let spFont = localStorage.getItem('sp_font') || 'system';
+    let spShadow = localStorage.getItem('sp_shadow') !== 'false';   // 기본 켜짐
+    const SP_FONTS = {
+        system: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', Roboto, sans-serif",
+        mono: "ui-monospace, SFMono-Regular, Menlo, monospace",
+        rounded: "'SF Pro Rounded', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif"
+    };
+    function spApplyTextStyle(el, px) {
+        el.style.color = spColor;
+        el.style.fontWeight = spWeight;
+        el.style.fontFamily = SP_FONTS[spFont] || SP_FONTS.system;
+        el.style.textShadow = spShadow ? '0 1px 3px rgba(0,0,0,0.45)' : 'none';
+        el.style.fontSize = px + 'px';
+    }
     let spLive = localStorage.getItem(SP_KEYS.live) === 'true';
     let spPush = localStorage.getItem(SP_KEYS.push) !== 'false';   // 기본 켜짐
     let spLiveUnsub = null;
@@ -3475,10 +3518,9 @@ body.android-mode #calcIconPlusMinus::after {
         if (!wrap || !t) return;
         t.style.left = spX + '%';
         t.style.top = spY + '%';
-        t.style.color = spColor;
         // 미리보기는 실제 화면보다 작으므로 폭 비율로 글자 크기를 환산한다
         const scale = wrap.clientWidth / Math.max(1, window.innerWidth);
-        t.style.fontSize = Math.max(8, spSize * scale) + 'px';
+        spApplyTextStyle(t, Math.max(8, spSize * scale));
     }
 
     function spBindDrag(wrap, t) {
@@ -3543,8 +3585,7 @@ body.android-mode #calcIconPlusMinus::after {
         const t = document.getElementById('spLiveText');
         t.style.left = spX + '%';
         t.style.top = spY + '%';
-        t.style.color = spColor;
-        t.style.fontSize = spSize + 'px';
+        spApplyTextStyle(t, spSize);
         t.textContent = '';
         t.classList.remove('show');
         stage.classList.add('active');
@@ -3585,20 +3626,23 @@ body.android-mode #calcIconPlusMinus::after {
         spLiveUnsub = null;
     }
 
-    // 실시간/배너 설정은 관객 앱과 서버도 봐야 하므로 configs에 같이 저장한다
+    // 배너 알림만 서버가 봐야 하므로 configs에 저장한다.
+    // 실시간 수신은 이 기기가 구독할지 말지의 문제라 관객에게 보낼 필요가 없다.
     async function spSyncFlags() {
         if (!currentAdminId) return;
         try {
             await db_auth.collection('configs').doc(currentAdminId)
-                .set({ live: spLive, pushEnabled: spPush }, { merge: true });
+                .set({ pushEnabled: spPush }, { merge: true });
         } catch (e) { console.error('화면 픽 설정 동기화 실패:', e); }
     }
 
     window.onSpLiveChange = function (on) {
         spLive = !!on;
         localStorage.setItem(SP_KEYS.live, spLive ? 'true' : 'false');
-        spSyncFlags();
-        if (document.getElementById('screenPickStage').classList.contains('active')) spStartLiveWatch();
+        // 켜면 바로 붙고, 끄면 바로 뗀다 — 관객 폰은 어차피 계속 보내고 있다
+        if (document.getElementById('screenPickStage').classList.contains('active')) {
+            if (spLive) spStartLiveWatch(); else spStopLiveWatch();
+        }
     };
     window.onSpPushChange = function (on) {
         spPush = !!on;
@@ -3615,13 +3659,41 @@ body.android-mode #calcIconPlusMinus::after {
             e.target.value = '';
         });
         const size = document.getElementById('spSizeRange');
-        if (size) {
-            size.value = String(spSize);
-            document.getElementById('spSizeVal').textContent = String(spSize);
-            size.addEventListener('input', () => {
-                spSize = parseInt(size.value, 10);
-                document.getElementById('spSizeVal').textContent = String(spSize);
-                localStorage.setItem(SP_KEYS.size, String(spSize));
+        const sizeNum = document.getElementById('spSizeInput');
+        function setSize(v) {
+            spSize = Math.min(240, Math.max(10, parseInt(v, 10) || 40));
+            if (size) size.value = String(spSize);
+            if (sizeNum) sizeNum.value = String(spSize);
+            localStorage.setItem(SP_KEYS.size, String(spSize));
+            spApplyPreviewStyle();
+        }
+        if (size) { size.value = String(spSize); size.addEventListener('input', () => setSize(size.value)); }
+        if (sizeNum) { sizeNum.value = String(spSize); sizeNum.addEventListener('change', () => setSize(sizeNum.value)); }
+
+        const weight = document.getElementById('spWeightSelect');
+        if (weight) {
+            weight.value = spWeight;
+            weight.addEventListener('change', () => {
+                spWeight = weight.value;
+                localStorage.setItem('sp_weight', spWeight);
+                spApplyPreviewStyle();
+            });
+        }
+        const font = document.getElementById('spFontSelect');
+        if (font) {
+            font.value = spFont;
+            font.addEventListener('change', () => {
+                spFont = font.value;
+                localStorage.setItem('sp_font', spFont);
+                spApplyPreviewStyle();
+            });
+        }
+        const shadow = document.getElementById('spShadowToggle');
+        if (shadow) {
+            shadow.checked = spShadow;
+            shadow.addEventListener('change', () => {
+                spShadow = shadow.checked;
+                localStorage.setItem('sp_shadow', spShadow ? 'true' : 'false');
                 spApplyPreviewStyle();
             });
         }
