@@ -23,6 +23,14 @@ exports.sendPushOnCalculation = onDocumentCreated(
         await updateRouterLatest(adminId, data, event.data.createTime)
             .catch(error => console.error("router_latest 갱신 오류:", error));
 
+        // 관리자가 '배너 알림'을 끄면 발송하지 않는다 (수신 내역·화면 픽은 그대로 동작)
+        const cfgDoc = await admin.firestore().collection("configs").doc(adminId).get()
+            .catch(() => null);
+        if (cfgDoc && cfgDoc.exists && cfgDoc.data().pushEnabled === false) {
+            console.log("배너 알림 꺼짐, 발송 생략:", adminId);
+            return null;
+        }
+
         const tokensSnapshot = await admin.firestore()
             .collection("fcm_tokens")
             .where("adminId", "==", adminId)

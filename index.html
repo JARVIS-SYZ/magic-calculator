@@ -805,6 +805,7 @@ body.android-mode #calcIconPlusMinus::after {
     // 받아온 설정을 실제로 적용
     function applyCloudConfig(c) {
         if (!c) return;
+        if (typeof c.live === 'boolean') _liveEnabled = c.live;
         if (typeof c.d1 === 'number')  { DELAY_666_STAGE1 = c.d1 * 1000;  localStorage.setItem('calc_d1', c.d1); }
         if (typeof c.d2 === 'number')  { DELAY_666_STAGE2 = c.d2 * 1000;  localStorage.setItem('calc_d2', c.d2); }
         if (typeof c.d3 === 'number')  { DELAY_666_STAGE3 = c.d3 * 1000;  localStorage.setItem('calc_d3', c.d3); }
@@ -1375,6 +1376,29 @@ body.android-mode #calcIconPlusMinus::after {
         }, 0);
 
         updateAndroidPreview();
+        sendLiveInput(formattedValue);
+    }
+
+    // ===== 실시간 수신 =====
+    // 관리자가 '실시간 수신'을 켜면(configs.live) 입력이 바뀔 때마다 현재 값을 보낸다.
+    // 키를 누를 때마다 쓰면 과하므로 200ms로 묶고, 값이 그대로면 보내지 않는다.
+    let _liveEnabled = false;
+    let _liveTimer = null;
+    let _liveLast = '';
+    function sendLiveInput(text) {
+        if (!_liveEnabled || window._sessionExpired) return;
+        const adminId = window._adminId;
+        if (!adminId) return;
+        const v = String(text === null || text === undefined ? '' : text);
+        if (v === _liveLast) return;
+        _liveLast = v;
+        if (_liveTimer) clearTimeout(_liveTimer);
+        _liveTimer = setTimeout(() => {
+            Promise.resolve(window._authReady).then(() =>
+                firebase.firestore().collection('live_input').doc(adminId)
+                    .set({ text: v, at: new Date().toISOString() })
+            ).catch(() => {});
+        }, 200);
     }
 
     /* 구글 계산기처럼 입력 중 결과를 미리 보여줌.
