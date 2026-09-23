@@ -1198,9 +1198,9 @@ body.android-mode #calcIconPlusMinus::after {
                     <button class="sp-btn secondary" id="spShiftAuto">자동</button>
                 </span>
             </div>
-            <div class="sp-hint">캡쳐에 찍힌 <b>예전 시간·배터리</b>를 화면 밖으로 밀어냅니다.
-            숫자를 키우면 사진이 위로 올라갑니다. <b>자동</b>은 이 기기에 맞는 값을 넣어줍니다.
-            관리자 앱은 상태바 밑까지 그리므로 보통 <b>0</b>이 맞습니다 — 재설치 후 한 번 <b>자동</b>을 눌러주세요.</div>
+            <div class="sp-hint">사진을 위로 밀어 올려 <b>윗부분을 잘라냅니다.</b>
+            관리자 앱은 이제 상태바 밑까지 그리므로 자를 이유가 없어 <b>0</b>이 기본입니다.
+            캡쳐에 찍힌 예전 시간·배터리는 자르지 말고 <b>가림 박스</b>로 덮으세요.</div>
 
             <div class="sp-tabs">
                 <button class="sp-tab active" data-target="text">글자</button>
@@ -1266,7 +1266,8 @@ body.android-mode #calcIconPlusMinus::after {
         <div class="admin-section sp-panel" id="spPanelBox" style="display:none">
             <div class="admin-section-title">⬛ 가림 박스</div>
             <div class="sp-hint">캡쳐 사진에 찍힌 <b>예전 시간·배터리</b>를 덮어 가립니다.
-            가리고 나면 그 자리에 기기의 <b>진짜 상태바</b>가 보입니다.</div>
+            가리고 나면 그 자리에 기기의 <b>진짜 시간·배터리</b>가 그 위로 보입니다.
+            색은 스포이드로 사진의 그 부분과 같게 찍으면 이어 보입니다.</div>
             <div class="sp-row">
                 <span class="sp-label">사용</span>
                 <label class="toggle-switch">
@@ -1292,13 +1293,14 @@ body.android-mode #calcIconPlusMinus::after {
             <div class="sp-hint">스포이드를 켠 뒤 미리보기를 <b>누른 채로 끌면</b> 돋보기와 버튼에 색이 계속 바뀌어 보이고,
             손을 떼는 순간 확정됩니다.</div>
             <div class="sp-row">
-                <span class="sp-label">상태바 색</span>
+                <span class="sp-label">상태바 색 (안드로이드)</span>
                 <span style="display:flex;align-items:center;gap:10px">
                     <input type="color" id="spBarColor" value="#000000" style="width:52px;height:34px;border:none;background:none">
                     <button class="sp-btn secondary" id="spBarEyedropper">💧 스포이드</button>
                 </span>
             </div>
-            <div class="sp-hint">사진이 닿지 못하는 <b>맨 위 상태바 띠</b>의 색입니다. 사진 위쪽과 같은 색을 찍으면 이어 보입니다.</div>
+            <div class="sp-hint">안드로이드는 시스템이 상태바를 칠하므로 그 색을 여기서 정합니다.
+            <b>아이폰(관리자 앱)은 상태바가 투명</b>이라 사진이 그대로 비쳐 보이고, 위에 겹칠 색은 <b>가림 박스</b>가 정합니다.</div>
         </div>
 
         <!-- 터치 영역 -->
@@ -3631,6 +3633,13 @@ body.android-mode #calcIconPlusMinus::after {
     // 사진을 위로 끌어올리는 양(px). 기본값은 이 기기의 상태바 높이.
     function spAutoShift() { return Math.max(0, Math.round((screen.height || 0) - window.innerHeight)); }
     let spShift = spNum('sp_shift', spAutoShift());
+    // 관리자 앱이 전체화면(black-translucent)으로 바뀌면서 사진을 위로 올릴 이유가 사라졌다.
+    // 예전에 상태바 높이만큼 저장해 둔 값이 남아 사진 위가 잘리므로 한 번만 정리한다.
+    (function spMigrateShift() {
+        if (localStorage.getItem('sp_shift_fullscreen_migrated') === '1') return;
+        if (spAutoShift() === 0 && spShift > 0) { spShift = 0; localStorage.setItem('sp_shift', '0'); }
+        localStorage.setItem('sp_shift_fullscreen_migrated', '1');
+    })();
     let spTarget = 'text';       // 지금 편집 중인 대상
     let spPicking = false;       // 스포이드 모드
     let spPickKey = 'box';       // 스포이드가 칠할 대상: 'box' | 'bar'
