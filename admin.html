@@ -726,27 +726,33 @@ body.android-mode #calcIconPlusMinus::after {
 .sp-row:last-child { border-bottom:none; }
 .sp-label { font-size:15px; color:#ddd; }
 .sp-hint { font-size:12px; color:#8e8e93; margin-top:4px; line-height:1.6; }
-.sp-btn {
-    background:#0a84ff; color:#fff; border:none; border-radius:10px;
-    padding:12px 18px; font-size:15px; font-weight:600; cursor:pointer;
-}
+.sp-btn { background:#0a84ff; color:#fff; border:none; border-radius:10px; padding:12px 18px; font-size:15px; font-weight:600; cursor:pointer; }
 .sp-btn.secondary { background:#2c2c2e; color:#ddd; }
-.sp-btn:disabled { opacity:0.4; }
+.sp-btn.on { background:#30d158; color:#08210f; }
+.sp-num { width:76px; padding:8px; border-radius:8px; border:1px solid #2c2c2e; background:#1c1c1e; color:#fff; font-size:15px; text-align:right; }
+
+/* 편집 대상 선택 */
+.sp-tabs { display:flex; gap:6px; margin:4px 0 10px 0; }
+.sp-tab { flex:1; padding:10px 0; border:none; border-radius:9px; background:#2c2c2e; color:#aaa; font-size:14px; cursor:pointer; }
+.sp-tab.active { background:#0a84ff; color:#fff; font-weight:600; }
+
+/* 미리보기는 공연 화면과 같은 비율의 축소 모형이다 */
 .sp-stage-wrap {
     position:relative; width:100%; margin-top:12px;
     border-radius:12px; overflow:hidden; background:#000;
     border:1px solid #2c2c2e; touch-action:none;
+    background-size:cover; background-position:center;
 }
-.sp-stage-wrap img { display:block; width:100%; height:auto; }
 .sp-stage-wrap .sp-empty { padding:40px 16px; text-align:center; color:#636366; font-size:13px; }
-.sp-overlay-text {
-    position:absolute; transform:translate(-50%,-50%);
-    white-space:nowrap; font-weight:600; cursor:move;
-    text-shadow:0 1px 3px rgba(0,0,0,0.45);
-}
-.sp-range { width:100%; }
+.sp-stage-wrap.picking { cursor:crosshair; outline:2px solid #ffd60a; outline-offset:-2px; }
 
-/* 위치 미세조정: 돋보기 + 십자 방향키 */
+.sp-overlay-text { position:absolute; transform:translate(-50%,-50%); white-space:nowrap; font-weight:600; }
+.sp-el { position:absolute; box-sizing:border-box; }
+.sp-el.selected { outline:2px dashed #0a84ff; outline-offset:1px; }
+#spPreviewBox { }
+#spPreviewTap { border:1px dashed rgba(255,214,10,0.9); background:rgba(255,214,10,0.12); }
+
+/* 돋보기 + 방향키 */
 .sp-loupe {
     position:absolute; width:128px; height:128px; border-radius:50%;
     border:2px solid rgba(255,255,255,0.85); box-shadow:0 4px 14px rgba(0,0,0,0.5);
@@ -760,29 +766,19 @@ body.android-mode #calcIconPlusMinus::after {
 .sp-dpad { display:flex; flex-direction:column; align-items:center; gap:6px; margin-top:14px; }
 .sp-dpad-mid { display:flex; align-items:center; gap:6px; }
 .sp-dpad-label { font-size:12px; color:#8e8e93; width:56px; text-align:center; }
-.sp-dbtn {
-    width:46px; height:40px; border:none; border-radius:10px;
-    background:#2c2c2e; color:#fff; font-size:16px; cursor:pointer;
-    -webkit-user-select:none; user-select:none;
-}
+.sp-dbtn { width:46px; height:40px; border:none; border-radius:10px; background:#2c2c2e; color:#fff; font-size:16px; cursor:pointer; -webkit-user-select:none; user-select:none; }
 .sp-dbtn:active { background:#0a84ff; }
 
 /* 실제 공연 화면 */
-#screenPickStage {
-    position:fixed; inset:0; z-index:5000; display:none;
-    background:#000; overflow:hidden;
-}
+#screenPickStage { position:fixed; inset:0; z-index:5000; display:none; background:#000; overflow:hidden; }
 #screenPickStage.active { display:block; }
-#screenPickStage img {
-    position:absolute; inset:0; width:100%; height:100%; object-fit:cover;
-}
-#screenPickExit {
-    position:absolute; top:0; left:0; width:72px; height:72px; z-index:2;
-}
+#spStageImg { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+#spStageBox { position:absolute; box-sizing:border-box; z-index:1; }
+#spStageTap { position:absolute; z-index:3; background:transparent; }
+#screenPickExit { position:absolute; top:0; left:0; width:72px; height:72px; z-index:4; }
 #spLiveText {
     position:absolute; transform:translate(-50%,-50%);
-    white-space:nowrap; font-weight:600; z-index:1;
-    text-shadow:0 1px 3px rgba(0,0,0,0.45);
+    white-space:nowrap; font-weight:600; z-index:2;
     opacity:0; transition:opacity 0.15s;
 }
 #spLiveText.show { opacity:1; }
@@ -1183,11 +1179,19 @@ body.android-mode #calcIconPlusMinus::after {
                 <span class="sp-label">캡쳐 사진 선택</span>
                 <button class="sp-btn secondary" onclick="document.getElementById('spFileInput').click()">사진 고르기</button>
             </div>
-            <div class="sp-hint">화면을 캡쳐해 두고 여기서 고르세요. 고른 사진은 이 기기에만 저장됩니다.</div>
+            <div class="sp-hint">화면을 캡쳐해 두고 여기서 고르세요. 사진은 이 기기에만 저장됩니다.
+            미리보기는 실제 공연 화면과 <b>같은 비율의 축소 모형</b>이라, 여기서 맞춘 자리가 그대로 나옵니다.</div>
+
+            <div class="sp-tabs">
+                <button class="sp-tab active" data-target="text">글자</button>
+                <button class="sp-tab" data-target="box">가림 박스</button>
+                <button class="sp-tab" data-target="tap">터치 영역</button>
+            </div>
+
             <div class="sp-stage-wrap" id="spPreviewWrap">
                 <div class="sp-empty" id="spEmptyMsg">사진을 고르면 여기에 미리보기가 나옵니다</div>
             </div>
-            <div class="sp-hint">미리보기의 글자를 <b>끌어서</b> 놓으세요. 끄는 동안 돋보기가 떠서 손가락에 가려진 부분을 보여줍니다.</div>
+            <div class="sp-hint" id="spTargetHint">글자를 끌어서 놓으세요. 끄는 동안 돋보기가 뜹니다.</div>
             <div class="sp-dpad">
                 <button class="sp-dbtn" data-dx="0" data-dy="-1">▲</button>
                 <div class="sp-dpad-mid">
@@ -1199,14 +1203,14 @@ body.android-mode #calcIconPlusMinus::after {
             </div>
         </div>
 
-        <div class="admin-section">
-            <div class="admin-section-title">🔤 표시 설정</div>
+        <!-- 글자 -->
+        <div class="admin-section sp-panel" id="spPanelText">
+            <div class="admin-section-title">🔤 글자</div>
             <div class="sp-row">
                 <span class="sp-label">글자 크기</span>
-                <input type="number" id="spSizeInput" min="10" max="240" step="1" value="40"
-                       style="width:76px;padding:8px;border-radius:8px;border:1px solid #2c2c2e;background:#1c1c1e;color:#fff;font-size:15px;text-align:right">
+                <input type="number" class="sp-num" id="spSizeInput" min="10" max="240" step="1" value="40">
             </div>
-            <input class="sp-range" type="range" id="spSizeRange" min="10" max="240" step="1" value="40">
+            <input class="sp-range" type="range" id="spSizeRange" min="10" max="240" step="1" value="40" style="width:100%">
             <div class="sp-row">
                 <span class="sp-label">글자 색</span>
                 <input type="color" id="spColorInput" value="#ffffff" style="width:52px;height:34px;border:none;background:none">
@@ -1236,7 +1240,58 @@ body.android-mode #calcIconPlusMinus::after {
                     <span class="toggle-slider"></span>
                 </label>
             </div>
-            <div class="sp-hint">밝은 배경 사진에서 글자가 묻히면 그림자를 켜세요.</div>
+        </div>
+
+        <!-- 가림 박스 -->
+        <div class="admin-section sp-panel" id="spPanelBox" style="display:none">
+            <div class="admin-section-title">⬛ 가림 박스</div>
+            <div class="sp-hint">캡쳐 사진에 찍힌 <b>예전 시간·배터리</b>를 덮어 가립니다.
+            가리고 나면 그 자리에 기기의 <b>진짜 상태바</b>가 보입니다.</div>
+            <div class="sp-row">
+                <span class="sp-label">사용</span>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="spBoxToggle">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+            <div class="sp-row">
+                <span class="sp-label">너비 (%)</span>
+                <input type="number" class="sp-num" id="spBoxW" min="1" max="100" step="0.5" value="100">
+            </div>
+            <div class="sp-row">
+                <span class="sp-label">높이 (%)</span>
+                <input type="number" class="sp-num" id="spBoxH" min="1" max="100" step="0.5" value="6">
+            </div>
+            <div class="sp-row">
+                <span class="sp-label">색</span>
+                <span style="display:flex;align-items:center;gap:10px">
+                    <input type="color" id="spBoxColor" value="#000000" style="width:52px;height:34px;border:none;background:none">
+                    <button class="sp-btn secondary" id="spEyedropper">💧 스포이드</button>
+                </span>
+            </div>
+            <div class="sp-hint">스포이드를 누른 뒤 미리보기에서 <b>가리려는 배경과 같은 색</b>을 찍으면 그 색이 들어갑니다.</div>
+        </div>
+
+        <!-- 터치 영역 -->
+        <div class="admin-section sp-panel" id="spPanelTap" style="display:none">
+            <div class="admin-section-title">👆 터치 영역</div>
+            <div class="sp-hint">공연 화면에서 이 자리를 누르면 <b>계산기 화면으로 들어갑니다.</b>
+            캡쳐 사진의 계산기 아이콘 위에 맞춰두세요. 실제 화면에서는 보이지 않습니다.</div>
+            <div class="sp-row">
+                <span class="sp-label">사용</span>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="spTapToggle">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+            <div class="sp-row">
+                <span class="sp-label">너비 (%)</span>
+                <input type="number" class="sp-num" id="spTapW" min="1" max="100" step="0.5" value="16">
+            </div>
+            <div class="sp-row">
+                <span class="sp-label">높이 (%)</span>
+                <input type="number" class="sp-num" id="spTapH" min="1" max="100" step="0.5" value="8">
+            </div>
         </div>
 
         <div class="admin-section">
@@ -1249,7 +1304,7 @@ body.android-mode #calcIconPlusMinus::after {
                 </label>
             </div>
             <div class="sp-hint">관객 폰은 항상 값을 보냅니다. 이 스위치는 <b>이 기기가 그걸 계속 받을지</b>만 정합니다.
-            켜면 누르는 대로 실시간으로, 끄면 <b>= 를 누른 결과값만</b> 나타납니다. 관객 폰을 새로고침할 필요가 없습니다.</div>
+            켜면 누르는 대로 실시간으로, 끄면 <b>= 를 누른 결과값만</b> 나타납니다.</div>
         </div>
 
         <div class="admin-section">
@@ -1262,7 +1317,9 @@ body.android-mode #calcIconPlusMinus::after {
 <!-- 화면 픽 공연 화면 -->
 <div id="screenPickStage">
     <img id="spStageImg" alt="">
+    <div id="spStageBox"></div>
     <div id="spLiveText"></div>
+    <div id="spStageTap"></div>
     <div id="screenPickExit"></div>
 </div>
 
@@ -3501,23 +3558,55 @@ body.android-mode #calcIconPlusMinus::after {
 
     } // startDataSync 끝
     // ===================================================================
-    // 화면 픽 — 캡쳐 사진을 배경으로 띄우고, 수신되는 값을 원하는 위치에 겹쳐 보여준다.
-    // 사진은 용량 때문에 리사이즈·압축해서 이 기기 localStorage에만 둔다 (클라우드로 안 보냄).
+    // 화면 픽 — 캡쳐 사진을 배경으로 띄우고 그 위에 세 가지를 얹는다.
+    //   글자      : 수신되는 계산식/결과
+    //   가림 박스 : 사진에 찍힌 예전 시간·배터리를 덮어, 진짜 상태바가 보이게 한다
+    //   터치 영역 : 누르면 계산기 화면으로 빠져나오는 보이지 않는 구역
+    // 미리보기는 공연 화면과 같은 비율의 축소 모형이라 % 좌표가 그대로 통한다.
+    // 사진은 리사이즈·압축해 이 기기 localStorage에만 둔다 (클라우드로 안 보냄).
     // ===================================================================
-    const SP_KEYS = { img:'sp_image', x:'sp_x', y:'sp_y', size:'sp_size', color:'sp_color', live:'sp_live', push:'sp_push' };
-    let spImage = localStorage.getItem(SP_KEYS.img) || '';
-    let spX = parseFloat(localStorage.getItem(SP_KEYS.x) || '50');
-    let spY = parseFloat(localStorage.getItem(SP_KEYS.y) || '50');
-    let spSize = parseInt(localStorage.getItem(SP_KEYS.size) || '40', 10);
-    let spColor = localStorage.getItem(SP_KEYS.color) || '#ffffff';
-    let spWeight = localStorage.getItem('sp_weight') || '600';
-    let spFont = localStorage.getItem('sp_font') || 'system';
-    let spShadow = localStorage.getItem('sp_shadow') !== 'false';   // 기본 켜짐
+    const SP = {
+        img: 'sp_image',
+        x: 'sp_x', y: 'sp_y', size: 'sp_size', color: 'sp_color',
+        weight: 'sp_weight', font: 'sp_font', shadow: 'sp_shadow',
+        boxOn: 'sp_box_on', boxX: 'sp_box_x', boxY: 'sp_box_y', boxW: 'sp_box_w', boxH: 'sp_box_h', boxC: 'sp_box_color',
+        tapOn: 'sp_tap_on', tapX: 'sp_tap_x', tapY: 'sp_tap_y', tapW: 'sp_tap_w', tapH: 'sp_tap_h',
+        live: 'sp_live', push: 'sp_push'
+    };
+    const spNum = (k, d) => { const v = parseFloat(localStorage.getItem(k)); return isNaN(v) ? d : v; };
+    const spBool = (k, d) => { const v = localStorage.getItem(k); return v === null ? d : v === 'true'; };
+
+    let spImage = localStorage.getItem(SP.img) || '';
+    let spImgW = 0, spImgH = 0;
+    let spX = spNum(SP.x, 50), spY = spNum(SP.y, 50);
+    let spSize = spNum(SP.size, 40);
+    let spColor = localStorage.getItem(SP.color) || '#ffffff';
+    let spWeight = localStorage.getItem(SP.weight) || '600';
+    let spFont = localStorage.getItem(SP.font) || 'system';
+    let spShadow = spBool(SP.shadow, true);
+
+    let spBoxOn = spBool(SP.boxOn, false);
+    let spBoxX = spNum(SP.boxX, 50), spBoxY = spNum(SP.boxY, 3);
+    let spBoxW = spNum(SP.boxW, 100), spBoxH = spNum(SP.boxH, 6);
+    let spBoxC = localStorage.getItem(SP.boxC) || '#000000';
+
+    let spTapOn = spBool(SP.tapOn, false);
+    let spTapX = spNum(SP.tapX, 50), spTapY = spNum(SP.tapY, 90);
+    let spTapW = spNum(SP.tapW, 16), spTapH = spNum(SP.tapH, 8);
+
+    let spLive = spBool(SP.live, false);
+    let spPush = spBool(SP.push, true);
+    let spLiveUnsub = null;
+    let spTarget = 'text';       // 지금 편집 중인 대상
+    let spPicking = false;       // 스포이드 모드
+
     const SP_FONTS = {
         system: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', Roboto, sans-serif",
         mono: "ui-monospace, SFMono-Regular, Menlo, monospace",
         rounded: "'SF Pro Rounded', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif"
     };
+    const spSave = (k, v) => localStorage.setItem(k, String(v));
+
     function spApplyTextStyle(el, px) {
         el.style.color = spColor;
         el.style.fontWeight = spWeight;
@@ -3525,39 +3614,74 @@ body.android-mode #calcIconPlusMinus::after {
         el.style.textShadow = spShadow ? '0 1px 3px rgba(0,0,0,0.45)' : 'none';
         el.style.fontSize = px + 'px';
     }
-    let spLive = localStorage.getItem(SP_KEYS.live) === 'true';
-    let spPush = localStorage.getItem(SP_KEYS.push) !== 'false';   // 기본 켜짐
-    let spLiveUnsub = null;
+    function spPlaceRect(el, cx, cy, w, h) {
+        el.style.left = (cx - w / 2) + '%';
+        el.style.top = (cy - h / 2) + '%';
+        el.style.width = w + '%';
+        el.style.height = h + '%';
+    }
 
-    function spSampleText() { return spLive ? '1,234' : '1,234'; }
+    // ===== 미리보기 =====
+    function spStageAspect() { return window.innerWidth / Math.max(1, window.innerHeight); }
 
     function spRenderPreview() {
         const wrap = document.getElementById('spPreviewWrap');
         if (!wrap) return;
+        wrap.style.aspectRatio = String(spStageAspect());
         if (!spImage) {
-            wrap.innerHTML = '<div class="sp-empty" id="spEmptyMsg">사진을 고르면 여기에 미리보기가 나옵니다</div>';
+            wrap.style.backgroundImage = '';
+            wrap.innerHTML = '<div class="sp-empty">사진을 고르면 여기에 미리보기가 나옵니다</div>';
             return;
         }
-        wrap.innerHTML = '<img alt="" src="' + spImage + '">' +
-            '<div class="sp-overlay-text" id="spPreviewText"></div>';
-        const t = document.getElementById('spPreviewText');
-        t.textContent = spSampleText();
+        wrap.style.backgroundImage = 'url(' + spImage + ')';
+        wrap.innerHTML =
+            '<div class="sp-el" id="spPreviewBox"></div>' +
+            '<div class="sp-overlay-text" id="spPreviewText">1,234</div>' +
+            '<div class="sp-el" id="spPreviewTap"></div>';
         spApplyPreviewStyle();
-        spBindDrag(wrap, t);
+        spBindDrag(wrap);
     }
 
     function spApplyPreviewStyle() {
         const wrap = document.getElementById('spPreviewWrap');
+        if (!wrap || !spImage) return;
         const t = document.getElementById('spPreviewText');
-        if (!wrap || !t) return;
-        t.style.left = spX + '%';
-        t.style.top = spY + '%';
-        // 미리보기는 실제 화면보다 작으므로 폭 비율로 글자 크기를 환산한다
+        const b = document.getElementById('spPreviewBox');
+        const p = document.getElementById('spPreviewTap');
+        if (!t || !b || !p) return;
         const scale = wrap.clientWidth / Math.max(1, window.innerWidth);
+
+        t.style.left = spX + '%'; t.style.top = spY + '%';
         spApplyTextStyle(t, Math.max(8, spSize * scale));
+
+        spPlaceRect(b, spBoxX, spBoxY, spBoxW, spBoxH);
+        b.style.background = spBoxC;
+        b.style.display = spBoxOn ? 'block' : 'none';
+
+        spPlaceRect(p, spTapX, spTapY, spTapW, spTapH);
+        p.style.display = spTapOn ? 'block' : 'none';
+
+        t.classList.toggle('selected', spTarget === 'text');
+        b.classList.toggle('selected', spTarget === 'box');
+        p.classList.toggle('selected', spTarget === 'tap');
     }
 
-    // 손가락이 가린 자리를 보여주는 돋보기. 미리보기 위에 겹쳐 띄우고 십자선이 글자 기준점이다.
+    // 지금 편집 중인 대상의 좌표를 읽고 쓴다
+    function spGetPos() {
+        if (spTarget === 'box') return [spBoxX, spBoxY];
+        if (spTarget === 'tap') return [spTapX, spTapY];
+        return [spX, spY];
+    }
+    function spSetPos(x, y) {
+        x = Math.min(100, Math.max(0, x));
+        y = Math.min(100, Math.max(0, y));
+        if (spTarget === 'box') { spBoxX = x; spBoxY = y; spSave(SP.boxX, x); spSave(SP.boxY, y); }
+        else if (spTarget === 'tap') { spTapX = x; spTapY = y; spSave(SP.tapX, x); spSave(SP.tapY, y); }
+        else { spX = x; spY = y; spSave(SP.x, x); spSave(SP.y, y); }
+        spApplyPreviewStyle();
+    }
+
+    // ===== 돋보기 =====
     const SP_LOUPE = 128, SP_ZOOM = 3;
     let spLoupeTimer = null;
     function spUpdateLoupe(show) {
@@ -3572,15 +3696,18 @@ body.android-mode #calcIconPlusMinus::after {
         }
         if (!show) { l.classList.remove('show'); return; }
         const r = wrap.getBoundingClientRect();
-        const px = (spX / 100) * r.width;
-        const py = (spY / 100) * r.height;
+        const [cx, cy] = spGetPos();
+        const px = (cx / 100) * r.width, py = (cy / 100) * r.height;
+        // 배경이 cover라 실제 그려지는 크기를 직접 구해야 돋보기 좌표가 맞는다
+        const cover = (spImgW && spImgH) ? Math.max(r.width / spImgW, r.height / spImgH) : 1;
+        const dw = (spImgW || r.width) * cover, dh = (spImgH || r.height) * cover;
+        const ox = (r.width - dw) / 2, oy = (r.height - dh) / 2;
         l.style.backgroundImage = 'url(' + spImage + ')';
-        l.style.backgroundSize = (r.width * SP_ZOOM) + 'px ' + (r.height * SP_ZOOM) + 'px';
+        l.style.backgroundSize = (dw * SP_ZOOM) + 'px ' + (dh * SP_ZOOM) + 'px';
         l.style.backgroundPosition =
-            (-(px * SP_ZOOM - SP_LOUPE / 2)) + 'px ' + (-(py * SP_ZOOM - SP_LOUPE / 2)) + 'px';
-        // 손가락 반대쪽 모서리로 비켜준다
-        l.style.left = (spX > 50 ? 8 : Math.max(8, r.width - SP_LOUPE - 8)) + 'px';
-        l.style.top  = (spY > 50 ? 8 : Math.max(8, r.height - SP_LOUPE - 8)) + 'px';
+            (-((px - ox) * SP_ZOOM - SP_LOUPE / 2)) + 'px ' + (-((py - oy) * SP_ZOOM - SP_LOUPE / 2)) + 'px';
+        l.style.left = (cx > 50 ? 8 : Math.max(8, r.width - SP_LOUPE - 8)) + 'px';
+        l.style.top = (cy > 50 ? 8 : Math.max(8, r.height - SP_LOUPE - 8)) + 'px';
         l.classList.add('show');
     }
     function spFlashLoupe() {
@@ -3591,48 +3718,87 @@ body.android-mode #calcIconPlusMinus::after {
 
     // 방향키 한 번 = 실제 공연 화면 기준 1px
     function spNudge(dx, dy) {
-        const stepX = 100 / Math.max(1, window.innerWidth);
-        const stepY = 100 / Math.max(1, window.innerHeight);
-        spX = Math.min(100, Math.max(0, spX + dx * stepX));
-        spY = Math.min(100, Math.max(0, spY + dy * stepY));
-        localStorage.setItem(SP_KEYS.x, String(spX));
-        localStorage.setItem(SP_KEYS.y, String(spY));
-        const t = document.getElementById('spPreviewText');
-        if (t) { t.style.left = spX + '%'; t.style.top = spY + '%'; }
+        const [cx, cy] = spGetPos();
+        spSetPos(cx + dx * (100 / Math.max(1, window.innerWidth)),
+                 cy + dy * (100 / Math.max(1, window.innerHeight)));
         spFlashLoupe();
     }
 
-    function spBindDrag(wrap, t) {
+    // ===== 드래그 / 스포이드 =====
+    function spBindDrag(wrap) {
         let dragging = false;
-        function move(clientX, clientY) {
+        function at(clientX, clientY) {
             const r = wrap.getBoundingClientRect();
-            spX = Math.min(100, Math.max(0, ((clientX - r.left) / r.width) * 100));
-            spY = Math.min(100, Math.max(0, ((clientY - r.top) / r.height) * 100));
-            t.style.left = spX + '%';
-            t.style.top = spY + '%';
+            return [((clientX - r.left) / r.width) * 100, ((clientY - r.top) / r.height) * 100];
+        }
+        function down(clientX, clientY, e) {
+            if (spPicking) { spPickColorAt(clientX, clientY); return; }
+            dragging = true;
+            if (e) e.preventDefault();
+            const [x, y] = at(clientX, clientY);
+            spSetPos(x, y);
+            spUpdateLoupe(true);
+        }
+        function move(clientX, clientY, e) {
+            if (!dragging) return;
+            if (e) e.preventDefault();
+            const [x, y] = at(clientX, clientY);
+            spSetPos(x, y);
             spUpdateLoupe(true);
         }
         function end() {
             if (!dragging) return;
             dragging = false;
-            localStorage.setItem(SP_KEYS.x, String(spX));
-            localStorage.setItem(SP_KEYS.y, String(spY));
             if (spLoupeTimer) clearTimeout(spLoupeTimer);
             spLoupeTimer = setTimeout(() => spUpdateLoupe(false), 600);
         }
-        t.addEventListener('touchstart', (e) => { dragging = true; spUpdateLoupe(true); e.preventDefault(); }, { passive:false });
-        wrap.addEventListener('touchmove', (e) => {
-            if (!dragging) return;
-            e.preventDefault();
-            move(e.touches[0].clientX, e.touches[0].clientY);
-        }, { passive:false });
+        wrap.addEventListener('touchstart', (e) => down(e.touches[0].clientX, e.touches[0].clientY, e), { passive: false });
+        wrap.addEventListener('touchmove', (e) => move(e.touches[0].clientX, e.touches[0].clientY, e), { passive: false });
         wrap.addEventListener('touchend', end);
-        t.addEventListener('mousedown', (e) => { dragging = true; spUpdateLoupe(true); e.preventDefault(); });
-        window.addEventListener('mousemove', (e) => { if (dragging) move(e.clientX, e.clientY); });
+        wrap.addEventListener('mousedown', (e) => down(e.clientX, e.clientY, e));
+        window.addEventListener('mousemove', (e) => move(e.clientX, e.clientY, null));
         window.addEventListener('mouseup', end);
     }
 
-    // 사진은 긴 변 1080px, JPEG 0.75로 줄인다. 원본 그대로면 localStorage 용량을 넘긴다.
+    // 스포이드 — 미리보기에서 찍은 지점의 실제 사진 픽셀 색을 읽는다
+    function spPickColorAt(clientX, clientY) {
+        const wrap = document.getElementById('spPreviewWrap');
+        const r = wrap.getBoundingClientRect();
+        const img = new Image();
+        img.onload = () => {
+            const cover = Math.max(r.width / img.width, r.height / img.height);
+            const dw = img.width * cover, dh = img.height * cover;
+            const ox = (r.width - dw) / 2, oy = (r.height - dh) / 2;
+            const sx = Math.round(((clientX - r.left) - ox) / cover);
+            const sy = Math.round(((clientY - r.top) - oy) / cover);
+            const cv = document.createElement('canvas');
+            cv.width = 1; cv.height = 1;
+            cv.getContext('2d').drawImage(img, sx, sy, 1, 1, 0, 0, 1, 1);
+            const d = cv.getContext('2d').getImageData(0, 0, 1, 1).data;
+            const hex = '#' + [d[0], d[1], d[2]].map((n) => n.toString(16).padStart(2, '0')).join('');
+            spBoxC = hex; spSave(SP.boxC, hex);
+            const ci = document.getElementById('spBoxColor');
+            if (ci) ci.value = hex;
+            spSetPicking(false);
+            spApplyPreviewStyle();
+        };
+        img.src = spImage;
+    }
+    function spSetPicking(on) {
+        spPicking = !!on;
+        const wrap = document.getElementById('spPreviewWrap');
+        const btn = document.getElementById('spEyedropper');
+        if (wrap) wrap.classList.toggle('picking', spPicking);
+        if (btn) btn.classList.toggle('on', spPicking);
+    }
+
+    // ===== 사진 불러오기 =====
+    function spMeasureImage() {
+        if (!spImage) return;
+        const im = new Image();
+        im.onload = () => { spImgW = im.width; spImgH = im.height; };
+        im.src = spImage;
+    }
     function spLoadFile(file) {
         const reader = new FileReader();
         reader.onload = () => {
@@ -3640,15 +3806,14 @@ body.android-mode #calcIconPlusMinus::after {
             img.onload = () => {
                 const max = 1080;
                 const ratio = Math.min(1, max / Math.max(img.width, img.height));
-                const cw = Math.round(img.width * ratio);
-                const ch = Math.round(img.height * ratio);
+                const cw = Math.round(img.width * ratio), ch = Math.round(img.height * ratio);
                 const cv = document.createElement('canvas');
                 cv.width = cw; cv.height = ch;
                 cv.getContext('2d').drawImage(img, 0, 0, cw, ch);
                 const data = cv.toDataURL('image/jpeg', 0.75);
                 try {
-                    localStorage.setItem(SP_KEYS.img, data);
-                    spImage = data;
+                    localStorage.setItem(SP.img, data);
+                    spImage = data; spImgW = cw; spImgH = ch;
                     spRenderPreview();
                 } catch (e) {
                     alert('사진이 너무 큽니다. 더 작은 캡쳐를 사용해주세요.');
@@ -3662,26 +3827,32 @@ body.android-mode #calcIconPlusMinus::after {
     // ===== 공연 화면 =====
     function startScreenPick() {
         if (!spImage) { alert('먼저 배경 사진을 골라주세요.'); return; }
-        const stage = document.getElementById('screenPickStage');
         document.getElementById('spStageImg').src = spImage;
+
         const t = document.getElementById('spLiveText');
-        t.style.left = spX + '%';
-        t.style.top = spY + '%';
+        t.style.left = spX + '%'; t.style.top = spY + '%';
         spApplyTextStyle(t, spSize);
-        t.textContent = '';
-        t.classList.remove('show');
-        stage.classList.add('active');
+        t.textContent = ''; t.classList.remove('show');
+
+        const b = document.getElementById('spStageBox');
+        spPlaceRect(b, spBoxX, spBoxY, spBoxW, spBoxH);
+        b.style.background = spBoxC;
+        b.style.display = spBoxOn ? 'block' : 'none';
+
+        const p = document.getElementById('spStageTap');
+        spPlaceRect(p, spTapX, spTapY, spTapW, spTapH);
+        p.style.display = spTapOn ? 'block' : 'none';
+
+        document.getElementById('screenPickStage').classList.add('active');
         window.closePage();
         window.closeSideMenu();
         spStartLiveWatch();
     }
-
     function stopScreenPick() {
         document.getElementById('screenPickStage').classList.remove('active');
         spStopLiveWatch();
     }
 
-    // 수신값을 화면에 얹는다. startDataSync 안의 수신 리스너가 이걸 호출한다.
     window.screenPickShow = function (text) {
         const stage = document.getElementById('screenPickStage');
         if (!stage || !stage.classList.contains('active')) return;
@@ -3692,7 +3863,6 @@ body.android-mode #calcIconPlusMinus::after {
     };
     window.screenPickLiveOn = function () { return spLive; };
 
-    // 실시간 수신: 관객 앱이 live_input/{adminId}에 입력값을 흘려보내면 여기서 받는다
     function spStartLiveWatch() {
         spStopLiveWatch();
         if (!spLive || !currentAdminId) return;
@@ -3709,7 +3879,6 @@ body.android-mode #calcIconPlusMinus::after {
     }
 
     // 배너 알림만 서버가 봐야 하므로 configs에 저장한다.
-    // 실시간 수신은 이 기기가 구독할지 말지의 문제라 관객에게 보낼 필요가 없다.
     async function spSyncFlags() {
         if (!currentAdminId) return;
         try {
@@ -3717,100 +3886,102 @@ body.android-mode #calcIconPlusMinus::after {
                 .set({ pushEnabled: spPush }, { merge: true });
         } catch (e) { console.error('화면 픽 설정 동기화 실패:', e); }
     }
-
     window.onSpLiveChange = function (on) {
-        spLive = !!on;
-        localStorage.setItem(SP_KEYS.live, spLive ? 'true' : 'false');
-        // 켜면 바로 붙고, 끄면 바로 뗀다 — 관객 폰은 어차피 계속 보내고 있다
+        spLive = !!on; spSave(SP.live, spLive);
         if (document.getElementById('screenPickStage').classList.contains('active')) {
             if (spLive) spStartLiveWatch(); else spStopLiveWatch();
         }
     };
     window.onSpPushChange = function (on) {
-        spPush = !!on;
-        localStorage.setItem(SP_KEYS.push, spPush ? 'true' : 'false');
-        spSyncFlags();
+        spPush = !!on; spSave(SP.push, spPush); spSyncFlags();
     };
     window.startScreenPick = startScreenPick;
 
     // ===== 초기화 =====
     (function spInit() {
+        spMeasureImage();
+
         const file = document.getElementById('spFileInput');
         if (file) file.addEventListener('change', (e) => {
             if (e.target.files && e.target.files[0]) spLoadFile(e.target.files[0]);
             e.target.value = '';
         });
+
+        // 편집 대상 탭
+        const HINTS = {
+            text: '글자를 끌어서 놓으세요. 끄는 동안 돋보기가 뜹니다.',
+            box: '가림 박스를 끌어서 시간·배터리 위에 올리세요. 크기는 아래에서 조절합니다.',
+            tap: '터치 영역을 끌어서 계산기 아이콘 위에 올리세요. 공연 화면에서는 보이지 않습니다.'
+        };
+        document.querySelectorAll('.sp-tab').forEach((tab) => {
+            tab.addEventListener('click', () => {
+                spTarget = tab.dataset.target;
+                document.querySelectorAll('.sp-tab').forEach((x) => x.classList.toggle('active', x === tab));
+                document.getElementById('spPanelText').style.display = spTarget === 'text' ? '' : 'none';
+                document.getElementById('spPanelBox').style.display = spTarget === 'box' ? '' : 'none';
+                document.getElementById('spPanelTap').style.display = spTarget === 'tap' ? '' : 'none';
+                document.getElementById('spTargetHint').textContent = HINTS[spTarget];
+                if (spTarget !== 'box') spSetPicking(false);
+                spApplyPreviewStyle();
+            });
+        });
+
+        // 글자
         const size = document.getElementById('spSizeRange');
         const sizeNum = document.getElementById('spSizeInput');
         function setSize(v) {
             spSize = Math.min(240, Math.max(10, parseInt(v, 10) || 40));
             if (size) size.value = String(spSize);
             if (sizeNum) sizeNum.value = String(spSize);
-            localStorage.setItem(SP_KEYS.size, String(spSize));
-            spApplyPreviewStyle();
+            spSave(SP.size, spSize); spApplyPreviewStyle();
         }
         if (size) { size.value = String(spSize); size.addEventListener('input', () => setSize(size.value)); }
         if (sizeNum) { sizeNum.value = String(spSize); sizeNum.addEventListener('change', () => setSize(sizeNum.value)); }
-
-        const weight = document.getElementById('spWeightSelect');
-        if (weight) {
-            weight.value = spWeight;
-            weight.addEventListener('change', () => {
-                spWeight = weight.value;
-                localStorage.setItem('sp_weight', spWeight);
-                spApplyPreviewStyle();
-            });
-        }
-        const font = document.getElementById('spFontSelect');
-        if (font) {
-            font.value = spFont;
-            font.addEventListener('change', () => {
-                spFont = font.value;
-                localStorage.setItem('sp_font', spFont);
-                spApplyPreviewStyle();
-            });
-        }
-        const shadow = document.getElementById('spShadowToggle');
-        if (shadow) {
-            shadow.checked = spShadow;
-            shadow.addEventListener('change', () => {
-                spShadow = shadow.checked;
-                localStorage.setItem('sp_shadow', spShadow ? 'true' : 'false');
-                spApplyPreviewStyle();
-            });
-        }
         const color = document.getElementById('spColorInput');
-        if (color) {
-            color.value = spColor;
-            color.addEventListener('input', () => {
-                spColor = color.value;
-                localStorage.setItem(SP_KEYS.color, spColor);
-                spApplyPreviewStyle();
-            });
-        }
+        if (color) { color.value = spColor; color.addEventListener('input', () => { spColor = color.value; spSave(SP.color, spColor); spApplyPreviewStyle(); }); }
+        const weight = document.getElementById('spWeightSelect');
+        if (weight) { weight.value = spWeight; weight.addEventListener('change', () => { spWeight = weight.value; spSave(SP.weight, spWeight); spApplyPreviewStyle(); }); }
+        const font = document.getElementById('spFontSelect');
+        if (font) { font.value = spFont; font.addEventListener('change', () => { spFont = font.value; spSave(SP.font, spFont); spApplyPreviewStyle(); }); }
+        const shadow = document.getElementById('spShadowToggle');
+        if (shadow) { shadow.checked = spShadow; shadow.addEventListener('change', () => { spShadow = shadow.checked; spSave(SP.shadow, spShadow); spApplyPreviewStyle(); }); }
+
+        // 가림 박스
+        const bOn = document.getElementById('spBoxToggle');
+        if (bOn) { bOn.checked = spBoxOn; bOn.addEventListener('change', () => { spBoxOn = bOn.checked; spSave(SP.boxOn, spBoxOn); spApplyPreviewStyle(); }); }
+        const bW = document.getElementById('spBoxW');
+        if (bW) { bW.value = String(spBoxW); bW.addEventListener('change', () => { spBoxW = Math.min(100, Math.max(1, parseFloat(bW.value) || 1)); bW.value = String(spBoxW); spSave(SP.boxW, spBoxW); spApplyPreviewStyle(); }); }
+        const bH = document.getElementById('spBoxH');
+        if (bH) { bH.value = String(spBoxH); bH.addEventListener('change', () => { spBoxH = Math.min(100, Math.max(1, parseFloat(bH.value) || 1)); bH.value = String(spBoxH); spSave(SP.boxH, spBoxH); spApplyPreviewStyle(); }); }
+        const bC = document.getElementById('spBoxColor');
+        if (bC) { bC.value = spBoxC; bC.addEventListener('input', () => { spBoxC = bC.value; spSave(SP.boxC, spBoxC); spApplyPreviewStyle(); }); }
+        const eye = document.getElementById('spEyedropper');
+        if (eye) eye.addEventListener('click', () => spSetPicking(!spPicking));
+
+        // 터치 영역
+        const pOn = document.getElementById('spTapToggle');
+        if (pOn) { pOn.checked = spTapOn; pOn.addEventListener('change', () => { spTapOn = pOn.checked; spSave(SP.tapOn, spTapOn); spApplyPreviewStyle(); }); }
+        const pW = document.getElementById('spTapW');
+        if (pW) { pW.value = String(spTapW); pW.addEventListener('change', () => { spTapW = Math.min(100, Math.max(1, parseFloat(pW.value) || 1)); pW.value = String(spTapW); spSave(SP.tapW, spTapW); spApplyPreviewStyle(); }); }
+        const pH = document.getElementById('spTapH');
+        if (pH) { pH.value = String(spTapH); pH.addEventListener('change', () => { spTapH = Math.min(100, Math.max(1, parseFloat(pH.value) || 1)); pH.value = String(spTapH); spSave(SP.tapH, spTapH); spApplyPreviewStyle(); }); }
+
         const lt = document.getElementById('spLiveToggle');
         if (lt) lt.checked = spLive;
         const pt = document.getElementById('spPushToggle');
         if (pt) pt.checked = spPush;
 
-        // 방향키: 한 번 누르면 1px, 길게 누르면 반복
+        // 방향키
         document.querySelectorAll('.sp-dbtn').forEach((btn) => {
             const dx = parseInt(btn.dataset.dx, 10) || 0;
             const dy = parseInt(btn.dataset.dy, 10) || 0;
             let holdTimer = null, repeatTimer = null;
-            const stop = () => {
-                if (holdTimer) clearTimeout(holdTimer);
-                if (repeatTimer) clearInterval(repeatTimer);
-                holdTimer = repeatTimer = null;
-            };
+            const stop = () => { if (holdTimer) clearTimeout(holdTimer); if (repeatTimer) clearInterval(repeatTimer); holdTimer = repeatTimer = null; };
             const start = (e) => {
-                e.preventDefault();
-                spNudge(dx, dy);
-                holdTimer = setTimeout(() => {
-                    repeatTimer = setInterval(() => spNudge(dx, dy), 90);
-                }, 350);
+                e.preventDefault(); spNudge(dx, dy);
+                holdTimer = setTimeout(() => { repeatTimer = setInterval(() => spNudge(dx, dy), 90); }, 350);
             };
-            btn.addEventListener('touchstart', start, { passive:false });
+            btn.addEventListener('touchstart', start, { passive: false });
             btn.addEventListener('touchend', stop);
             btn.addEventListener('touchcancel', stop);
             btn.addEventListener('mousedown', start);
@@ -3818,19 +3989,24 @@ body.android-mode #calcIconPlusMinus::after {
             btn.addEventListener('mouseleave', stop);
         });
 
+        // 터치 영역을 누르면 계산기 화면으로
+        const tapZone = document.getElementById('spStageTap');
+        if (tapZone) tapZone.addEventListener('click', () => { if (spTapOn) stopScreenPick(); });
+
         // 나가기: 왼쪽 위 모서리를 1.5초 길게 누르기
         const exit = document.getElementById('screenPickExit');
         if (exit) {
             let timer = null;
-            const start = () => { timer = setTimeout(() => { if ("vibrate" in navigator) navigator.vibrate(30); stopScreenPick(); }, 1500); };
+            const start = () => { timer = setTimeout(() => { if ('vibrate' in navigator) navigator.vibrate(30); stopScreenPick(); }, 1500); };
             const cancel = () => { if (timer) clearTimeout(timer); timer = null; };
-            exit.addEventListener('touchstart', start, { passive:true });
+            exit.addEventListener('touchstart', start, { passive: true });
             exit.addEventListener('touchend', cancel);
             exit.addEventListener('touchmove', cancel);
             exit.addEventListener('mousedown', start);
             exit.addEventListener('mouseup', cancel);
             exit.addEventListener('mouseleave', cancel);
         }
+
         spRenderPreview();
     })();
 
