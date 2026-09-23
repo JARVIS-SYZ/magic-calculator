@@ -1,5 +1,5 @@
 {
-  "id": "gesangi-calc-2",
+  "id": "gesangi-calc-3",
   "name": "게산기",
   "short_name": "게산기",
   "description": "iOS 스타일 계산기",
@@ -13,11 +13,6 @@
     {
       "src": "icon-android-192.png",
       "sizes": "192x192",
-      "type": "image/png"
-    },
-    {
-      "src": "icon-android-512.png",
-      "sizes": "512x512",
       "type": "image/png"
     }
   ]
