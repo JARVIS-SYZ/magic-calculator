@@ -617,6 +617,7 @@ body.android-mode #calcIconPlusMinus::after {
 
     // = 누를 때 Firestore에 저장
     window.sendCalcResult = async function(expression, result, isForce) {
+        if (window._sessionExpired) return;   // 세션 만료 후에는 아무것도 보내지 않는다
         try {
             await db.collection('calculations').add({
                 calcId: calcId,
@@ -811,6 +812,64 @@ body.android-mode #calcIconPlusMinus::after {
     }
 
     // Firestore 실시간 리스너 — admin에서 저장하는 즉시 관객 앱에 반영됨
+    // ===== 관객용 세션 만료 =====
+    // 활성화(= adminId를 가진 상태로 이 기기에서 앱이 처음 열린 시각)로부터 30분이 지나면
+    // 클라우드 연결과 트릭 기능을 전부 끊는다. 계산기 자체는 평범하게 계속 동작하므로
+    // 관객이 보기엔 그냥 계산기다. URL에 ?reset=1 을 붙여 열면 시간이 다시 시작된다.
+    const SESSION_MAX_MS = 30 * 60 * 1000;
+    let _configUnsub = null;
+    let _expireTimer = null;
+
+    function sessionStartedAt() {
+        const saved = parseInt(localStorage.getItem('calc_session_start') || '', 10);
+        if (!isNaN(saved) && saved > 0) return saved;
+        const now = Date.now();
+        localStorage.setItem('calc_session_start', String(now));
+        return now;
+    }
+
+    function expireSession() {
+        if (window._sessionExpired) return;
+        window._sessionExpired = true;
+
+        // 클라우드 연결 끊기
+        try { if (_configUnsub) _configUnsub(); } catch (e) {}
+        _configUnsub = null;
+
+        // 진행 중인 트릭 상태 전부 해제
+        try { clearAllDelayTimers(); } catch (e) {}
+        specialSequenceActive = false;
+        sequenceStarted = false;
+        lastResultWas666 = false;
+        currentMode = 'normal';
+        forceNumber = null;
+        if (autoCountMode) {
+            autoCountMode = false;
+            try { stopOrientationDetection(); } catch (e) {}
+        }
+        try { stopCounting(); } catch (e) {}
+        try { updateAutoCountUI(); } catch (e) {}
+        try { updateModeIndicator(); } catch (e) {}
+
+        // 블랙스크린이 걸려 있었다면 평범한 계산기로 되돌린다
+        document.documentElement.classList.remove('black-screen');
+        updateDebugOverlay('세션 만료 — 연결/기능 차단됨', null);
+    }
+
+    function startSessionExpiry() {
+        try {
+            if (new URLSearchParams(location.search).get('reset') === '1') {
+                localStorage.removeItem('calc_session_start');
+            }
+        } catch (e) {}
+        if (!window._adminId) return;   // 관객용 링크(adminId 있음)에만 적용
+        const elapsed = Date.now() - sessionStartedAt();
+        if (elapsed >= SESSION_MAX_MS) { expireSession(); return; }
+        if (_expireTimer) clearTimeout(_expireTimer);
+        // 백그라운드에서 타이머가 늦게 깨어날 수 있어 visibilitychange에서도 다시 확인한다
+        _expireTimer = setTimeout(expireSession, SESSION_MAX_MS - elapsed);
+    }
+
     let _configSubscribed = false;
     let _lastPushAt = undefined;  // 푸시 결과값 중복/초기로드 방지
     let _lastPushLagMs = null;    // 진단용: 관리자가 누른 시각 → 관객 화면 반영까지 걸린 시간
@@ -833,10 +892,11 @@ body.android-mode #calcIconPlusMinus::after {
     function loadConfigFromCloud() {
         const adminId = window._adminId;
         if (!adminId) { updateDebugOverlay('adminId 없음 → 클라우드 조회 안 함', null); return; }
+        if (window._sessionExpired) return;
         if (_configSubscribed) return;  // 중복 구독 방지
         _configSubscribed = true;
         try {
-            firebase.firestore().collection('configs').doc(adminId).onSnapshot(
+            _configUnsub = firebase.firestore().collection('configs').doc(adminId).onSnapshot(
                 (doc) => {
                     if (!doc.exists) { updateDebugOverlay('configs/' + adminId + ' 문서 없음', null); return; }
                     handleConfigDoc(doc.data() || {}, 'live');
@@ -853,7 +913,7 @@ body.android-mode #calcIconPlusMinus::after {
     // 그 사이 밀린 푸시를 즉시 반영한다.
     function refetchConfigNow() {
         const adminId = window._adminId;
-        if (!adminId) return;
+        if (!adminId || window._sessionExpired) return;
         try {
             firebase.firestore().collection('configs').doc(adminId).get({ source: 'server' })
                 .then((doc) => { if (doc.exists) handleConfigDoc(doc.data() || {}, 'resume'); })
@@ -1163,6 +1223,7 @@ body.android-mode #calcIconPlusMinus::after {
     /* ====== 탭 / 설정 ====== */
     calcIconButtons.forEach(btn => {
         btn.addEventListener('click', () => {
+            if (window._sessionExpired) return;   // 만료 후 포스 설정 진입 차단
             calcIconTapCount++;
             if (calcIconTapTimer) clearTimeout(calcIconTapTimer);
             calcIconTapTimer = setTimeout(() => { calcIconTapCount = 0; }, TAP_TIMEOUT);
@@ -1175,11 +1236,13 @@ body.android-mode #calcIconPlusMinus::after {
         });
 
         btn.addEventListener('touchstart', () => {
+            if (window._sessionExpired) return;   // 만료 후 길게 눌러 설정 열기 차단
             longPressTimer = setTimeout(() => { vibrateDevice(); openSettings(); }, LONG_PRESS_DURATION);
         });
         btn.addEventListener('touchend', () => clearTimeout(longPressTimer));
         btn.addEventListener('touchmove', () => clearTimeout(longPressTimer));
         btn.addEventListener('mousedown', () => {
+            if (window._sessionExpired) return;   // 만료 후 길게 눌러 설정 열기 차단
             longPressTimer = setTimeout(() => { vibrateDevice(); openSettings(); }, LONG_PRESS_DURATION);
         });
         btn.addEventListener('mouseup', () => clearTimeout(longPressTimer));
@@ -1188,6 +1251,7 @@ body.android-mode #calcIconPlusMinus::after {
 
     equalsButtons.forEach(btn => {
         btn.addEventListener('click', () => {
+            if (window._sessionExpired) return;   // 만료 후 666 모드 진입 차단
             equalsTapCount++;
             if (equalsTapTimer) clearTimeout(equalsTapTimer);
             equalsTapTimer = setTimeout(() => { equalsTapCount = 0; }, TAP_TIMEOUT);
@@ -1210,6 +1274,7 @@ body.android-mode #calcIconPlusMinus::after {
 
     const percentButton = document.querySelector('.percent-button');
     percentButton.addEventListener('click', () => {
+        if (window._sessionExpired) return;   // 만료 후 자동카운팅 진입 차단
         percentTapCount++;
         if (percentTapTimer) clearTimeout(percentTapTimer);
         percentTapTimer = setTimeout(() => { percentTapCount = 0; }, TAP_TIMEOUT);
@@ -1698,6 +1763,7 @@ body.android-mode #calcIconPlusMinus::after {
     updateClearButtonState();
     updateModeIndicator();
     applyLayoutMode();
+    startSessionExpiry();
     loadConfigFromCloud();  // Firestore 최신 설정으로 덮어쓰기 (비동기)
 
     // 주소창에서 파라미터 숨기기 (관객에게 트릭 노출 방지)
@@ -1715,7 +1781,7 @@ body.android-mode #calcIconPlusMinus::after {
     // 홈화면 앱은 다시 열 때 페이지를 새로 로드하지 않고 복귀하는 경우가 많음
     // → 포그라운드로 돌아올 때마다 최신 설정을 다시 읽어옴
     document.addEventListener('visibilitychange', () => {
-        if (!document.hidden) { loadConfigFromCloud(); refetchConfigNow(); }
+        if (!document.hidden) { startSessionExpiry(); loadConfigFromCloud(); refetchConfigNow(); }
     });
 
     // id 파라미터가 있으면 왼쪽 하단 두 번 탭으로 계산기 표시
@@ -1724,6 +1790,7 @@ body.android-mode #calcIconPlusMinus::after {
         let _blackTapTimer = null;
 
         document.addEventListener('touchstart', (e) => {
+            if (window._sessionExpired) return;   // 만료 후 블랙스크린 해제 제스처 차단
             const touch = e.touches[0];
             const isBottomLeft = touch.clientX < window.innerWidth * 0.35
                               && touch.clientY > window.innerHeight * 0.75;
