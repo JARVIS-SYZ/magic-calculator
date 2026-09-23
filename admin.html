@@ -3990,6 +3990,8 @@ body.android-mode #calcIconPlusMinus::after {
             tc.setAttribute('content', spBarC);
         }
 
+        console.log('화면 픽 시작 — 터치영역', spTapOn ? ('켜짐 ' + spTapX + '%,' + spTapY + '% ' + spTapW + 'x' + spTapH) : '꺼짐',
+                    '/ 가림박스', spBoxOn ? '켜짐' : '꺼짐', '/ 위로올리기', spShift + 'px');
         document.getElementById('screenPickStage').classList.add('active');
         window.closePage();
         window.closeSideMenu();
@@ -4156,21 +4158,32 @@ body.android-mode #calcIconPlusMinus::after {
         });
 
         // 터치 영역을 누르면 계산기 화면으로
-        // 터치 영역: click은 iOS에서 한 박자 늦고 두 번 탭이 확대로 새기도 해서
-        // 손이 닿는 즉시 반응하도록 touchstart를 쓴다.
-        const tapZone = document.getElementById('spStageTap');
-        if (tapZone) {
-            const fire = (e) => {
-                if (!spTapOn) return;
-                e.preventDefault();
-                stopScreenPick();
-            };
-            tapZone.addEventListener('touchstart', fire, { passive: false });
-            tapZone.addEventListener('click', fire);
-        }
-        // 공연 화면에서 두 번 탭 확대 차단
+        // 터치 판정은 요소에 걸지 않고 화면 전체에서 좌표로 한다.
+        // 투명한 div에 이벤트를 걸면 다른 레이어에 가려 한 번에 안 먹는 일이 있었다.
         const stageEl = document.getElementById('screenPickStage');
         if (stageEl) {
+            const inTapZone = (clientX, clientY) => {
+                if (!spTapOn) return false;
+                const r = stageEl.getBoundingClientRect();
+                const x = ((clientX - r.left) / r.width) * 100;
+                const y = ((clientY - r.top) / r.height) * 100;
+                return x >= spTapX - spTapW / 2 && x <= spTapX + spTapW / 2
+                    && y >= spTapY - spTapH / 2 && y <= spTapY + spTapH / 2;
+            };
+            const onDown = (clientX, clientY, e) => {
+                // 왼쪽 위 나가기 영역은 길게 누르기 전용이라 여기서 건드리지 않는다
+                const r = stageEl.getBoundingClientRect();
+                if (clientX - r.left < 72 && clientY - r.top < 72) return;
+                if (!inTapZone(clientX, clientY)) return;
+                if (e) e.preventDefault();
+                stopScreenPick();
+            };
+            stageEl.addEventListener('touchstart', (e) => {
+                if (e.touches && e.touches[0]) onDown(e.touches[0].clientX, e.touches[0].clientY, e);
+            }, { passive: false });
+            stageEl.addEventListener('mousedown', (e) => onDown(e.clientX, e.clientY, e));
+
+            // 두 번 탭 확대 / 핀치 확대 차단
             let lastTap = 0;
             stageEl.addEventListener('touchend', (e) => {
                 const now = Date.now();
