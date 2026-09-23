@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
+    <!-- 관리자 앱만 상태바 밑까지 그린다. 불투명으로 두면 iOS가 상태바 색을 우리 값에서
+         읽지 않아(문서 배경·theme-color 모두 무시) 검정을 못 벗어난다. 직접 그리려면 이 방법뿐.
+         (관객용 index.html은 불투명 유지 — iOS 26 흐림 띠를 피하기 위해) -->
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#0a0a0a">
     <title>관리자</title>
@@ -773,13 +777,16 @@ body.android-mode #calcIconPlusMinus::after {
 
 /* 실제 공연 화면 */
 /* 공연 화면에서는 두 번 탭 확대가 걸리면 안 된다 */
-#screenPickStage { position:fixed; inset:0; z-index:5000; display:none; overflow:hidden;
+#screenPickStage { position:fixed; inset:0; z-index:5000; display:none; background:#000; overflow:hidden;
     touch-action:manipulation; -webkit-user-select:none; user-select:none; }
 #screenPickStage * { touch-action:manipulation; -webkit-touch-callout:none; }
 #screenPickStage.active { display:block; }
 /* 사진은 폭에 맞춰 놓고 위로 끌어올려, 캡쳐에 찍힌 예전 상태바를 화면 밖으로 잘라낸다 */
 #spStageImg { position:absolute; left:0; width:100%; height:auto; }
 #spStageBox { position:absolute; box-sizing:border-box; z-index:1; }
+/* 시간·배터리가 뜨는 맨 윗줄을 우리가 칠한다 (OS 상태바는 투명) */
+#spStageBar { position:absolute; top:0; left:0; right:0; height:env(safe-area-inset-top, 0px); z-index:2; display:none; }
+#spPreviewBar { position:absolute; top:0; left:0; right:0; display:none; z-index:2; }
 
 #spStageTap { position:absolute; z-index:3; background:transparent; }
 /* 테스트 모드에서만 잠깐 드러낸다 */
@@ -1305,8 +1312,9 @@ body.android-mode #calcIconPlusMinus::after {
         <!-- 상태바 -->
         <div class="admin-section sp-panel" id="spPanelBar" style="display:none">
             <div class="admin-section-title">🔝 상태바</div>
-            <div class="sp-hint">사진이 닿지 못하는 <b>화면 맨 윗줄</b>입니다. 진짜 시간·배터리가 뜨는 자리고,
-            그 배경색을 여기서 정합니다. 사진 맨 윗부분과 같은 색을 찍으면 이어 보입니다.</div>
+            <div class="sp-hint">시간·배터리가 뜨는 <b>맨 윗줄</b>을 이 색으로 칠합니다.
+            사진은 자르지 않고 그대로 들어가며, 사진에 찍힌 예전 시간·배터리는 이 띠가 덮습니다.
+            스포이드로 사진 맨 윗부분과 같은 색을 찍으면 이어 보입니다. <b>즉시 반영됩니다.</b></div>
             <div class="sp-row">
                 <span class="sp-label">색 지정 사용</span>
                 <label class="toggle-switch">
@@ -1322,13 +1330,6 @@ body.android-mode #calcIconPlusMinus::after {
                 </span>
             </div>
             <div class="sp-hint">끄면 검정으로 둡니다.</div>
-            <div class="sp-row">
-                <span class="sp-label">빨강 테스트</span>
-                <button class="sp-btn secondary" id="spRedTest">상태바 빨강으로</button>
-            </div>
-            <div class="sp-hint">누르면 문서 배경을 <b>순수 빨강</b>으로 바꿉니다.
-            상태바가 빨개지면 이 방식이 통하는 것이고, 검정 그대로면 iOS가 이 값을 아예 안 읽는다는 뜻입니다.
-            (한 번 더 누르면 원래대로)</div>
             <div class="sp-row">
                 <span class="sp-label">진단 (실시간)</span>
                 <button class="sp-btn secondary" id="spDiagBtn">새로고침</button>
@@ -1382,6 +1383,7 @@ body.android-mode #calcIconPlusMinus::after {
 <!-- 화면 픽 공연 화면 -->
 <div id="screenPickStage">
     <img id="spStageImg" alt="">
+    <div id="spStageBar"></div>
     <div id="spStageBox"></div>
     <div id="spLiveText"></div>
     <div id="spStageTap"></div>
@@ -3727,6 +3729,7 @@ body.android-mode #calcIconPlusMinus::after {
         wrap.style.backgroundImage = 'url(' + spImage + ')';
         wrap.style.backgroundPosition = '0px ' + (-spEffShift() * (wrap.clientWidth / Math.max(1, window.innerWidth))) + 'px';
         wrap.innerHTML =
+            '<div id="spPreviewBar"></div>' +
             '<div class="sp-el" id="spPreviewBox"></div>' +
             '<div class="sp-overlay-text" id="spPreviewText">1,234</div>' +
             '<div class="sp-el" id="spPreviewTap"></div>';
@@ -3743,6 +3746,12 @@ body.android-mode #calcIconPlusMinus::after {
         if (!t || !b || !p) return;
         const scale = wrap.clientWidth / Math.max(1, window.innerWidth);
         wrap.style.backgroundPosition = '0px ' + (-spEffShift() * scale) + 'px';
+        const pvBar = document.getElementById('spPreviewBar');
+        if (pvBar) {
+            const saTop = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--sa-top')) || 0;
+            pvBar.style.height = Math.max(1, saTop * scale) + 'px';
+        }
+        spApplyBarColorNow();
 
 
         t.style.left = spX + '%'; t.style.top = spY + '%';
@@ -4128,17 +4137,22 @@ body.android-mode #calcIconPlusMinus::after {
     // iOS는 불투명 상태바의 색을 '화면 맨 위를 덮고 있는 것'의 배경색에서 실시간으로 읽는다.
     // 문서 배경을 칠했더니 계산기로 돌아갔을 때만 그 색이 뜨고, 공연 화면에서는 스테이지의
     // 검정이 읽혀서 정반대로 동작했다. 그래서 스테이지 자체를 그 색으로 칠한다.
-    // 불투명 상태바의 색은 iOS가 정하고, 실험해 보니 '페이지가 뜰 때부터 칠해져 있을 때'만
-    // 확실히 먹혔다. 공연 시작 시점에 바꾸면 반영되지 않는다. 그래서 로드 때부터 계속 칠해 둔다.
-    // 계산기 화면 UI는 .calculator가 덮으므로 눈에 보이는 건 상태바뿐이다.
+    // 불투명 상태바에서는 iOS가 우리 색을 전혀 읽지 않는다 (문서 배경도, theme-color도,
+    // 순수 빨강으로 강제해도 검정 그대로였다). 그래서 상태바를 투명으로 두고 그 자리를
+    // 공연 화면 안에서 직접 칠한다. 높이는 기기의 safe-area 상단 여백을 그대로 쓴다.
     function spApplyBarColorNow() {
-        const c = spBarOn ? spBarC : '#000000';
-        const stage = document.getElementById('screenPickStage');
-        if (stage) stage.style.backgroundColor = c;
-        document.documentElement.style.backgroundColor = c;
-        document.body.style.backgroundColor = c;
+        const bar = document.getElementById('spStageBar');
+        if (bar) {
+            bar.style.background = spBarC;
+            bar.style.display = spBarOn ? 'block' : 'none';
+        }
+        const pv = document.getElementById('spPreviewBar');
+        if (pv) {
+            pv.style.background = spBarC;
+            pv.style.display = spBarOn ? 'block' : 'none';
+        }
         const tc = document.querySelector('meta[name="theme-color"]');
-        if (tc) tc.setAttribute('content', c);
+        if (tc) tc.setAttribute('content', spBarOn ? spBarC : '#0a0a0a');
     }
 
     // ===== 초기화 =====
@@ -4267,23 +4281,6 @@ body.android-mode #calcIconPlusMinus::after {
             if (panel && panel.style.display !== 'none') spRefreshDiag();
         }, 500);
 
-        // iOS가 문서 배경에서 상태바 색을 읽는지 한 번에 판정하는 실험
-        let redOn = false;
-        const redBtn = document.getElementById('spRedTest');
-        if (redBtn) redBtn.addEventListener('click', () => {
-            redOn = !redOn;
-            if (redOn) {
-                document.documentElement.style.backgroundColor = '#ff0000';
-                document.body.style.backgroundColor = '#ff0000';
-                const tc = document.querySelector('meta[name="theme-color"]');
-                if (tc) tc.setAttribute('content', '#ff0000');
-                redBtn.textContent = '원래대로';
-            } else {
-                spApplyBarColorNow();
-                redBtn.textContent = '상태바 빨강으로';
-            }
-            spRefreshDiag();
-        });
 
         const barOn = document.getElementById('spBarToggle');
         if (barOn) { barOn.checked = spBarOn; barOn.addEventListener('change', () => {
