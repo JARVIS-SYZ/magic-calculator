@@ -29,6 +29,14 @@ html, body {
     font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif;
     touch-action: manipulation;
 }
+html.screen-pick-active,
+html.screen-pick-active body {
+    background-color: #000;
+    background-image: var(--sp-screen-image, none);
+    background-position: left top;
+    background-size: 100vw auto;
+    background-repeat: no-repeat;
+}
 .calculator {
     position: fixed;
     top: 0; left: 0; right: 0; bottom: 0;
@@ -3644,6 +3652,16 @@ body.android-mode #calcIconPlusMinus::after {
     const spNum = (k, d) => { const v = parseFloat(localStorage.getItem(k)); return isNaN(v) ? d : v; };
     const spBool = (k, d) => { const v = localStorage.getItem(k); return v === null ? d : v === 'true'; };
 
+    // 예전 버전에서 자동으로 저장했던 자르기·상태바 가림 값을 한 번만 제거한다.
+    // 이후 사용자가 직접 바꾼 값은 그대로 유지한다.
+    const SP_LAYOUT_VERSION = '2';
+    if (localStorage.getItem('sp_layout_version') !== SP_LAYOUT_VERSION) {
+        localStorage.setItem('sp_shift_adj', '0');
+        localStorage.setItem('sp_bar_on', 'false');
+        localStorage.setItem(SP.boxOn, 'false');
+        localStorage.setItem('sp_layout_version', SP_LAYOUT_VERSION);
+    }
+
     let spImage = localStorage.getItem(SP.img) || '';
     let spImgW = 0, spImgH = 0;
     let spX = spNum(SP.x, 50), spY = spNum(SP.y, 50);
@@ -3678,9 +3696,15 @@ body.android-mode #calcIconPlusMinus::after {
         const cropped = navigator.standalone === true && safeTop === 0
             && Math.abs(screen.width - width) <= 1 && gap > 0 && gap <= 100
             && (!window.visualViewport || Math.abs(window.visualViewport.scale - 1) < 0.01);
-        return { width, height: height + (cropped ? gap : 0), top: cropped ? gap : 0, safeTop };
+        return {
+            width,
+            height: height + (cropped ? gap : 0),
+            top: 0,
+            excludedTop: cropped ? gap : 0,
+            safeTop
+        };
     }
-    function spBaseShift() { return spViewportFrame().top; }
+    function spBaseShift() { return spViewportFrame().excludedTop; }
     let spShiftAdj = spNum('sp_shift_adj', 0);   // 손으로 더하는 미세조정
     function spEffShift() { return spShiftAdj; }
     let spTarget = 'text';       // 지금 편집 중인 대상
@@ -3728,7 +3752,7 @@ body.android-mode #calcIconPlusMinus::after {
     function spLayoutStage() {
         const f = spViewportFrame();
         const surface = document.getElementById('spStageSurface');
-        surface.style.top = -f.top + 'px';
+        surface.style.top = '0px';
         surface.style.height = f.height + 'px';
         const layout = spImgLayout({ width: f.width, height: f.height });
         const image = document.getElementById('spStageImg');
@@ -3736,11 +3760,11 @@ body.android-mode #calcIconPlusMinus::after {
             left: layout.ox + 'px', top: layout.oy + 'px',
             width: layout.dw + 'px', height: layout.dh + 'px'
         });
-        document.getElementById('spStageBar').style.height = (f.safeTop || f.top) + 'px';
+        document.getElementById('spStageBar').style.height = (f.safeTop || f.excludedTop) + 'px';
         const notice = document.getElementById('spViewportNotice');
         if (notice) {
-            notice.hidden = !f.top;
-            notice.textContent = f.top ? '현재 iOS가 상단 ' + f.top + 'px를 웹앱 밖에 두고 있습니다. 사진의 나머지는 원래 위치에 맞추지만, 이 영역을 사진으로 덮을 수는 없습니다.' : '';
+            notice.hidden = !f.excludedTop;
+            notice.textContent = f.excludedTop ? '현재 iOS가 상태바 ' + f.excludedTop + 'px를 웹앱 밖에 두고 있습니다. 캡처 사진은 위가 잘리지 않도록 맨 위부터 표시됩니다.' : '';
         }
     }
 
@@ -3778,7 +3802,7 @@ body.android-mode #calcIconPlusMinus::after {
         wrap.style.backgroundSize = layout.dw + 'px ' + layout.dh + 'px';
         const pvBar = document.getElementById('spPreviewBar');
         if (pvBar) {
-            pvBar.style.height = (frame.safeTop || frame.top) * scale + 'px';
+            pvBar.style.height = (frame.safeTop || frame.excludedTop) * scale + 'px';
         }
         spApplyBarColorNow();
         spLayoutStage();
@@ -4067,6 +4091,8 @@ body.android-mode #calcIconPlusMinus::after {
         }
         const si = document.getElementById('spStageImg');
         si.src = spImage;
+        document.documentElement.style.setProperty('--sp-screen-image', 'url("' + spImage + '")');
+        document.documentElement.classList.add('screen-pick-active');
         spLayoutStage();
 
         const t = document.getElementById('spLiveText');
@@ -4107,6 +4133,8 @@ body.android-mode #calcIconPlusMinus::after {
 
     function stopScreenPick() {
         document.getElementById('screenPickStage').classList.remove('active');
+        document.documentElement.classList.remove('screen-pick-active');
+        document.documentElement.style.removeProperty('--sp-screen-image');
         spStopLiveWatch();
         spShieldClicks();
         spCloseAllPanels();

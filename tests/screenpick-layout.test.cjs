@@ -38,13 +38,14 @@ test('a same-device screenshot occupies the full screen without rescaling or off
     assert.equal(image.oy, 0);
 });
 
-test('an OS-owned top inset clips the screenshot instead of shrinking it below the status bar', () => {
+test('an OS-owned top inset keeps the screenshot anchored at its visible top edge', () => {
     const c = fixture({ height: 812, safeTop: 0 });
     const f = c.spViewportFrame();
-    assert.equal(f.top, 62);
+    assert.equal(f.top, 0);
+    assert.equal(f.excludedTop, 62);
     assert.equal(f.height, 874);
     assert.equal(c.spImgLayout(f).dh, 874);
-    assert.equal(100 - f.top, 38);
+    assert.equal(c.spImgLayout(f).oy, 0);
 });
 
 test('browser chrome, keyboard, zoom and rotation are not treated as an OS top inset', () => {
@@ -53,7 +54,7 @@ test('browser chrome, keyboard, zoom and rotation are not treated as an OS top i
         { height: 550, safeTop: 0 },
         { height: 812, safeTop: 0, scale: 2 },
         { width: 874, height: 402, safeTop: 0 }
-    ]) assert.equal(fixture(options).spViewportFrame().top, 0);
+    ]) assert.equal(fixture(options).spViewportFrame().excludedTop, 0);
 });
 
 test('moving a photo never changes its scale, including negative adjustments', () => {
