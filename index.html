@@ -1314,16 +1314,19 @@ body.android-mode #calcIconPlusMinus::after {
     }
 
     /* ====== 탭 / 설정 ====== */
+    // iOS 26에서는 키패드 ± 가 날짜 트릭 전용이라 포스 진입에서 뺀다.
+    // 그 버전에는 상단에 계산기 아이콘이 따로 있으므로 그쪽으로 들어간다.
+    // iOS 18에는 상단 아이콘이 없으니 키패드 버튼이 그대로 포스 진입이다.
+    function forceGestureBlocked(btn) {
+        return window._sessionExpired || (ios26Mode && btn.id === 'calcIconButton');
+    }
+
     calcIconButtons.forEach(btn => {
         btn.addEventListener('click', () => {
-            if (window._sessionExpired) return;   // 만료 후 포스 설정 진입 차단
+            if (forceGestureBlocked(btn)) return;
             calcIconTapCount++;
             if (calcIconTapTimer) clearTimeout(calcIconTapTimer);
-            calcIconTapTimer = setTimeout(() => {
-                // 두 번 탭 = 날짜 트릭 켜기/끄기 (세 번이면 아래에서 설정이 열린다)
-                if (calcIconTapCount === 2) dtToggle();
-                calcIconTapCount = 0;
-            }, TAP_TIMEOUT);
+            calcIconTapTimer = setTimeout(() => { calcIconTapCount = 0; }, TAP_TIMEOUT);
             if (calcIconTapCount === 3) {
                 calcIconTapCount = 0;
                 clearTimeout(calcIconTapTimer);
@@ -1333,18 +1336,31 @@ body.android-mode #calcIconPlusMinus::after {
         });
 
         btn.addEventListener('touchstart', () => {
-            if (window._sessionExpired) return;   // 만료 후 길게 눌러 설정 열기 차단
+            if (forceGestureBlocked(btn)) return;
             longPressTimer = setTimeout(() => { vibrateDevice(); openSettings(); }, LONG_PRESS_DURATION);
         });
         btn.addEventListener('touchend', () => clearTimeout(longPressTimer));
         btn.addEventListener('touchmove', () => clearTimeout(longPressTimer));
         btn.addEventListener('mousedown', () => {
-            if (window._sessionExpired) return;   // 만료 후 길게 눌러 설정 열기 차단
+            if (forceGestureBlocked(btn)) return;
             longPressTimer = setTimeout(() => { vibrateDevice(); openSettings(); }, LONG_PRESS_DURATION);
         });
         btn.addEventListener('mouseup', () => clearTimeout(longPressTimer));
         btn.addEventListener('mouseleave', () => clearTimeout(longPressTimer));
     });
+
+    // 날짜 트릭은 키패드의 ± (0 왼쪽) 두 번 탭 전용으로 따로 묶는다
+    (function dtBindTrigger() {
+        const btn = document.getElementById('calcIconButton');
+        if (!btn) return;
+        let taps = 0, timer = null;
+        btn.addEventListener('click', () => {
+            if (window._sessionExpired) return;
+            taps++;
+            if (timer) clearTimeout(timer);
+            timer = setTimeout(() => { if (taps === 2) dtToggle(); taps = 0; }, 500);
+        });
+    })();
 
     equalsButtons.forEach(btn => {
         btn.addEventListener('click', () => {
