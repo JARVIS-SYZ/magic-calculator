@@ -870,8 +870,9 @@ body.android-mode #calcIconPlusMinus::after {
 }
 .button.dt-blink .button-content { animation: dtBlink 0.5s ease-in-out 2; }
 /* X의 자릿수를 키패드 숫자 굵기로 알려준다 */
+/* X의 자릿수는 굵기가 아니라 옅은 회색으로 알린다 (관객 눈에 덜 띈다) */
 .button-content.dt-hint,
-.button-content.dt-hint * { font-weight: 900 !important; }
+.button-content.dt-hint * { color: #8e8e93 !important; }
 
 </style>
 </head>
@@ -3139,6 +3140,7 @@ body.android-mode #calcIconPlusMinus::after {
             }
         }, 0);
 
+        dtFitDisplay();
         updateAndroidPreview();
         dtOnInput();
     }
@@ -3279,6 +3281,17 @@ body.android-mode #calcIconPlusMinus::after {
             const nx = dtComputeX();
             if (nx) { dtDigits = nx; dtShowHint(nx.length); }
         }, 5000);
+    }
+
+    // 날짜 트릭 중에는 수식이 길어져 잘리므로, 다 보일 때까지 글자를 더 줄인다
+    function dtFitDisplay() {
+        if (!dtArmed || !displayElement) return;
+        let size = parseFloat(getComputedStyle(displayElement).fontSize) || 40;
+        let guard = 0;
+        while (displayElement.scrollWidth > displayElement.clientWidth + 1 && size > 16 && guard++ < 40) {
+            size -= 2;
+            displayElement.style.fontSize = size + 'px';
+        }
     }
 
     // handleNumber 첫머리에서 호출 — 누른 숫자를 X의 다음 자리로 바꿔치기한다
