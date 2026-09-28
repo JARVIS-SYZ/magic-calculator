@@ -14,10 +14,10 @@ function sourceBetween(start, end) {
 const geometry = sourceBetween('function spViewportFrame()', 'function spBaseShift()')
     + sourceBetween('function spImgLayout(r)', 'function spLayoutStage()');
 
-test('the iOS status-area shield is present only outside screen pick mode', () => {
-    assert.match(html, /#normalStatusBarShield\s*\{[\s\S]*?height:\s*env\(safe-area-inset-top,\s*0px\);[\s\S]*?background:\s*#000;/);
-    assert.match(html, /html\.screen-pick-active\s+#normalStatusBarShield\s*\{\s*display:\s*none;\s*\}/);
-    assert.match(html, /<div id="normalStatusBarShield" aria-hidden="true"><\/div>/);
+test('the iOS 27 blur guard is active only outside screen pick mode', () => {
+    assert.match(html, /@media \(display-mode:\s*standalone\)[\s\S]*?#iosTopBlurGuard\s*\{[\s\S]*?height:\s*11px;[\s\S]*?background-color:\s*#000;[\s\S]*?-webkit-background-clip:\s*text;/);
+    assert.match(html, /html\.screen-pick-active\s+#iosTopBlurGuard\s*\{\s*display:\s*none;\s*\}/);
+    assert.match(html, /<div id="iosTopBlurGuard" aria-hidden="true"><\/div>/);
 });
 
 function fixture({ width = 402, height = 874, safeTop = 62, standalone = true,

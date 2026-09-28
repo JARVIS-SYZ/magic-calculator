@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <!-- 설치 시 전체 화면을 요청한다. 일부 iOS 버전은 이 설정에도 상태바 영역을 제외한다. -->
+    <!-- 화면 픽 사진을 상태바 아래까지 이어 붙이기 위해 전체 화면 모드를 유지한다. -->
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#0a0a0a">
@@ -40,21 +40,22 @@ html.screen-pick-active body {
     background-size: 100vw auto;
     background-repeat: no-repeat;
 }
-/*
- * black-translucent는 화면 픽 사진을 iOS 상태바 아래까지 이어 붙이는 데 필요하다.
- * 일반 화면에서는 순수 검정층을 상태바 아래에 두어 iOS의 흐림 재료가 보이지 않게 한다.
- */
-#normalStatusBarShield {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: env(safe-area-inset-top, 0px);
-    background: #000;
-    z-index: 4999;
-    pointer-events: none;
+/* iOS 27 PWA의 상단 시스템 흐림을 일반 화면에서만 해제하는 합성 기준점이다. */
+#iosTopBlurGuard { display: none; }
+@media (display-mode: standalone) {
+    #iosTopBlurGuard {
+        display: block;
+        position: fixed;
+        inset: 0 0 auto;
+        height: 11px;
+        background-color: #000;
+        -webkit-background-clip: text;
+        background-clip: text;
+        pointer-events: none;
+        z-index: 4999;
+    }
+    html.screen-pick-active #iosTopBlurGuard { display: none; }
 }
-html.screen-pick-active #normalStatusBarShield { display: none; }
 .calculator {
     position: fixed;
     top: 0; left: 0; right: 0; bottom: 0;
@@ -842,7 +843,7 @@ body.android-mode #calcIconPlusMinus::after {
 </head>
 <body>
 
-<div id="normalStatusBarShield" aria-hidden="true"></div>
+<div id="iosTopBlurGuard" aria-hidden="true"></div>
 
 <!-- 코드 인증 화면 -->
 <div class="auth-screen hidden" id="authScreen">
