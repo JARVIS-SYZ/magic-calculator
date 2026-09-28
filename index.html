@@ -869,12 +869,20 @@ body.android-mode #calcIconPlusMinus::after {
         updateDebugOverlay('세션 만료 — 연결/기능 차단됨', null);
     }
 
+    // 한 번의 페이지 로드에서만 링크를 확인한다. 앱 복귀는 시작 시간을 갱신하지 않는다.
+    function prepareAudienceSession() {
+        if (!window._adminId) return;
+        const params = new URLSearchParams(location.search);
+        const session = params.get('session');
+        const key = window._adminId + ':' + (session || 'legacy');
+        const previousKey = localStorage.getItem('calc_session_key');
+        if ((session && previousKey !== key) || params.get('reset') === '1') {
+            localStorage.setItem('calc_session_start', String(Date.now()));
+        }
+        if (session) localStorage.setItem('calc_session_key', key);
+    }
+
     function startSessionExpiry() {
-        try {
-            if (new URLSearchParams(location.search).get('reset') === '1') {
-                localStorage.removeItem('calc_session_start');
-            }
-        } catch (e) {}
         if (!window._adminId) return;   // 관객용 링크(adminId 있음)에만 적용
         const elapsed = Date.now() - sessionStartedAt();
         if (elapsed >= SESSION_MAX_MS) { expireSession(); return; }
@@ -1824,6 +1832,7 @@ body.android-mode #calcIconPlusMinus::after {
     updateClearButtonState();
     updateModeIndicator();
     applyLayoutMode();
+    prepareAudienceSession();
     startSessionExpiry();
     loadConfigFromCloud();  // Firestore 최신 설정으로 덮어쓰기 (비동기)
 

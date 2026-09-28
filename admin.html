@@ -2172,6 +2172,7 @@ body.android-mode #calcIconPlusMinus::after {
     window.openPage = function(pageId) {
         origOpenPage(pageId);
         if (pageId === 'url') {
+            calcLinkSession = crypto.randomUUID();
             setTimeout(() => {
                 document.getElementById('urlOutput').textContent = buildCalcUrl();
                 restoreQR();
@@ -2436,6 +2437,7 @@ body.android-mode #calcIconPlusMinus::after {
     })();
 
     // ===== URL 생성 =====
+    let calcLinkSession = crypto.randomUUID();
     function buildCalcUrl() {
         const d1  = localStorage.getItem('delay666_s1') || '5';
         const d2  = localStorage.getItem('delay666_s2') || '10';
@@ -2446,6 +2448,7 @@ body.android-mode #calcIconPlusMinus::after {
 
         const params = new URLSearchParams({
             id: 'magic2024',
+            session: calcLinkSession,
             d1, d2, d3, ctd,
             ios,
             admin: currentAdminId || ''
