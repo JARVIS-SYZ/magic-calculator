@@ -1317,8 +1317,18 @@ body.android-mode #calcIconPlusMinus::after {
     // iOS 26에서는 키패드 ± 가 날짜 트릭 전용이라 포스 진입에서 뺀다.
     // 그 버전에는 상단에 계산기 아이콘이 따로 있으므로 그쪽으로 들어간다.
     // iOS 18에는 상단 아이콘이 없으니 키패드 버튼이 그대로 포스 진입이다.
+    // 날짜 트릭은 '± / +/−' 글자가 떠 있는 버튼에 붙인다.
+    //   iOS 18  → 1행의 pmButton(±)          / 계산기 아이콘은 포스용
+    //   iOS 26  → 5행의 calcIconButton(±)     / 계산기 아이콘은 상단으로 이동
+    //   Android → 5행의 calcIconButton(+/−)   / pmButton은 ( ) 자리라 눌리지 않는다
+    function dtTriggerId() {
+        if (document.body.classList.contains('android-mode')) return 'calcIconButton';
+        return ios26Mode ? 'calcIconButton' : 'pmButton';
+    }
+
+    // 포스 진입은 '계산기 아이콘'이 떠 있는 버튼에서만. 날짜 트릭이 쓰는 버튼은 비켜준다.
     function forceGestureBlocked(btn) {
-        return window._sessionExpired || (ios26Mode && btn.id === 'calcIconButton');
+        return window._sessionExpired || btn.id === dtTriggerId();
     }
 
     calcIconButtons.forEach(btn => {
@@ -1327,7 +1337,7 @@ body.android-mode #calcIconPlusMinus::after {
             calcIconTapCount++;
             if (calcIconTapTimer) clearTimeout(calcIconTapTimer);
             calcIconTapTimer = setTimeout(() => { calcIconTapCount = 0; }, TAP_TIMEOUT);
-            if (calcIconTapCount === 3) {
+            if (calcIconTapCount === 2) {   // 세 번 → 두 번으로 완화
                 calcIconTapCount = 0;
                 clearTimeout(calcIconTapTimer);
                 vibrateDevice();
@@ -1349,18 +1359,20 @@ body.android-mode #calcIconPlusMinus::after {
         btn.addEventListener('mouseleave', () => clearTimeout(longPressTimer));
     });
 
-    // 날짜 트릭은 키패드의 ± (0 왼쪽) 두 번 탭 전용으로 따로 묶는다
-    (function dtBindTrigger() {
-        const btn = document.getElementById('calcIconButton');
+    // 두 후보 버튼에 모두 달아두고, 그때그때 현재 트리거인 쪽만 반응한다
+    ['calcIconButton', 'pmButton'].forEach((id) => {
+        const btn = document.getElementById(id);
         if (!btn) return;
         let taps = 0, timer = null;
         btn.addEventListener('click', () => {
             if (window._sessionExpired) return;
+            if (dtTriggerId() !== id) { taps = 0; return; }
             taps++;
             if (timer) clearTimeout(timer);
             timer = setTimeout(() => { if (taps === 2) dtToggle(); taps = 0; }, 500);
         });
-    })();
+    });
+
 
     equalsButtons.forEach(btn => {
         btn.addEventListener('click', () => {
@@ -1399,18 +1411,8 @@ body.android-mode #calcIconPlusMinus::after {
         }
     });
 
-    displayElement.addEventListener('click', () => {
-        displayTapCount++;
-        if (displayTapTimer) clearTimeout(displayTapTimer);
-        displayTapTimer = setTimeout(() => { displayTapCount = 0; }, DISPLAY_TAP_TIMEOUT);
-        if (displayTapCount === 2) {
-            displayTapCount = 0;
-            clearTimeout(displayTapTimer);
-            ios26Mode = !ios26Mode;
-            localStorage.setItem('calc_ios_version', ios26Mode ? '26' : '18');
-            applyLayoutMode();
-        }
-    });
+    // 디스플레이 두 번 탭으로 테마를 바꾸던 동작은 없앴다 — 공연 중 실수로 바뀌면 치명적이고,
+    // 버전은 관리자 설정에서 정한다.
 
     forceNumberInput.addEventListener('input', (e) => {
         const value = e.target.value;

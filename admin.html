@@ -2750,6 +2750,12 @@ body.android-mode #calcIconPlusMinus::after {
             zeroTapCount = 0;
             clearTimeout(zeroTapTimer);
 
+            // '.' 두 번이라 화면에 '0.'이 남는다 — 시작하면서 깨끗이 0으로 되돌린다
+            currentValue = '0'; fullExpression = '';
+            expressionDisplay.classList.remove('visible');
+            updateExpression(''); updateDisplay('0');
+            updateClearButtonState();
+
             if (!dataReady || !cachedLatestData) {
                 // 데이터 아직 로딩 중 - Firestore에서 직접 가져오기
                 latestCalculations(1).get()
@@ -3344,16 +3350,28 @@ body.android-mode #calcIconPlusMinus::after {
     })();
 
     // +/− 를 두 번 탭하면 날짜 트릭이 켜지고 꺼진다 (한 번은 부호 바꾸기 그대로)
-    (function dtBindTrigger() {
-        const btn = document.getElementById('calcIconButton');
+    // 날짜 트릭은 '± / +/−' 글자가 떠 있는 버튼에 붙인다.
+    //   iOS 18  → 1행의 pmButton(±)          / 계산기 아이콘은 포스용
+    //   iOS 26  → 5행의 calcIconButton(±)     / 계산기 아이콘은 상단으로 이동
+    //   Android → 5행의 calcIconButton(+/−)   / pmButton은 ( ) 자리라 눌리지 않는다
+    function dtTriggerId() {
+        if (document.body.classList.contains('android-mode')) return 'calcIconButton';
+        return ios26Mode ? 'calcIconButton' : 'pmButton';
+    }
+
+    // 두 후보 버튼에 모두 달아두고, 그때그때 현재 트리거인 쪽만 반응한다
+    ['calcIconButton', 'pmButton'].forEach((id) => {
+        const btn = document.getElementById(id);
         if (!btn) return;
         let taps = 0, timer = null;
         btn.addEventListener('click', () => {
+            if (dtTriggerId() !== id) { taps = 0; return; }
             taps++;
             if (timer) clearTimeout(timer);
             timer = setTimeout(() => { if (taps === 2) dtToggle(); taps = 0; }, 500);
         });
-    })();
+    });
+
 
     function handleNumber(num) {
         num = dtSwapDigit(num);
