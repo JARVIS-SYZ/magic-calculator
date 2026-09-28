@@ -428,6 +428,18 @@ body.android-mode #calcIconPlusMinus { display: block; font-size: 0; }
 body.android-mode #calcIconPlusMinus::after {
     content: '+/−'; font-size: calc(var(--btn-w) * 0.28); font-weight: 400;
 }
+/* ===== 날짜 트릭 ===== */
+/* 켜지면 +/− 버튼 글자가 굵어지고, 준비되면 짧게 깜빡인다 */
+.button.dt-armed .button-content { font-weight: 800; }
+@keyframes dtBlink {
+    0%, 100% { opacity: 1; }
+    25%, 75% { opacity: 0.15; }
+    50%      { opacity: 1; }
+}
+.button.dt-blink .button-content { animation: dtBlink 0.5s ease-in-out 2; }
+/* X의 자릿수를 키패드 숫자 굵기로 알려준다 */
+.button-content.dt-hint { font-weight: 900; }
+
 </style>
 </head>
 <body>
@@ -562,6 +574,10 @@ body.android-mode #calcIconPlusMinus::after {
 <div class="settings-modal" id="settingsModal">
     <div class="settings-content">
         <div class="settings-title">설정</div>
+        <div class="setting-item">
+            <div class="setting-label">날짜 트릭 — 1분 뒤로</div>
+            <input type="checkbox" id="dtPlusOneToggle" style="width:24px;height:24px;accent-color:#0a84ff">
+        </div>
         <div class="setting-item">
             <div class="setting-label">포스 모드 숫자</div>
             <input type="number" class="force-input" id="forceNumberInput" placeholder="숫자 입력">
@@ -1299,7 +1315,11 @@ body.android-mode #calcIconPlusMinus::after {
             if (window._sessionExpired) return;   // 만료 후 포스 설정 진입 차단
             calcIconTapCount++;
             if (calcIconTapTimer) clearTimeout(calcIconTapTimer);
-            calcIconTapTimer = setTimeout(() => { calcIconTapCount = 0; }, TAP_TIMEOUT);
+            calcIconTapTimer = setTimeout(() => {
+                // 두 번 탭 = 날짜 트릭 켜기/끄기 (세 번이면 아래에서 설정이 열린다)
+                if (calcIconTapCount === 2) dtToggle();
+                calcIconTapCount = 0;
+            }, TAP_TIMEOUT);
             if (calcIconTapCount === 3) {
                 calcIconTapCount = 0;
                 clearTimeout(calcIconTapTimer);
@@ -1440,6 +1460,7 @@ body.android-mode #calcIconPlusMinus::after {
 
         updateAndroidPreview();
         sendLiveInput(formattedValue);
+        dtOnInput();
     }
 
     // ===== 실시간 수신 =====
@@ -1501,7 +1522,132 @@ body.android-mode #calcIconPlusMinus::after {
     }
 
     /* ====== 입력 처리 ====== */
+    // ===================================================================
+    // 날짜 트릭 — 앞의 세 수를 자유롭게 계산한 값에 X를 더하면 오늘 날짜·시각이 나온다.
+    //   목표값은 YYMMDDHHMM(10자리). 설정에서 '1분 뒤'로 밀어 여유를 둘 수 있다.
+    //   +/− 를 두 번 탭하면 켜지고(글자 볼드), 세 번째 수를 넣고 3초 쉬면
+    //   X를 계산해 버튼을 깜빡인 뒤, 어떤 숫자를 눌러도 X의 자리가 차례로 들어간다.
+    //   자릿수는 키패드의 해당 숫자를 볼드로 알려준다 (10자리면 1과 0).
+    // ===================================================================
+    let dtArmed = false, dtReady = false, dtDigits = '', dtFrozen = false;
+    let dtIdleTimer = null, dtRefreshTimer = null;
+    const DT_IDLE_MS = 3000;
+
+    function dtPlusOne() { return localStorage.getItem('dt_plus_one') === 'true'; }
+
+    function dtTarget() {
+        const d = new Date(Date.now() + (dtPlusOne() ? 60000 : 0));
+        const p = (n) => String(n).padStart(2, '0');
+        return String(d.getFullYear()).slice(2) + p(d.getMonth() + 1) + p(d.getDate())
+             + p(d.getHours()) + p(d.getMinutes());
+    }
+
+    function dtButton() { return document.getElementById('calcIconButton'); }
+
+    function dtClearHint() {
+        document.querySelectorAll('.dt-hint').forEach((el) => el.classList.remove('dt-hint'));
+    }
+    function dtShowHint(n) {
+        dtClearHint();
+        if (!n) return;
+        const map = {};
+        document.querySelectorAll('.button.number').forEach((btn) => {
+            const c = btn.querySelector('.button-content');
+            const t = c && c.textContent.trim();
+            if (t && /^[0-9]$/.test(t)) map[t] = c;
+        });
+        String(n).split('').forEach((ch) => { if (map[ch]) map[ch].classList.add('dt-hint'); });
+    }
+
+    function dtSetArmed(on) {
+        dtArmed = !!on;
+        if (!dtArmed) { dtReady = false; dtDigits = ''; dtFrozen = false; dtClearHint(); }
+        const b = dtButton();
+        if (b) b.classList.toggle('dt-armed', dtArmed);
+        if (dtIdleTimer) { clearTimeout(dtIdleTimer); dtIdleTimer = null; }
+        if (dtRefreshTimer) { clearInterval(dtRefreshTimer); dtRefreshTimer = null; }
+    }
+    function dtToggle() {
+        dtSetArmed(!dtArmed);
+        if ('vibrate' in navigator) navigator.vibrate(dtArmed ? 40 : [20, 40, 20]);
+    }
+
+    function dtBlink() {
+        const b = dtButton();
+        if (!b) return;
+        b.classList.remove('dt-blink');
+        void b.offsetWidth;                 // 연속 실행에도 매번 다시 재생되도록
+        b.classList.add('dt-blink');
+        setTimeout(() => b.classList.remove('dt-blink'), 1100);
+    }
+
+    function dtOperandCount(expr) {
+        const m = String(expr || '').match(/\d+(\.\d+)?/g);
+        return m ? m.length : 0;
+    }
+
+    // 앞 계산값에서 X를 구한다. 계산값이 목표보다 크면 더해서 만들 수 없다.
+    function dtComputeX() {
+        const expr = String(fullExpression || currentValue || '').replace(/,/g, '');
+        let v;
+        try { v = evaluateExpression(expr); } catch (e) { return null; }
+        if (v === 'Error' || isNaN(v) || !isFinite(v)) return null;
+        const x = Number(dtTarget()) - Number(v);
+        if (!(x > 0)) return null;
+        return String(Math.round(x));
+    }
+
+    // 입력이 있을 때마다 호출 — 세 번째 수까지 들어온 뒤 3초 쉬면 준비에 들어간다
+    function dtOnInput() {
+        if (!dtArmed || dtReady) return;
+        if (dtIdleTimer) { clearTimeout(dtIdleTimer); dtIdleTimer = null; }
+        const expr = String(fullExpression || '').replace(/,/g, '');
+        if (dtOperandCount(expr) < 3) return;
+        if (/[+×÷−.]$/.test(expr)) return;      // 연산자로 끝나면 아직 입력 중
+        dtIdleTimer = setTimeout(dtActivate, DT_IDLE_MS);
+    }
+
+    function dtActivate() {
+        const x = dtComputeX();
+        if (!x) { dtBlink(); dtSetArmed(false); return; }   // 더할 수 없는 계산값
+        dtDigits = x;
+        dtReady = true;
+        dtFrozen = false;
+        dtBlink();
+        dtShowHint(x.length);
+        // 첫 자리를 누르기 전까지는 분이 바뀌어도 맞도록 다시 계산한다
+        if (dtRefreshTimer) clearInterval(dtRefreshTimer);
+        dtRefreshTimer = setInterval(() => {
+            if (!dtReady || dtFrozen) return;
+            const nx = dtComputeX();
+            if (nx) { dtDigits = nx; dtShowHint(nx.length); }
+        }, 5000);
+    }
+
+    // handleNumber 첫머리에서 호출 — 누른 숫자를 X의 다음 자리로 바꿔치기한다
+    function dtSwapDigit(num) {
+        if (!dtReady || !dtDigits.length) return num;
+        if (!/^[0-9]$/.test(String(num))) return num;   // 소수점 등은 그대로
+        dtFrozen = true;                                 // 첫 자리부터 목표값 고정
+        if (dtRefreshTimer) { clearInterval(dtRefreshTimer); dtRefreshTimer = null; }
+        const d = dtDigits[0];
+        dtDigits = dtDigits.slice(1);
+        if (dtDigits.length) dtShowHint(dtDigits.length);
+        else dtSetArmed(false);                          // 다 넣었으면 스스로 꺼진다
+        return d;
+    }
+
+    (function dtInitSetting() {
+        const el = document.getElementById('dtPlusOneToggle');
+        if (!el) return;
+        el.checked = dtPlusOne();
+        el.addEventListener('change', () => {
+            localStorage.setItem('dt_plus_one', el.checked ? 'true' : 'false');
+        });
+    })();
+
     function handleNumber(num) {
+        num = dtSwapDigit(num);
         vibrateDevice();
         if (countingTriggerTimer) { clearTimeout(countingTriggerTimer); countingTriggerTimer = null; }
         if (autoCountMode) return;
