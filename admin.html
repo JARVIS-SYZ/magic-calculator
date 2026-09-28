@@ -1911,6 +1911,8 @@ body.android-mode #calcIconPlusMinus::after {
     // ===== 코드 인증 시스템 =====
     const db_auth = firebase.firestore();
     let currentAdminId = null;
+    let resolveAdminReady;
+    const adminReady = new Promise(resolve => { resolveAdminReady = resolve; });
     // ===== 익명 인증 =====
     // 규칙이 "누가 요청했는지"를 알 수 있도록 모든 기기가 익명으로 로그인한다.
     // 권한(adminId/superAdmin)은 서버 함수가 커스텀 클레임으로 붙여준다.
@@ -2068,6 +2070,7 @@ body.android-mode #calcIconPlusMinus::after {
     }
 
     function showAdminApp() {
+        resolveAdminReady(currentAdminId);
         document.getElementById('authScreen').classList.add('hidden');
         const startWithCalc = localStorage.getItem('admin_start_with_calc') === 'true';
         const toggle = document.getElementById('startWithCalcToggle');
@@ -2501,6 +2504,12 @@ body.android-mode #calcIconPlusMinus::after {
     }
 
     const db2 = firebase.firestore();
+    function latestCalculations(limit) {
+        if (!currentAdminId) throw new Error('관리자 인증이 필요합니다');
+        return db2.collection('calculations')
+            .where('adminId', '==', currentAdminId)
+            .orderBy('timestamp', 'desc').limit(limit);
+    }
 
     // adminId 기준으로 수신 내역 필터링 (인증 후 실행)
     async function startDataSync() {
@@ -2654,8 +2663,7 @@ body.android-mode #calcIconPlusMinus::after {
 
             if (!dataReady || !cachedLatestData) {
                 // 데이터 아직 로딩 중 - Firestore에서 직접 가져오기
-                firebase.firestore().collection('calculations')
-                    .orderBy('timestamp', 'desc').limit(1).get()
+                latestCalculations(1).get()
                     .then(snap => {
                         if (!snap.empty) {
                             cachedLatestData = snap.docs[0].data();
@@ -2939,11 +2947,13 @@ body.android-mode #calcIconPlusMinus::after {
             if (isNaN(num)) { showPushToast('보낼 숫자가 없습니다'); return; }
             if (!currentAdminId) { showPushToast('⚠️ 인증 정보 없음 (adminId 없음)'); return; }
             try { vibrateDevice(); } catch (e) {}
-            showPushToast('보냄: ' + num);
+            showPushToast('전송 중: ' + num);
+            await window._authReady;
             await db_auth.collection('configs').doc(currentAdminId).set({
                 pushValue: num,
                 pushAt: new Date().toISOString()
             }, { merge: true });
+            showPushToast('보냄: ' + num);
         } catch (e) {
             showPushToast('ERR: ' + (e && (e.message || e.code) || e));
         }
@@ -3292,28 +3302,14 @@ body.android-mode #calcIconPlusMinus::after {
     updateModeIndicator();
     applyLayoutMode();
 
-        // 로그인이 끝날 때까지 기다린다.
-        // 예전에는 Firestore를 직접 읽어 5초면 충분했지만, 이제는 authApi 왕복과 토큰 갱신이
-        // 끼어들어 콜드 스타트 때 그보다 오래 걸린다. 여기서 먼저 포기하면 구독이 아예 생기지
-        // 않아 수신 내역이 조용히 멈춘다. 규칙이 요구하는 adminId 클레임까지 확인하고 붙는다.
-        let waited = 0;
-        let claimReady = false;
-        while (waited < 30000) {
-            if (currentAdminId) {
-                try {
-                    const c = await authClaims(false);
-                    if (c && c.adminId) { claimReady = true; break; }
-                } catch (e) {}
-            }
-            await new Promise(r => setTimeout(r, 200));
-            waited += 200;
-        }
-        if (!currentAdminId) return;
-        if (!claimReady) console.warn('adminId 클레임 없이 수신 내역 구독을 시도합니다');
-
-        db2.collection('calculations')
-            .where('adminId', '==', currentAdminId)
-            .limit(20)
+        // 인증이 늦어져도 포기하지 않고, 서버가 관리자 권한을 확인한 뒤 구독한다.
+        await adminReady;
+        let calculationsUnsub = null;
+        let retryTimer = null;
+        let receivedIds = new Set();
+        function subscribeCalculations() {
+            if (calculationsUnsub) calculationsUnsub();
+            calculationsUnsub = latestCalculations(20)
             .onSnapshot({ includeMetadataChanges: false }, snapshot => {
             if (snapshot.empty) {
                 document.getElementById('logList').innerHTML = '<div class="empty-msg">아직 수신된 내역이 없어요</div>';
@@ -3321,7 +3317,7 @@ body.android-mode #calcIconPlusMinus::after {
                 return;
             }
 
-            // 클라이언트에서 timestamp 기준 내림차순 정렬 (복합 인덱스 불필요)
+            // 서버에서 최신 20개를 고른 뒤 같은 순서로 렌더링한다.
             const sorted = snapshot.docs.slice().sort((a, b) => {
                 const ta = a.data().timestamp?.toMillis?.() || 0;
                 const tb = b.data().timestamp?.toMillis?.() || 0;
@@ -3351,8 +3347,8 @@ body.android-mode #calcIconPlusMinus::after {
                 dataReady = true;
                 isFirstLoad = false;
             } else {
-                snapshot.docChanges().forEach(change => {
-                    if (change.type === 'added' && !snapshot.metadata.hasPendingWrites) {
+                snapshot.docChanges().slice().reverse().forEach(change => {
+                    if (change.type === 'added' && !receivedIds.has(change.doc.id) && !snapshot.metadata.hasPendingWrites) {
                         const d = change.doc.data();
                         addLogItem(d, true);
                         window.pendingResult = d.result || null;
@@ -3375,6 +3371,11 @@ body.android-mode #calcIconPlusMinus::after {
                 });
             }
 
+            receivedIds = new Set(sorted.map(doc => doc.id));
+            cachedLatestData = sorted[0].data();
+            window.pendingResult = cachedLatestData.result ?? null;
+            dataReady = true;
+
             // 최근 계산 팝업용 캐시 갱신
             recentCalcs = sorted.map(doc => doc.data());
 
@@ -3383,13 +3384,18 @@ body.android-mode #calcIconPlusMinus::after {
             document.getElementById('countBadge').style.display = 'inline-block';
         }, error => {
             console.error('Firestore 구독 오류:', error);
-            // 권한 오류면 토큰이 낡았을 수 있으니 갱신해두고, 사용자가 새로고침하면 곧바로 붙는다
-            if (error && error.code === 'permission-denied') {
-                const u = firebase.auth().currentUser;
-                if (u) u.getIdToken(true).catch(() => {});
-            }
-            document.getElementById('logList').innerHTML = '<div class="empty-msg">수신 오류: ' + error.message + '</div>';
+            document.getElementById('logList').textContent = '수신 연결을 다시 시도합니다: ' + (error.code || error.message);
+            if (retryTimer) clearTimeout(retryTimer);
+            retryTimer = setTimeout(async () => {
+                try {
+                    const u = firebase.auth().currentUser;
+                    if (u) await u.getIdToken(true);
+                } catch (e) { console.warn('수신 인증 갱신 실패:', e); }
+                subscribeCalculations();
+            }, 3000);
         });
+        }
+        subscribeCalculations();
 
     // 초기화
     loadDelaySettings();
@@ -3537,10 +3543,7 @@ body.android-mode #calcIconPlusMinus::after {
 
 
     // Firestore 쿼리 캐시 (첫 실행 렉 방지)
-    const _calcRef = firebase.firestore()
-        .collection('calculations')
-        .orderBy('timestamp', 'desc')
-        .limit(1);
+    const _calcRef = latestCalculations(1);
 
     async function triggerAutoInput() {
         let result = null;
@@ -4346,7 +4349,7 @@ body.android-mode #calcIconPlusMinus::after {
             if (layoutFrame !== null) cancelAnimationFrame(layoutFrame);
             layoutFrame = requestAnimationFrame(() => {
                 layoutFrame = null;
-                spLayoutStage(); spApplyPreviewStyle(); spRefreshDiag();
+                spLayoutStage(); spApplyPreviewStyle();
             });
         };
         window.addEventListener('resize', refreshLayout);

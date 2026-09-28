@@ -908,18 +908,39 @@ body.android-mode #calcIconPlusMinus::after {
         if (window._sessionExpired) return;
         if (_configSubscribed) return;  // 중복 구독 방지
         _configSubscribed = true;
-        try {
-            Promise.resolve(window._authReady).then(() => {
+        Promise.resolve(window._authReady).then(() => {
             _configUnsub = firebase.firestore().collection('configs').doc(adminId).onSnapshot(
                 (doc) => {
-                    if (!doc.exists) { updateDebugOverlay('configs/' + adminId + ' 문서 없음', null); return; }
+                    // 문서가 아직 없어도 초기 구독은 완료다. 이후 첫 푸시를 무시하지 않는다.
+                    if (!doc.exists) {
+                        if (_lastPushAt === undefined) _lastPushAt = null;
+                        updateDebugOverlay('설정 대기 중', null);
+                        return;
+                    }
                     handleConfigDoc(doc.data() || {}, 'live');
                 },
-                (e) => { updateDebugOverlay('cloud ERR: ' + (e.code || e.message || e), null); }
+                configSubscriptionFailed
             );
-            });
-        } catch (e) {
-            updateDebugOverlay('cloud ERR: ' + (e.code || e.message || e), null);
+        }).catch(configSubscriptionFailed);
+    }
+
+    let _configRetryTimer = null;
+    function configSubscriptionFailed(e) {
+        _configSubscribed = false;
+        if (_configUnsub) _configUnsub();
+        _configUnsub = null;
+        updateDebugOverlay('cloud ERR: ' + (e.code || e.message || e), null);
+        if (_configRetryTimer) clearTimeout(_configRetryTimer);
+        if (!window._sessionExpired) {
+            _configRetryTimer = setTimeout(async () => {
+                try {
+                    const u = firebase.auth().currentUser;
+                    if (u) await u.getIdToken(true);
+                    else window._authReady = firebase.auth().signInAnonymously();
+                    await window._authReady;
+                } catch (err) { console.warn('관객 인증 재시도 실패:', err); }
+                loadConfigFromCloud();
+            }, 3000);
         }
     }
 
