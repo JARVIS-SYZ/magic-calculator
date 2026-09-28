@@ -30,8 +30,11 @@ for (const file of ['index.html', 'admin.html']) {
         const html = read(file);
 
         assert.match(html, /body\.ios26-theme \{\s*--btn-w: calc\(\(100vw - 56px\) \/ 4\);\s*\}/);
-        const expectedOffset = file === 'admin.html' ? 30 : 14;
-        assert.match(html, new RegExp(`body\\.ios26-theme \\.calculator \\{\\s*transform: translateY\\(${expectedOffset}px\\);\\s*\\}`));
+        if (file === 'admin.html') {
+            assert.match(html, /body\.ios26-theme \.calculator \{\s*padding-top: calc\(env\(safe-area-inset-top\) \+ 30px\);\s*\}/);
+        } else {
+            assert.match(html, /body\.ios26-theme \.calculator \{\s*transform: translateY\(14px\);\s*\}/);
+        }
         assert.match(html, /body\.ios26-theme \.button-grid \{\s*gap: 8px;\s*padding: 0 16px 20px;\s*\}/);
         assert.match(html, /body\.ios26-theme \.button(?:\s|\{)[\s\S]*?transform: scale\(1\)/);
     });
