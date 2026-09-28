@@ -31,7 +31,8 @@ for (const file of ['index.html', 'admin.html']) {
 
         assert.match(html, /body\.ios26-theme \{\s*--btn-w: calc\(\(100vw - 56px\) \/ 4\);\s*\}/);
         if (file === 'admin.html') {
-            assert.match(html, /body\.ios26-theme \.calculator \{\s*padding-top: calc\(env\(safe-area-inset-top\) \+ 30px\);\s*\}/);
+            assert.match(html, /document\.documentElement\.classList\.add\('ios-device'\)/);
+            assert.match(html, /html\.ios-device \.calculator \{\s*padding-top: calc\(env\(safe-area-inset-top\) \+ 30px\);\s*\}/);
         } else {
             assert.match(html, /body\.ios26-theme \.calculator \{\s*transform: translateY\(14px\);\s*\}/);
         }

@@ -6,6 +6,12 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <!-- 화면 픽 사진을 상태바 아래까지 이어 붙이기 위해 전체 화면 모드를 유지한다. -->
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <script>
+        if (/iPhone|iPad|iPod/i.test(navigator.userAgent)
+            || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)) {
+            document.documentElement.classList.add('ios-device');
+        }
+    </script>
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#0a0a0a">
     <title>관리자</title>
@@ -385,7 +391,7 @@ body.ios26-theme .top-icon { background: #1c1c1e; border: 1px solid #2c2c2e; }
 body.ios26-theme {
     --btn-w: calc((100vw - 56px) / 4);
 }
-body.ios26-theme .calculator {
+html.ios-device .calculator {
     padding-top: calc(env(safe-area-inset-top) + 30px);
 }
 body.ios26-theme .button-grid {
