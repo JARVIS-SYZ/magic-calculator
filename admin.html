@@ -363,13 +363,20 @@ body.ios26-theme .top-icon { background: #1c1c1e; border: 1px solid #2c2c2e; }
 }
 
 /* iOS26 테마 */
+body.ios26-theme {
+    --btn-w: calc((100vw - 56px) / 4);
+}
+body.ios26-theme .button-grid {
+    gap: 8px;
+    padding: 0 16px 20px;
+}
 body.ios26-theme #menuDots  { display: none; }
 body.ios26-theme #menuClock { display: block; }
 body.ios26-theme .header-calc { display: flex; }
 body.ios26-theme .header-calc .calc-icon-svg rect:first-of-type { fill: #fff; stroke: #fff; }
 body.ios26-theme .header-calc .calc-icon-svg rect:nth-of-type(2) { fill: #3a3a3c; }
 body.ios26-theme .header-calc .calc-icon-svg circle { fill: #2c2c2e; }
-body.ios26-theme .button { transform: scale(0.94); background: radial-gradient(circle at 20% 0%, #4a4a4e, #151516); }
+body.ios26-theme .button { transform: scale(1); background: radial-gradient(circle at 20% 0%, #4a4a4e, #151516); }
 body.ios26-theme .button.number   { background: radial-gradient(circle at 20% 0%, #454549, #111112); }
 body.ios26-theme .button.function { background: radial-gradient(circle at 20% 0%, #505054, #18181a); }
 body.ios26-theme .button.operator { background: radial-gradient(circle at 20% 0%, #ffb340, #a85c00); }
@@ -955,7 +962,7 @@ body.android-mode #calcIconPlusMinus::after {
             <select class="version-select" id="iosVersionSelect" onchange="onIosVersionChange(this.value)">
                 <option value="auto">자동 (관객 기기 감지 · 기본)</option>
                 <option value="18">iOS 18</option>
-                <option value="26">iOS 26</option>
+                <option value="26">iOS 26 이상</option>
             </select>
         </div>
         <div class="setting-item">
@@ -990,7 +997,7 @@ body.android-mode #calcIconPlusMinus::after {
         <select class="version-select" id="iosVersionSelectMenu" onchange="onIosVersionChange(this.value)" style="width:auto;padding:6px 32px 6px 12px;font-size:14px;border-radius:8px">
             <option value="auto">자동</option>
             <option value="18">iOS 18</option>
-            <option value="26">iOS 26</option>
+            <option value="26">iOS 26 이상</option>
         </select>
     </div>
     <div class="side-menu-list">
@@ -1934,13 +1941,10 @@ body.android-mode #calcIconPlusMinus::after {
         return null;
     }
 
-    // 설정값이 'auto'면 기기의 iOS 버전으로 판단한다 (26 이상 → iOS 26 스타일).
-    // 안드로이드에선 android-mode CSS가 어차피 덮으므로 어느 쪽이든 화면은 같다.
+    // 최신 iOS는 PWA에서 OS 버전을 구버전처럼 보고할 수 있다.
+    // 자동 모드는 최신(iOS 26 이상) 화면을 기본으로 하고, iOS 18은 메뉴에서 직접 선택한다.
     function resolveIos26(val) {
-        if (String(val) === 'auto') {
-            const major = detectIosMajor();
-            return (major === null) ? true : (major >= 26);
-        }
+        if (String(val) === 'auto') return true;
         return String(val) === '26';
     }
 
@@ -3022,7 +3026,6 @@ body.android-mode #calcIconPlusMinus::after {
     const iosVersionSelectMenu = document.getElementById('iosVersionSelectMenu');
     if (iosVersionSelect) iosVersionSelect.value = savedIosVersion;
     if (iosVersionSelectMenu) iosVersionSelectMenu.value = savedIosVersion;
-    ios26Mode = (savedIosVersion === '26');
     applyLayoutMode();
 
     forceNumberInput.addEventListener('input', e => { const v = e.target.value; forceNumber = v==='' ? null : parseFloat(v); });
