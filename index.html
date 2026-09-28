@@ -1380,7 +1380,7 @@ body.android-mode #calcIconPlusMinus::after {
             equalsTapCount++;
             if (equalsTapTimer) clearTimeout(equalsTapTimer);
             equalsTapTimer = setTimeout(() => { equalsTapCount = 0; }, TAP_TIMEOUT);
-            if (equalsTapCount === 3) {
+            if (equalsTapCount === 2) {   // 세 번 → 두 번으로 통일
                 equalsTapCount = 0;
                 clearTimeout(equalsTapTimer);
                 // 안드로이드에서는 666 모드 잠금 - 진동도 주지 않아야 제스처 존재가 드러나지 않음
@@ -1403,7 +1403,7 @@ body.android-mode #calcIconPlusMinus::after {
         percentTapCount++;
         if (percentTapTimer) clearTimeout(percentTapTimer);
         percentTapTimer = setTimeout(() => { percentTapCount = 0; }, TAP_TIMEOUT);
-        if (percentTapCount === 3) {
+        if (percentTapCount === 2) {   // 세 번 → 두 번으로 통일
             percentTapCount = 0;
             clearTimeout(percentTapTimer);
             toggleAutoCountMode();

@@ -881,6 +881,14 @@ body.android-mode #calcIconPlusMinus::after {
 .button-content.dt-hint,
 .button-content.dt-hint * { color: #8e8e93 !important; }
 
+/* 트리거 정리 표 */
+.trg-row { display:flex; gap:12px; padding:11px 0; border-bottom:1px solid #2c2c2e; }
+.trg-row:last-child { border-bottom:none; }
+.trg-k { flex:0 0 96px; font-size:14px; color:#8e8e93; }
+.trg-v { flex:1; font-size:14px; color:#eee; line-height:1.6; }
+.trg-v b { color:#fff; }
+.trg-sub { font-size:11px; color:#636366; }
+
 </style>
 </head>
 <body>
@@ -1134,6 +1142,11 @@ body.android-mode #calcIconPlusMinus::after {
             <span class="side-menu-arrow">›</span>
         </button>
         <div class="side-menu-divider"></div>
+        <button class="side-menu-item" onclick="openPage('triggers')">
+            <span class="side-menu-icon">⌨️</span>
+            <span>트리거 정리</span>
+            <span class="side-menu-arrow">›</span>
+        </button>
         <button class="side-menu-item" onclick="openPage('guide')">
             <span class="side-menu-icon">📖</span>
             <span>사용 설명서</span>
@@ -1259,6 +1272,56 @@ body.android-mode #calcIconPlusMinus::after {
 </div>
 
 <!-- 고스트 모드 -->
+<!-- 트리거 정리 -->
+<div class="admin-page" id="page-triggers">
+    <div class="admin-page-header">
+        <button class="admin-back" onclick="closePage()">‹</button>
+        <div class="admin-page-title">트리거 정리</div>
+    </div>
+    <div class="admin-page-content">
+        <div class="admin-section">
+            <div style="font-size:12px;color:#636366;line-height:1.7">
+            <b style="color:#aaa">관객 계산기</b>의 제스처입니다. 모든 진입은 <b style="color:#aaa">두 번 빠르게 탭</b>으로 통일했습니다.
+            아래 표는 설정된 <b style="color:#aaa">iOS 버전·기기</b>에 맞춰 자동으로 바뀝니다.</div>
+        </div>
+
+        <div class="admin-section">
+            <div class="admin-section-title">
+                <span class="ios-only"><span class="v18-only">📱 iOS 18</span><span class="v26-only">📱 iOS 26</span></span><span class="android-only">🤖 Android</span>
+            </div>
+            <div class="trg-row"><span class="trg-k">날짜 트릭</span><span class="trg-v">
+                <span class="ios-only"><span class="v18-only"><b>±</b> (1행 2번째)</span><span class="v26-only"><b>±</b> (0 왼쪽)</span></span><span class="android-only"><b>+/−</b> (0 왼쪽)</span> 두 번 탭</span></div>
+            <div class="trg-row"><span class="trg-k">포스 모드</span><span class="trg-v">
+                <span class="ios-only"><span class="v18-only"><b>계산기 아이콘</b> (0 왼쪽)</span><span class="v26-only"><b>우상단 계산기 아이콘</b></span></span><span class="android-only">도구줄 <b>자 아이콘</b></span><br>두 번 탭 · 또는 3초 길게</span></div>
+            <div class="trg-row"><span class="trg-k">자동 카운팅</span><span class="trg-v">숫자만 입력 후 <b>=</b> (딜레이 후 진입)<br>또는 <b>%</b> 두 번 탭으로 켜고 끄기<br><span class="trg-sub">세우면 시작 · 내리면 정지</span></span></div>
+            <div class="trg-row"><span class="trg-k">666 모드</span><span class="trg-v">
+                <span class="android-only" style="color:#ff9f0a">안드로이드에서는 잠김</span><span class="ios-only"><b>=</b> 두 번 탭</span></span></div>
+            <div class="trg-row"><span class="trg-k">블랙스크린 해제</span><span class="trg-v"><b>좌하단</b> 두 번 탭</span></div>
+            <div class="trg-row"><span class="trg-k">모드 표시기</span><span class="trg-v">
+                <span class="ios-only"><span class="v18-only">좌상단 <b>점 3개</b> 패턴</span><span class="v26-only">좌상단 <b>시계 바늘</b> 방향</span></span><span class="android-only">도구줄 <b>시계 바늘</b> 방향</span></span></div>
+        </div>
+
+        <div class="admin-section">
+            <div class="admin-section-title">🎩 관리자 앱 전용</div>
+            <div class="trg-row"><span class="trg-k">고스트 모드</span><span class="trg-v"><b>.</b> 두 번 탭 <span class="trg-sub">(화면이 0으로 초기화됨)</span></span></div>
+            <div class="trg-row"><span class="trg-k">푸시하기</span><span class="trg-v"><b>디스플레이</b> 두 번 탭<br><span class="trg-sub">0 오른쪽 점이 깜빡이면 전송 완료</span></span></div>
+            <div class="trg-row"><span class="trg-k">수신 내역 팝업</span><span class="trg-v"><b>=</b> 길게 누르기</span></div>
+            <div class="trg-row"><span class="trg-k">관리자 메뉴</span><span class="trg-v"><b>좌상단</b> 메뉴 아이콘</span></div>
+        </div>
+
+        <div class="admin-section">
+            <div class="admin-section-title">⏱ 날짜 트릭 순서</div>
+            <div class="how-to-row"><div class="how-to-step">1</div><div class="how-to-desc">위 버튼 두 번 탭 → 글자가 <b>회색</b>으로 바뀌면 켜짐</div></div>
+            <div class="how-to-row"><div class="how-to-step">2</div><div class="how-to-desc">관객이 숫자 <b>3개</b>를 자유롭게 계산 (연산자도 자유)</div></div>
+            <div class="how-to-row"><div class="how-to-step">3</div><div class="how-to-desc"><b>3초</b> 가만히 두면 버튼이 깜빡이고, 키패드의 한 숫자가 회색이 됨<br><span class="trg-sub">그 숫자가 앞으로 누를 횟수입니다 (10이면 1과 0이 회색)</span></div></div>
+            <div class="how-to-row"><div class="how-to-step">4</div><div class="how-to-desc"><b>+</b> 를 누른 뒤 아무 숫자나 그 횟수만큼 누르기</div></div>
+            <div class="how-to-row"><div class="how-to-step">5</div><div class="how-to-desc"><b>=</b> → 오늘 날짜·시각 <span class="trg-sub">(YYMMDDHHMM)</span></div></div>
+            <div style="font-size:11px;color:#636366;margin-top:6px;line-height:1.7">
+            앞 계산값이 목표보다 크면 켜지지 않고 꺼집니다. 설정창의 <b>1분 뒤로</b>를 켜면 여유가 생깁니다.</div>
+        </div>
+    </div>
+</div>
+
 <!-- 화면 픽 -->
 <div class="admin-page" id="page-screenpick">
     <div class="admin-page-header">
@@ -1484,7 +1547,7 @@ body.android-mode #calcIconPlusMinus::after {
             <div class="android-only" style="font-size:12px;color:#ff9f0a;margin-bottom:12px;line-height:1.6">⚠️ 666 모드는 안드로이드 관객용 기기에서는 잠겨 있습니다 (진입 제스처 무시).</div>
             <div class="how-to-row">
                 <div class="how-to-step">1</div>
-                <div class="how-to-desc"><span class="key-badge">'='</span> 을 <b>빠르게 세 번</b> 탭하면 666 모드 켜짐</div>
+                <div class="how-to-desc"><span class="key-badge">'='</span> 을 <b>빠르게 두 번</b> 탭하면 666 모드 켜짐</div>
             </div>
             <div class="how-to-row">
                 <div class="how-to-step">2</div>
@@ -1548,7 +1611,7 @@ body.android-mode #calcIconPlusMinus::after {
             <div class="admin-section-title">🍎 동작 방법</div>
             <div class="how-to-row">
                 <div class="how-to-step">1</div>
-                <div class="how-to-desc"><span class="ios-only"><span class="v18-only">키패드 <span class="key-badge">0</span> 왼쪽의 <span class="key-badge">계산기 아이콘</span></span><span class="v26-only">화면 <b>우상단</b>의 <span class="key-badge">계산기 아이콘</span><br><span style="color:#636366;font-size:11px">키패드 ± 는 날짜 트릭 전용입니다</span></span></span><span class="android-only">키패드 위 <span class="key-badge">자 아이콘</span> 또는 <span class="key-badge">'+/−'</span> 버튼</span>을 <b>빠르게 세 번</b> 탭<br>또는 <b>3초 길게</b> 누르기</div>
+                <div class="how-to-desc"><span class="ios-only"><span class="v18-only">키패드 <span class="key-badge">0</span> 왼쪽의 <span class="key-badge">계산기 아이콘</span></span><span class="v26-only">화면 <b>우상단</b>의 <span class="key-badge">계산기 아이콘</span><br><span style="color:#636366;font-size:11px">키패드 ± 는 날짜 트릭 전용입니다</span></span></span><span class="android-only">키패드 위 <span class="key-badge">자 아이콘</span> 또는 <span class="key-badge">'+/−'</span> 버튼</span>을 <b>빠르게 두 번</b> 탭<br>또는 <b>3초 길게</b> 누르기</div>
             </div>
             <div class="how-to-row">
                 <div class="how-to-step">2</div>
@@ -2954,11 +3017,8 @@ body.android-mode #calcIconPlusMinus::after {
             equalsTapCount++;
             if (equalsTapTimer) clearTimeout(equalsTapTimer);
             equalsTapTimer = setTimeout(() => { equalsTapCount = 0; }, TAP_TIMEOUT);
-            if (equalsTapCount === 2 && currentMode === '666') {
-                equalsTapCount=0; clearTimeout(equalsTapTimer); vibrateDevice();
-                clearAllDelayTimers(); specialSequenceActive=false; lastResultWas666=false; sequenceStarted=false;
-                currentMode = 'normal'; updateModeIndicator();
-            } else if (equalsTapCount === 3) {
+            // 두 번 탭 하나로 켜고 끈다 (예전엔 끄기 2번 / 켜기 3번으로 갈려 있었다)
+            if (equalsTapCount === 2) {
                 equalsTapCount=0; clearTimeout(equalsTapTimer); vibrateDevice();
                 clearAllDelayTimers(); specialSequenceActive=false; lastResultWas666=false; sequenceStarted=false;
                 currentMode = (currentMode === '666') ? 'normal' : '666'; updateModeIndicator();
