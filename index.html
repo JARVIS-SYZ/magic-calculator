@@ -430,7 +430,9 @@ body.android-mode #calcIconPlusMinus::after {
 }
 /* ===== 날짜 트릭 ===== */
 /* 켜지면 +/− 버튼 글자가 굵어지고, 준비되면 짧게 깜빡인다 */
-.button.dt-armed .button-content { font-weight: 800; }
+/* 안쪽 span(±, +/−)이 자체 font-weight를 가지고 있어 부모만 굵혀서는 티가 안 난다 */
+.button.dt-armed .button-content,
+.button.dt-armed .button-content * { font-weight: 900 !important; }
 @keyframes dtBlink {
     0%, 100% { opacity: 1; }
     25%, 75% { opacity: 0.15; }
@@ -438,7 +440,8 @@ body.android-mode #calcIconPlusMinus::after {
 }
 .button.dt-blink .button-content { animation: dtBlink 0.5s ease-in-out 2; }
 /* X의 자릿수를 키패드 숫자 굵기로 알려준다 */
-.button-content.dt-hint { font-weight: 900; }
+.button-content.dt-hint,
+.button-content.dt-hint * { font-weight: 900 !important; }
 
 </style>
 </head>
@@ -1573,6 +1576,8 @@ body.android-mode #calcIconPlusMinus::after {
     function dtToggle() {
         dtSetArmed(!dtArmed);
         if ('vibrate' in navigator) navigator.vibrate(dtArmed ? 40 : [20, 40, 20]);
+        dtBlink();                      // 켜고 끌 때도 확실히 보이게
+        console.log('날짜 트릭: ' + (dtArmed ? '켜짐 (목표 ' + dtTarget() + ')' : '꺼짐'));
     }
 
     function dtBlink() {
