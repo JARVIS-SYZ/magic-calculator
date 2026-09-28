@@ -1149,6 +1149,16 @@ body.android-mode #calcIconPlusMinus::after {
         <div class="admin-section">
             <div class="admin-section-title">🔗 계산기 URL</div>
             <div style="font-size:12px;color:#636366;margin-bottom:10px;line-height:1.6">기기를 자동 감지합니다. 상대방에게 전달하세요.</div>
+        </div>
+
+        <div class="admin-section">
+            <div class="admin-section-title">♻️ 관객 세션 초기화</div>
+            <div style="font-size:12px;color:#636366;margin-bottom:10px;line-height:1.6">
+            관객용 계산기는 켠 지 <b>30분이 지나면 스스로 연결을 끊습니다.</b>
+            공연 전에 이 버튼을 누르면 관객 기기의 30분이 처음부터 다시 시작됩니다.
+            이미 끊긴 기기는 <b>앱을 껐다 켜야</b> 되살아납니다.</div>
+            <button class="sp-btn" id="resetSessionBtn" style="width:100%" onclick="resetAudienceSession()">30분 다시 시작</button>
+            <div class="sp-hint" id="resetSessionMsg"></div>
             <div class="url-row">
                 <div class="url-display" id="urlOutput"></div>
                 <button class="copy-btn" id="copyBtnUrl" onclick="copyUrl()">복사</button>
@@ -4172,6 +4182,20 @@ body.android-mode #calcIconPlusMinus::after {
         spPush = !!on; spSave(SP.push, spPush); spSyncFlags();
     };
     window.startScreenPick = startScreenPick;
+
+    // 관객 기기의 30분 타이머를 다시 시작시킨다. 관객 앱은 이 값이 바뀐 걸 보고 되살아난다.
+    window.resetAudienceSession = async function () {
+        const msg = document.getElementById('resetSessionMsg');
+        if (!currentAdminId) { if (msg) msg.textContent = '인증 정보가 없습니다.'; return; }
+        if (msg) msg.textContent = '보내는 중...';
+        try {
+            await db_auth.collection('configs').doc(currentAdminId)
+                .set({ sessionEpoch: Date.now() }, { merge: true });
+            if (msg) msg.textContent = '✅ 보냈습니다. 관객 기기에서 앱을 껐다 켜면 30분이 다시 시작됩니다.';
+        } catch (e) {
+            if (msg) msg.textContent = '오류: ' + (e.message || e);
+        }
+    };
 
     // 웹에서 그릴 수 있는 사진 영역에만 색을 덧댄다. OS가 가린 영역은 변경할 수 없다.
     function spApplyBarColorNow() {
