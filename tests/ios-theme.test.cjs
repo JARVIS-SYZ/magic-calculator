@@ -30,7 +30,7 @@ for (const file of ['index.html', 'admin.html']) {
         const html = read(file);
 
         assert.match(html, /body\.ios26-theme \{\s*--btn-w: calc\(\(100vw - 56px\) \/ 4\);\s*\}/);
-        assert.match(html, /body\.ios26-theme \.calculator \{\s*top: 14px;\s*bottom: -14px;\s*\}/);
+        assert.match(html, /body\.ios26-theme \.calculator \{\s*transform: translateY\(14px\);\s*\}/);
         assert.match(html, /body\.ios26-theme \.button-grid \{\s*gap: 8px;\s*padding: 0 16px 20px;\s*\}/);
         assert.match(html, /body\.ios26-theme \.button(?:\s|\{)[\s\S]*?transform: scale\(1\)/);
     });

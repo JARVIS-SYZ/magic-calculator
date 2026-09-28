@@ -48,6 +48,16 @@ test('an OS-owned top inset keeps the screenshot anchored at its visible top edg
     assert.equal(c.spImgLayout(f).oy, 0);
 });
 
+test('iOS 27 fills the physical screen when safe-area and viewport cropping are both reported', () => {
+    const c = fixture({ height: 812, safeTop: 62 });
+    const f = c.spViewportFrame();
+    assert.equal(f.height, 874);
+    assert.equal(f.viewportGap, 62);
+    assert.equal(f.excludedTop, 0);
+    assert.equal(c.spImgLayout(f).dh, 874);
+    assert.equal(c.spImgLayout(f).oy, 0);
+});
+
 test('browser chrome, keyboard, zoom and rotation are not treated as an OS top inset', () => {
     for (const options of [
         { height: 812, safeTop: 0, standalone: false },
