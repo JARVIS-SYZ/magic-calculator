@@ -1553,6 +1553,7 @@ body.android-mode #calcIconPlusMinus::after {
     var dtArmed = false, dtReady = false, dtDigits = '', dtFrozen = false;
     var dtIdleTimer = null, dtRefreshTimer = null;
     var DT_IDLE_MS = 3000;
+    var DT_BLOCK_MS = 3000;
 
     function dtPlusOne() { return localStorage.getItem('dt_plus_one') === 'true'; }
 
@@ -1655,9 +1656,23 @@ body.android-mode #calcIconPlusMinus::after {
         if (dtRefreshTimer) { clearInterval(dtRefreshTimer); dtRefreshTimer = null; }
         const d = dtDigits[0];
         dtDigits = dtDigits.slice(1);
-        if (dtDigits.length) dtShowHint(dtDigits.length);
-        else dtSetArmed(false);                          // 다 넣었으면 스스로 꺼진다
+        // 힌트는 3초 시점에 한 번만 띄운다. 누를 때마다 바뀌면 오히려 눈에 띈다.
+        if (!dtDigits.length) {
+            dtReady = false;
+            dtBlockKeypad(DT_BLOCK_MS);   // 자릿수를 다 채웠으니 잠시 더 눌리지 않게 막는다
+            setTimeout(() => dtSetArmed(false), DT_BLOCK_MS);
+        }
         return d;
+    }
+
+    // 자릿수만큼 다 눌린 뒤 잠깐 키패드를 덮어 여분의 입력이 들어가지 않게 한다.
+    // 계속 막지는 않는다 — 잠시 뒤에는 = 를 눌러 결과를 봐야 하기 때문.
+    function dtBlockKeypad(ms) {
+        const sh = document.createElement('div');
+        sh.id = '_dtBlock';
+        sh.style.cssText = 'position:fixed;inset:0;z-index:900;background:transparent';
+        document.body.appendChild(sh);
+        setTimeout(() => { try { sh.remove(); } catch (e) {} }, ms);
     }
 
     (function dtInitSetting() {
