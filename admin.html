@@ -770,6 +770,16 @@ body.android-mode #calcIconPlusMinus::after {
 }
 .auth-btn:active { opacity: 0.8; }
 .auth-error { font-size: 14px; color: #ff453a; min-height: 20px; text-align: center; }
+/* 푸시하기 확인 신호 — 0 오른쪽 점만 잠깐 깜박인다 (관객에게 안 띄게) */
+@keyframes pushBlink {
+    0%   { opacity: 1; }
+    25%  { opacity: 0.15; }
+    50%  { opacity: 1; }
+    75%  { opacity: 0.15; }
+    100% { opacity: 1; }
+}
+#dotContent.push-blink { animation: pushBlink 0.5s ease-in-out; }
+
 /* ===== 화면 픽 ===== */
 .sp-row { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px 0; border-bottom:1px solid #2c2c2e; }
 .sp-row:last-child { border-bottom:none; }
@@ -979,7 +989,7 @@ body.android-mode #calcIconPlusMinus::after {
                 <div class="delay-dot"></div>
             </button>
             <button class="button number" id="zeroButton"><div class="button-content">0</div></button>
-            <button class="button number" onclick="handleNumber('.')"><div class="button-content">.</div></button>
+            <button class="button number" id="dotButton" onclick="handleNumber('.')"><div class="button-content" id="dotContent">.</div></button>
             <button class="button operator equals-trigger" id="equalsButton" onclick="handleEquals()">
                 <div class="button-content">=</div>
             </button>
@@ -2954,19 +2964,28 @@ body.android-mode #calcIconPlusMinus::after {
     });
 
     // 계산기 화면의 현재 숫자를 관객 결과값으로 전송 (currentValue 접근 위해 이 스코프에 정의)
+    // 푸시가 실제로 서버에 올라간 뒤에만 깜박인다 — 눌렀다는 표시가 아니라 전송 확인이다
+    function blinkPushDot() {
+        const el = document.getElementById('dotContent');
+        if (!el) return;
+        el.classList.remove('push-blink');
+        void el.offsetWidth;          // 연속 전송에도 매번 다시 재생되도록
+        el.classList.add('push-blink');
+        setTimeout(() => el.classList.remove('push-blink'), 600);
+    }
+
     async function pushCurrentValueToAudience() {
         try {
             const num = parseFloat(String(currentValue).replace(/,/g, ''));
             if (isNaN(num)) { showPushToast('보낼 숫자가 없습니다'); return; }
             if (!currentAdminId) { showPushToast('⚠️ 인증 정보 없음 (adminId 없음)'); return; }
             try { vibrateDevice(); } catch (e) {}
-            showPushToast('전송 중: ' + num);
             await window._authReady;
             await db_auth.collection('configs').doc(currentAdminId).set({
                 pushValue: num,
                 pushAt: new Date().toISOString()
             }, { merge: true });
-            showPushToast('보냄: ' + num);
+            blinkPushDot();   // 화면에 글자를 띄우지 않고 점만 깜박여 보낸 걸 알린다
         } catch (e) {
             showPushToast('ERR: ' + (e && (e.message || e.code) || e));
         }
