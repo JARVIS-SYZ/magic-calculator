@@ -1579,7 +1579,8 @@ body.android-mode #calcIconPlusMinus::after {
             </div>
             <div class="how-to-row">
                 <div class="how-to-step">3</div>
-                <div class="how-to-desc"><b>"보냄"</b> 알림이 뜨면 전송 완료</div>
+                <div class="how-to-desc"><span class="key-badge">0</span> 오른쪽 <b>점 버튼이 두 번 깜박이면</b> 전송 완료<br>
+                <span style="color:#636366;font-size:11px">글자가 뜨지 않으므로 관객이 봐도 알 수 없습니다</span></div>
             </div>
             <div class="how-to-row">
                 <div class="how-to-step">4</div>
@@ -1709,6 +1710,9 @@ body.android-mode #calcIconPlusMinus::after {
 
         <div class="admin-section">
             <div class="admin-section-title">🔔 알림 설정</div>
+            <div style="font-size:12px;color:#636366;margin-bottom:10px;line-height:1.6">
+            알림을 받을 <b>기기마다 따로</b> 등록해야 합니다. 배너를 끄고 싶으면
+            메뉴 → 알림 받기 → <b>배너 표시</b>에서 끄면 되고, 수신 내역과 화면 픽은 그대로 동작합니다.</div>
             <div style="font-size:12px;color:#636366;margin-bottom:14px;line-height:1.6">관객이 계산하면 관리자 기기로 푸시 알림이 옵니다.</div>
             <div class="how-to-row">
                 <div class="how-to-step">1</div>
@@ -1783,6 +1787,7 @@ body.android-mode #calcIconPlusMinus::after {
 
         <div class="admin-section">
             <div class="admin-section-title">🔮 666 트릭</div>
+            <div class="android-only" style="font-size:12px;color:#ff9f0a;margin-bottom:10px;line-height:1.6">⚠️ 안드로이드 관객 기기에서는 잠겨 있습니다 (진입 제스처가 무시됩니다).</div>
             <div style="font-size:12px;color:#636366;margin-bottom:14px;line-height:1.6">관객이 333+333을 입력하면 666이 나오고 자동 시퀀스가 실행됩니다.</div>
             <div class="how-to-row">
                 <div class="how-to-step">1</div>
@@ -1827,6 +1832,60 @@ body.android-mode #calcIconPlusMinus::after {
                 <div class="how-to-step">3</div>
                 <div class="how-to-desc">해제: <span class="key-badge">%</span> 한 번 탭 또는 <span class="key-badge">%</span> 두 번 탭</div>
             </div>
+        </div>
+
+        <div class="admin-section">
+            <div class="admin-section-title">🖼 화면 픽</div>
+            <div class="how-to-row">
+                <div class="how-to-step">1</div>
+                <div class="how-to-desc">관리자 폰 화면을 <b>캡쳐</b>해 두기 (홈 화면 등)</div>
+            </div>
+            <div class="how-to-row">
+                <div class="how-to-step">2</div>
+                <div class="how-to-desc">메뉴 → <b>화면 픽</b> → 사진 고르기</div>
+            </div>
+            <div class="how-to-row">
+                <div class="how-to-step">3</div>
+                <div class="how-to-desc"><b>글자</b> 탭에서 수신값이 나올 자리를 끌어서 지정<br>
+                <span style="color:#636366;font-size:11px">방향키로 1px씩, 끄는 동안 돋보기로 확대 확인</span></div>
+            </div>
+            <div class="how-to-row">
+                <div class="how-to-step">4</div>
+                <div class="how-to-desc"><b>터치 영역</b> 탭에서 사용 켜고, 사진 속 계산기 아이콘 위에 배치<br>
+                <span style="color:#636366;font-size:11px">공연 중 그 자리를 누르면 계산기로 빠져나옵니다</span></div>
+            </div>
+            <div class="how-to-row">
+                <div class="how-to-step">5</div>
+                <div class="how-to-desc"><b>시작하기</b> → 나갈 때는 <b>왼쪽 위 모서리 1.5초 길게</b></div>
+            </div>
+            <div style="margin-top:4px;background:#1a1a1a;border-radius:10px;padding:14px;font-size:13px;color:#636366;line-height:1.9">
+                <span class="ios-only">📱 <b style="color:#aaa">아이폰</b> — 사진이 화면 끝까지 올라가고 그 위에 진짜 시간·배터리가 보입니다.
+                사진에 찍힌 예전 시간·배터리는 <b style="color:#aaa">상태바 탭</b>에서 띠를 켜서 덮으세요.
+                iOS 버전에 따라 맨 위가 시스템에 막혀 있으면 설정 화면에 안내가 표시됩니다.</span>
+                <span class="android-only">🤖 <b style="color:#aaa">안드로이드</b> — 시스템이 상태바를 칠하므로
+                <b style="color:#aaa">상태바 탭</b>의 색이 그대로 반영됩니다.</span><br>
+                💡 <b style="color:#aaa">실시간 수신</b>을 켜면 관객이 누르는 대로, 끄면 <span class="key-badge">=</span> 결과값만 올라옵니다.
+                관객 폰은 항상 보내므로 이 스위치는 관리자 기기에서 즉시 바뀝니다.
+            </div>
+        </div>
+
+        <div class="admin-section">
+            <div class="admin-section-title">⏱ 관객 세션 30분 제한</div>
+            <div class="how-to-row">
+                <div class="how-to-step">1</div>
+                <div class="how-to-desc">관객용 계산기는 켠 지 <b>30분이 지나면 스스로 연결을 끊습니다</b><br>
+                <span style="color:#636366;font-size:11px">평범한 계산기로만 남고, 수신·트릭 기능이 모두 멈춥니다</span></div>
+            </div>
+            <div class="how-to-row">
+                <div class="how-to-step">2</div>
+                <div class="how-to-desc">공연 전에 메뉴 → <b>URL 생성</b> → <b>30분 다시 시작</b> 누르기</div>
+            </div>
+            <div class="how-to-row">
+                <div class="how-to-step">3</div>
+                <div class="how-to-desc">관객 폰에서 <b>앱을 껐다 켜면</b> 30분이 처음부터 다시 시작</div>
+            </div>
+            <div style="font-size:11px;color:#636366;margin-top:6px">
+            이미 끊긴 기기는 앱을 지웠다 깔아도 풀리지 않습니다. 반드시 위 버튼을 쓰세요.</div>
         </div>
 
         <div class="admin-section">
