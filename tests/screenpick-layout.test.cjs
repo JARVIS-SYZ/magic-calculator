@@ -74,3 +74,10 @@ test('preview and eyedropper use the same centered crop and movement as the stag
     for (const key of ['dw', 'dh', 'ox', 'oy']) assert.equal(half[key] * 2, full[key]);
     assert.ok(full.ox < 0);
 });
+
+test('a slightly taller screenshot remains anchored to the top instead of center-cropping upward', () => {
+    const c = fixture({ imageWidth: 1206, imageHeight: 2700 });
+    const image = c.spImgLayout(c.spViewportFrame());
+    assert.ok(image.dh > 874);
+    assert.equal(image.oy, 0);
+});

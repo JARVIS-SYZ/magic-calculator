@@ -3746,7 +3746,9 @@ body.android-mode #calcIconPlusMinus::after {
             const cover = Math.max(r.width / spImgW, boxH / spImgH);
             dw = spImgW * cover; dh = spImgH * cover;
         }
-        return { k: k, dw: dw, dh: dh, ox: (r.width - dw) / 2, oy: -shiftPx + (boxH - dh) / 2 };
+        // 세로 중앙 정렬은 사진 비율이 조금만 달라도 윗부분을 잘라 화면 전체가
+        // 위로 올라간 것처럼 보이게 한다. 캡처의 첫 픽셀은 항상 화면 맨 위에 둔다.
+        return { k: k, dw: dw, dh: dh, ox: (r.width - dw) / 2, oy: shiftPx ? -shiftPx : 0 };
     }
 
     function spLayoutStage() {
