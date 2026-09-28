@@ -16,6 +16,7 @@ service cloud.firestore {
     function myCode()   { return signedIn() && ('code' in request.auth.token) ? request.auth.token.code : ''; }
 
     // ===== 서버 전용 =====
+    // api_keys는 기능을 없앴지만, 남아 있는 문서가 다시 읽히지 않도록 규칙은 유지한다
     match /api_keys/{doc}      { allow read, write: if false; }
     match /viewer_tokens/{doc} { allow read, write: if false; }
     match /router_latest/{doc} { allow read, write: if false; }
