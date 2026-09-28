@@ -3178,9 +3178,12 @@ body.android-mode #calcIconPlusMinus::after {
     //   X를 계산해 버튼을 깜빡인 뒤, 어떤 숫자를 눌러도 X의 자리가 차례로 들어간다.
     //   자릿수는 키패드의 해당 숫자를 볼드로 알려준다 (10자리면 1과 0).
     // ===================================================================
-    let dtArmed = false, dtReady = false, dtDigits = '', dtFrozen = false;
-    let dtIdleTimer = null, dtRefreshTimer = null;
-    const DT_IDLE_MS = 3000;
+    // var로 선언한다. 초기화 중에 updateDisplay가 먼저 돌면서 dtOnInput을 부르는데,
+    // let이면 그 시점에 아직 TDZ라 'Cannot access dtReady before initialization'으로 터진다.
+    // var면 undefined라 가드에 걸려 조용히 빠져나온다.
+    var dtArmed = false, dtReady = false, dtDigits = '', dtFrozen = false;
+    var dtIdleTimer = null, dtRefreshTimer = null;
+    var DT_IDLE_MS = 3000;
 
     function dtPlusOne() { return localStorage.getItem('dt_plus_one') === 'true'; }
 
