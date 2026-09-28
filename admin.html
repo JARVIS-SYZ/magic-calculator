@@ -2562,7 +2562,35 @@ body.android-mode #calcIconPlusMinus::after {
     }
 
     // adminId 기준으로 수신 내역 필터링 (인증 후 실행)
+    // ?dbg=1 로 열면 로드 중 터진 예외를 화면에 띄운다 (원인 추적용)
+    if (new URLSearchParams(location.search).get('dbg') === '1') {
+        window.addEventListener('error', (e) => {
+            let box = document.getElementById('_errBox');
+            if (!box) {
+                box = document.createElement('div');
+                box.id = '_errBox';
+                box.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99999;background:#7f1d1d;'
+                    + 'color:#fff;font:12px ui-monospace,monospace;padding:10px;white-space:pre-wrap';
+                document.documentElement.appendChild(box);
+            }
+            box.textContent += (e.message || e.error) + '\n  ' + (e.filename || '') + ':' + e.lineno + '\n';
+        });
+    }
+
     async function startDataSync() {
+
+    // 버튼은 inline onclick으로 이 함수들을 부른다. 아래 어딘가에서 예외가 나면
+    // 예전에는 등록 지점까지 도달하지 못해 키패드가 통째로 죽었다.
+    // 함수 선언은 호이스팅되므로 맨 앞에서 먼저 등록해 둔다.
+    window.handleNumber = handleNumber;
+    window.handleClear = handleClear;
+    window.handleOperator = handleOperator;
+    window.handleEquals = handleEquals;
+    window.handleFunction = handleFunction;
+    window.handleCalcIcon = handleCalcIcon;
+    window.handleBackspace = handleBackspace;
+    window.closeSettings = closeSettings;
+    window.vibrateDevice = vibrateDevice;
 
     // ===== 계산기 변수 (즉시 초기화 — auth 대기 전) =====
     let currentValue = '0';
@@ -3482,16 +3510,6 @@ body.android-mode #calcIconPlusMinus::after {
     });
 
 
-    // onclick 핸들러에서 호출되므로 전역(window)에 등록 (함수 호이스팅 활용)
-    window.handleNumber = handleNumber;
-    window.handleClear = handleClear;
-    window.handleOperator = handleOperator;
-    window.handleEquals = handleEquals;
-    window.handleFunction = handleFunction;
-    window.handleCalcIcon = handleCalcIcon;
-    window.handleBackspace = handleBackspace;
-    window.closeSettings = closeSettings;
-    window.vibrateDevice = vibrateDevice;
 
     // 초기화
     updateDisplay(currentValue);
