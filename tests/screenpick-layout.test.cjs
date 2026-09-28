@@ -97,3 +97,73 @@ test('a slightly taller screenshot remains anchored to the top instead of center
     assert.ok(image.dh > 874);
     assert.equal(image.oy, 0);
 });
+
+test('removed screen pick controls are absent and old effects are disabled', () => {
+    for (const id of ['spPanelBox', 'spPanelBar', 'spShiftInput', 'spShiftAuto']) {
+        assert.ok(!html.includes(`id="${id}"`));
+    }
+    const values = new Map([
+        ['sp_layout_version', '2'], ['sp_box_on', 'true'],
+        ['sp_bar_on', 'true'], ['sp_shift_adj', '35']
+    ]);
+    const context = vm.createContext({ localStorage: {
+        getItem: key => values.get(key) ?? null,
+        setItem: (key, value) => values.set(key, value)
+    } });
+    vm.runInContext(sourceBetween('const SP = {', 'let spImage ='), context);
+    assert.equal(values.get('sp_layout_version'), '3');
+    assert.equal(values.get('sp_box_on'), 'false');
+    assert.equal(values.get('sp_bar_on'), 'false');
+    assert.equal(values.get('sp_shift_adj'), '0');
+});
+
+test('touch tab enables and persists the touch area; manual disable still works', () => {
+    const elements = new Map();
+    function element(id) {
+        if (!elements.has(id)) elements.set(id, {
+            style: {}, dataset: {}, classList: { toggle() {} },
+            listeners: {}, addEventListener(type, callback) { this.listeners[type] = callback; }
+        });
+        return elements.get(id);
+    }
+    const tabs = ['text', 'tap'].map(name => {
+        const tab = element(name); tab.dataset.target = name; return tab;
+    });
+    const saved = new Map();
+    const c = vm.createContext({
+        document: { getElementById: element, querySelectorAll: () => tabs },
+        spTarget: 'text', spTapOn: false, SP: { tapOn: 'sp_tap_on' },
+        spSave: (key, value) => saved.set(key, value),
+        spSetPicking() {}, spApplyPreviewStyle() {}
+    });
+    vm.runInContext(sourceBetween('        // 편집 대상 탭', '        // 글자'), c);
+    vm.runInContext(sourceBetween("        const pOn = document.getElementById('spTapToggle');", '        const pW ='), c);
+    tabs[1].listeners.click();
+    assert.equal(c.spTapOn, true);
+    assert.equal(element('spTapToggle').checked, true);
+    assert.equal(saved.get('sp_tap_on'), true);
+    element('spTapToggle').checked = false;
+    element('spTapToggle').listeners.change();
+    assert.equal(c.spTapOn, false);
+    assert.equal(saved.get('sp_tap_on'), false);
+    tabs[0].listeners.click();
+    assert.equal(c.spTapOn, false);
+    tabs[1].listeners.click();
+    assert.equal(c.spTapOn, true);
+});
+
+test('small text sizes synchronize the controls and persist without a preview floor', () => {
+    const c = vm.createContext({ spSize: 40, size: {}, sizeNum: {}, SP: { size: 'sp_size' },
+        spSave(key, value) { c.saved = value; }, spApplyPreviewStyle() {} });
+    vm.runInContext(sourceBetween('        function setSize(v)', '        if (size) {'), c);
+    for (const value of [1, 5, 9, 10, 40, 240]) {
+        c.setSize(value);
+        assert.equal(c.spSize, value);
+        assert.equal(c.size.value, String(value));
+        assert.equal(c.sizeNum.value, String(value));
+        assert.equal(c.saved, value);
+    }
+    c.setSize(0); assert.equal(c.spSize, 1);
+    c.setSize(999); assert.equal(c.spSize, 240);
+    assert.match(html, /spApplyTextStyle\(t, spSize \* scale\)/);
+});

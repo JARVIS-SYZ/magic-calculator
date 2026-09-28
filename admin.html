@@ -1249,22 +1249,11 @@ body.android-mode #calcIconPlusMinus::after {
             <div class="sp-hint">화면을 캡쳐해 두고 여기서 고르세요. 사진은 이 기기에만 저장됩니다.
             미리보기는 실제 공연 화면과 <b>같은 비율의 축소 모형</b>이라, 여기서 맞춘 자리가 그대로 나옵니다.</div>
 
-            <div class="sp-row">
-                <span class="sp-label">위치 미세조정 (px)</span>
-                <span style="display:flex;align-items:center;gap:8px">
-                    <input type="number" class="sp-num" id="spShiftInput" min="-60" max="200" step="1" value="0">
-                    <button class="sp-btn secondary" id="spShiftAuto">원본 맞춤</button>
-                </span>
-            </div>
-            <div class="sp-hint">같은 기기에서 찍은 전체 화면 캡처는 0px에서 원래 위치에 맞춰집니다.
-            사진을 위아래로 옮길 때만 조정하세요. 실제 시간·배터리는 iOS가 사진 위에 표시합니다.</div>
             <div class="sp-hint" id="spViewportNotice" role="status" hidden></div>
 
             <div class="sp-tabs">
                 <button class="sp-tab active" data-target="text">글자</button>
-                <button class="sp-tab" data-target="box">가림 박스</button>
                 <button class="sp-tab" data-target="tap">터치 영역</button>
-                <button class="sp-tab" data-target="bar">상태바</button>
             </div>
 
             <div class="sp-stage-wrap" id="spPreviewWrap">
@@ -1287,9 +1276,9 @@ body.android-mode #calcIconPlusMinus::after {
             <div class="admin-section-title">🔤 글자</div>
             <div class="sp-row">
                 <span class="sp-label">글자 크기</span>
-                <input type="number" class="sp-num" id="spSizeInput" min="10" max="240" step="1" value="40">
+                <input type="number" class="sp-num" id="spSizeInput" min="1" max="240" step="1" value="40">
             </div>
-            <input class="sp-range" type="range" id="spSizeRange" min="10" max="240" step="1" value="40" style="width:100%">
+            <input class="sp-range" type="range" id="spSizeRange" min="1" max="240" step="1" value="40" style="width:100%">
             <div class="sp-row">
                 <span class="sp-label">글자 색</span>
                 <input type="color" id="spColorInput" value="#ffffff" style="width:52px;height:34px;border:none;background:none">
@@ -1319,70 +1308,6 @@ body.android-mode #calcIconPlusMinus::after {
                     <span class="toggle-slider"></span>
                 </label>
             </div>
-        </div>
-
-        <!-- 가림 박스 -->
-        <div class="admin-section sp-panel" id="spPanelBox" style="display:none">
-            <div class="admin-section-title">⬛ 가림 박스</div>
-            <div class="sp-hint">캡쳐 사진에 찍힌 <b>예전 시간·배터리</b>를 덮어 가립니다.
-            가리고 나면 그 자리에 기기의 <b>진짜 시간·배터리</b>가 그 위로 보입니다.
-            색은 스포이드로 사진의 그 부분과 같게 찍으면 이어 보입니다.</div>
-            <div class="sp-row">
-                <span class="sp-label">사용</span>
-                <label class="toggle-switch">
-                    <input type="checkbox" id="spBoxToggle">
-                    <span class="toggle-slider"></span>
-                </label>
-            </div>
-            <div class="sp-row">
-                <span class="sp-label">상태바 자리에 맞추기</span>
-                <button class="sp-btn secondary" id="spBoxPreset">자동 맞춤</button>
-            </div>
-            <div class="sp-row">
-                <span class="sp-label">너비 (%)</span>
-                <input type="number" class="sp-num" id="spBoxW" min="1" max="100" step="0.5" value="100">
-            </div>
-            <div class="sp-row">
-                <span class="sp-label">높이 (%)</span>
-                <input type="number" class="sp-num" id="spBoxH" min="1" max="100" step="0.5" value="6">
-            </div>
-            <div class="sp-row">
-                <span class="sp-label">박스 색</span>
-                <span style="display:flex;align-items:center;gap:10px">
-                    <input type="color" id="spBoxColor" value="#000000" style="width:52px;height:34px;border:none;background:none">
-                    <button class="sp-btn secondary" id="spEyedropper">💧 스포이드</button>
-                </span>
-            </div>
-            <div class="sp-hint">스포이드를 켠 뒤 미리보기를 <b>누른 채로 끌면</b> 돋보기와 버튼에 색이 계속 바뀌어 보이고,
-            손을 떼는 순간 확정됩니다.</div>
-        </div>
-
-        <!-- 상태바 -->
-        <div class="admin-section sp-panel" id="spPanelBar" style="display:none">
-            <div class="admin-section-title">🔝 상태바</div>
-            <div class="sp-hint">시간·배터리가 뜨는 <b>맨 윗줄</b>을 이 색으로 칠합니다.
-            사진은 자르지 않고 그대로 들어가며, 사진에 찍힌 예전 시간·배터리는 이 띠가 덮습니다.
-            스포이드로 사진 맨 윗부분과 같은 색을 찍으면 이어 보입니다. <b>즉시 반영됩니다.</b></div>
-            <div class="sp-row">
-                <span class="sp-label">색 지정 사용</span>
-                <label class="toggle-switch">
-                    <input type="checkbox" id="spBarToggle">
-                    <span class="toggle-slider"></span>
-                </label>
-            </div>
-            <div class="sp-row">
-                <span class="sp-label">상태바 색</span>
-                <span style="display:flex;align-items:center;gap:10px">
-                    <input type="color" id="spBarColor" value="#000000" style="width:52px;height:34px;border:none;background:none">
-                    <button class="sp-btn secondary" id="spBarEyedropper">💧 스포이드</button>
-                </span>
-            </div>
-            <div class="sp-hint">끄면 캡처 사진의 맨 윗부분을 그대로 보여줍니다.</div>
-            <div class="sp-row">
-                <span class="sp-label">진단 (실시간)</span>
-                <button class="sp-btn secondary" id="spDiagBtn">새로고침</button>
-            </div>
-            <pre id="spDiag" style="font:11px ui-monospace,monospace;color:#8e8e93;white-space:pre-wrap;margin:8px 0 0 0"></pre>
         </div>
 
         <!-- 터치 영역 -->
@@ -3689,9 +3614,8 @@ body.android-mode #calcIconPlusMinus::after {
     const spNum = (k, d) => { const v = parseFloat(localStorage.getItem(k)); return isNaN(v) ? d : v; };
     const spBool = (k, d) => { const v = localStorage.getItem(k); return v === null ? d : v === 'true'; };
 
-    // 예전 버전에서 자동으로 저장했던 자르기·상태바 가림 값을 한 번만 제거한다.
-    // 이후 사용자가 직접 바꾼 값은 그대로 유지한다.
-    const SP_LAYOUT_VERSION = '2';
+    // 제거된 가림·상태바·사진 이동 옵션의 저장값을 초기화한다.
+    const SP_LAYOUT_VERSION = '3';
     if (localStorage.getItem('sp_layout_version') !== SP_LAYOUT_VERSION) {
         localStorage.setItem('sp_shift_adj', '0');
         localStorage.setItem('sp_bar_on', 'false');
@@ -3708,13 +3632,13 @@ body.android-mode #calcIconPlusMinus::after {
     let spFont = localStorage.getItem(SP.font) || 'system';
     let spShadow = spBool(SP.shadow, true);
 
-    let spBoxOn = spBool(SP.boxOn, false);
+    const spBoxOn = false;
     let spBoxX = spNum(SP.boxX, 50), spBoxY = spNum(SP.boxY, 3);
     let spBoxW = spNum(SP.boxW, 100), spBoxH = spNum(SP.boxH, 6);
     let spBoxC = localStorage.getItem(SP.boxC) || '#000000';
     // 사진 위에 선택적으로 덮는 띠. OS 상태바 자체를 바꾸는 설정은 아니다.
     let spBarC = localStorage.getItem('sp_bar_color') || '#000000';
-    let spBarOn = spBool('sp_bar_on', false);
+    const spBarOn = false;
 
     let spTapOn = spBool(SP.tapOn, false);
     let spTapX = spNum(SP.tapX, 50), spTapY = spNum(SP.tapY, 90);
@@ -3745,7 +3669,7 @@ body.android-mode #calcIconPlusMinus::after {
         };
     }
     function spBaseShift() { return spViewportFrame().excludedTop; }
-    let spShiftAdj = spNum('sp_shift_adj', 0);   // 손으로 더하는 미세조정
+    const spShiftAdj = 0;
     function spEffShift() { return spShiftAdj; }
     let spTarget = 'text';       // 지금 편집 중인 대상
     let spPicking = false;       // 스포이드 모드
@@ -3855,7 +3779,7 @@ body.android-mode #calcIconPlusMinus::after {
 
 
         t.style.left = spX + '%'; t.style.top = spY + '%';
-        spApplyTextStyle(t, Math.max(8, spSize * scale));
+        spApplyTextStyle(t, spSize * scale);
 
         spPlaceRect(b, spBoxX, spBoxY, spBoxW, spBoxH);
         b.style.background = spBoxC;
@@ -4270,42 +4194,22 @@ body.android-mode #calcIconPlusMinus::after {
             e.target.value = '';
         });
 
-        // 사진 위로 올리기
-        const shiftIn = document.getElementById('spShiftInput');
-        function setShift(v) {
-            spShiftAdj = Math.min(200, Math.max(-60, Math.round(parseFloat(v) || 0)));
-            if (shiftIn) shiftIn.value = String(spShiftAdj);
-            spSave('sp_shift_adj', spShiftAdj);
-            spApplyPreviewStyle();
-        }
-        if (shiftIn) { shiftIn.value = String(spShiftAdj); shiftIn.addEventListener('change', () => setShift(shiftIn.value)); }
-        const shiftAuto = document.getElementById('spShiftAuto');
-        if (shiftAuto) shiftAuto.addEventListener('click', () => {
-            spBarOn = false;
-            spBoxOn = false;
-            spSave('sp_bar_on', false);
-            spSave(SP.boxOn, false);
-            document.getElementById('spBarToggle').checked = false;
-            document.getElementById('spBoxToggle').checked = false;
-            setShift(0);
-        });
-
         // 편집 대상 탭
         const HINTS = {
             text: '글자를 <b>직접 집어서</b> 끌어 놓으세요. 빈 곳을 눌러도 움직이지 않습니다.',
-            box: '가림 박스를 <b>직접 집어서</b> 시간·배터리 위로 끌어 놓으세요. 크기는 아래에서 조절합니다.',
-            tap: '터치 영역을 <b>직접 집어서</b> 계산기 아이콘 위로 끌어 놓으세요. 공연 화면에서는 보이지 않습니다.',
-            bar: '맨 윗줄 색만 정하는 탭입니다. 미리보기에서 끌 대상은 없습니다.'
+            tap: '터치 영역을 <b>직접 집어서</b> 계산기 아이콘 위로 끌어 놓으세요. 공연 화면에서는 보이지 않습니다.'
         };
         document.querySelectorAll('.sp-tab').forEach((tab) => {
             tab.addEventListener('click', () => {
                 spTarget = tab.dataset.target;
                 document.querySelectorAll('.sp-tab').forEach((x) => x.classList.toggle('active', x === tab));
                 document.getElementById('spPanelText').style.display = spTarget === 'text' ? '' : 'none';
-                document.getElementById('spPanelBox').style.display = spTarget === 'box' ? '' : 'none';
                 document.getElementById('spPanelTap').style.display = spTarget === 'tap' ? '' : 'none';
-                document.getElementById('spPanelBar').style.display = spTarget === 'bar' ? '' : 'none';
-                if (spTarget === 'bar' && window.spRefreshDiag) window.spRefreshDiag();
+                if (spTarget === 'tap') {
+                    spTapOn = true;
+                    spSave(SP.tapOn, true);
+                    document.getElementById('spTapToggle').checked = true;
+                }
                 document.getElementById('spTargetHint').innerHTML = HINTS[spTarget];
                 if (spTarget !== 'box' && spTarget !== 'bar') spSetPicking(false);
                 spApplyPreviewStyle();
@@ -4316,7 +4220,7 @@ body.android-mode #calcIconPlusMinus::after {
         const size = document.getElementById('spSizeRange');
         const sizeNum = document.getElementById('spSizeInput');
         function setSize(v) {
-            spSize = Math.min(240, Math.max(10, parseInt(v, 10) || 40));
+            spSize = Math.min(240, Math.max(1, parseInt(v, 10) || 1));
             if (size) size.value = String(spSize);
             if (sizeNum) sizeNum.value = String(spSize);
             spSave(SP.size, spSize); spApplyPreviewStyle();
@@ -4331,79 +4235,6 @@ body.android-mode #calcIconPlusMinus::after {
         if (font) { font.value = spFont; font.addEventListener('change', () => { spFont = font.value; spSave(SP.font, spFont); spApplyPreviewStyle(); }); }
         const shadow = document.getElementById('spShadowToggle');
         if (shadow) { shadow.checked = spShadow; shadow.addEventListener('change', () => { spShadow = shadow.checked; spSave(SP.shadow, spShadow); spApplyPreviewStyle(); }); }
-
-        // 가림 박스
-        const bOn = document.getElementById('spBoxToggle');
-        if (bOn) { bOn.checked = spBoxOn; bOn.addEventListener('change', () => { spBoxOn = bOn.checked; spSave(SP.boxOn, spBoxOn); spApplyPreviewStyle(); }); }
-        const bW = document.getElementById('spBoxW');
-        if (bW) { bW.value = String(spBoxW); bW.addEventListener('change', () => { spBoxW = Math.min(100, Math.max(1, parseFloat(bW.value) || 1)); bW.value = String(spBoxW); spSave(SP.boxW, spBoxW); spApplyPreviewStyle(); }); }
-        const bH = document.getElementById('spBoxH');
-        if (bH) { bH.value = String(spBoxH); bH.addEventListener('change', () => { spBoxH = Math.min(100, Math.max(1, parseFloat(bH.value) || 1)); bH.value = String(spBoxH); spSave(SP.boxH, spBoxH); spApplyPreviewStyle(); }); }
-        // 상태바 높이(safe-area)에 맞춰 박스를 화면 맨 위 전체 폭으로 깔아준다
-        const bPreset = document.getElementById('spBoxPreset');
-        if (bPreset) bPreset.addEventListener('click', () => {
-            const frame = spViewportFrame();
-            const saTop = frame.safeTop || frame.top;
-            const h = saTop > 0 ? (saTop / Math.max(1, frame.height)) * 100 : 6;
-            spBoxW = 100; spBoxX = 50;
-            spBoxH = Math.round(h * 10) / 10;
-            spBoxY = Math.round((spBoxH / 2) * 10) / 10;
-            spBoxOn = true;
-            [[SP.boxW, spBoxW], [SP.boxX, spBoxX], [SP.boxH, spBoxH], [SP.boxY, spBoxY], [SP.boxOn, true]]
-                .forEach(([k, v]) => spSave(k, v));
-            if (bW) bW.value = String(spBoxW);
-            if (bH) bH.value = String(spBoxH);
-            if (bOn) bOn.checked = true;
-            spApplyPreviewStyle();
-        });
-
-        const bC = document.getElementById('spBoxColor');
-        if (bC) { bC.value = spBoxC; bC.addEventListener('input', () => { spBoxC = bC.value; spSave(SP.boxC, spBoxC); spApplyPreviewStyle(); }); }
-        const eye = document.getElementById('spEyedropper');
-        if (eye) eye.addEventListener('click', () => spSetPicking(!(spPicking && spPickKey === 'box'), 'box'));
-        // 상태바 색이 왜 안 먹는지 기기에서 직접 확인하기 위한 값들
-        function spDiagText() {
-            const cs = getComputedStyle(document.body);
-            const saTop = getComputedStyle(document.documentElement).getPropertyValue('--sa-top').trim();
-            const tc = document.querySelector('meta[name="theme-color"]');
-            const meta = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
-            return [
-                '홈화면앱(standalone): ' + (window.navigator.standalone === true),
-                '상태바 meta: ' + (meta ? meta.getAttribute('content') : '(없음 = 불투명)'),
-                'safe-area-top: ' + saTop,
-                'screen.height: ' + (screen.height || '?') + ' / innerHeight: ' + window.innerHeight,
-                'OS가 제외한 상단: ' + spBaseShift() + 'px / 사진 이동: ' + spShiftAdj + 'px',
-                '색 지정 사용: ' + spBarOn,
-                '지정한 색: ' + spBarC,
-                'body 실제 배경: ' + cs.backgroundColor,
-                'theme-color: ' + (tc ? tc.getAttribute('content') : '(없음)')
-            ].join('\n');
-        }
-        function spRefreshDiag() {
-            const el = document.getElementById('spDiag');
-            if (el) el.textContent = spDiagText();
-        }
-        const diagBtn = document.getElementById('spDiagBtn');
-        if (diagBtn) diagBtn.addEventListener('click', spRefreshDiag);
-        window.spRefreshDiag = spRefreshDiag;
-        spRefreshDiag();
-        // 값이 낡아서 헷갈리지 않도록 상태바 탭이 열려 있는 동안 계속 갱신한다
-        setInterval(() => {
-            const panel = document.getElementById('spPanelBar');
-            if (panel && panel.style.display !== 'none') spRefreshDiag();
-        }, 500);
-
-
-        const barOn = document.getElementById('spBarToggle');
-        if (barOn) { barOn.checked = spBarOn; barOn.addEventListener('change', () => {
-            spBarOn = barOn.checked; spSave('sp_bar_on', spBarOn); spApplyBarColorNow();
-        }); }
-        const barC = document.getElementById('spBarColor');
-        if (barC) { barC.value = spBarC; barC.addEventListener('input', () => {
-            spBarC = barC.value; spSave('sp_bar_color', spBarC); spApplyBarColorNow();
-        }); }
-        const barEye = document.getElementById('spBarEyedropper');
-        if (barEye) barEye.addEventListener('click', () => spSetPicking(!(spPicking && spPickKey === 'bar'), 'bar'));
 
         // 터치 영역
         const pOn = document.getElementById('spTapToggle');
