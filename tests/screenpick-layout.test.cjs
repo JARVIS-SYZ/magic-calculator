@@ -14,6 +14,12 @@ function sourceBetween(start, end) {
 const geometry = sourceBetween('function spViewportFrame()', 'function spBaseShift()')
     + sourceBetween('function spImgLayout(r)', 'function spLayoutStage()');
 
+test('the iOS status-area shield is present only outside screen pick mode', () => {
+    assert.match(html, /#normalStatusBarShield\s*\{[\s\S]*?height:\s*env\(safe-area-inset-top,\s*0px\);[\s\S]*?background:\s*#000;/);
+    assert.match(html, /html\.screen-pick-active\s+#normalStatusBarShield\s*\{\s*display:\s*none;\s*\}/);
+    assert.match(html, /<div id="normalStatusBarShield" aria-hidden="true"><\/div>/);
+});
+
 function fixture({ width = 402, height = 874, safeTop = 62, standalone = true,
     scale = 1, shift = 0, imageWidth = 1206, imageHeight = 2622 } = {}) {
     const context = vm.createContext({

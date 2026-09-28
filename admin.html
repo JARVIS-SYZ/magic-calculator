@@ -40,6 +40,21 @@ html.screen-pick-active body {
     background-size: 100vw auto;
     background-repeat: no-repeat;
 }
+/*
+ * black-translucent는 화면 픽 사진을 iOS 상태바 아래까지 이어 붙이는 데 필요하다.
+ * 일반 화면에서는 순수 검정층을 상태바 아래에 두어 iOS의 흐림 재료가 보이지 않게 한다.
+ */
+#normalStatusBarShield {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: env(safe-area-inset-top, 0px);
+    background: #000;
+    z-index: 4999;
+    pointer-events: none;
+}
+html.screen-pick-active #normalStatusBarShield { display: none; }
 .calculator {
     position: fixed;
     top: 0; left: 0; right: 0; bottom: 0;
@@ -826,6 +841,8 @@ body.android-mode #calcIconPlusMinus::after {
 </style>
 </head>
 <body>
+
+<div id="normalStatusBarShield" aria-hidden="true"></div>
 
 <!-- 코드 인증 화면 -->
 <div class="auth-screen hidden" id="authScreen">
