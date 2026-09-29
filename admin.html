@@ -1096,12 +1096,12 @@ body.android-mode #calcIconPlusMinus::after {
             <span>자동 카운팅</span>
             <span class="side-menu-arrow">›</span>
         </button>
-        <button class="side-menu-item" onclick="openPage('trick666')">
+        <button class="side-menu-item ios-only" onclick="openPage('trick666')">
             <span class="side-menu-icon">🔮</span>
             <span>666 트릭</span>
             <span class="side-menu-arrow">›</span>
         </button>
-        <button class="side-menu-item" onclick="openPage('force')">
+        <button class="side-menu-item ios-only" onclick="openPage('force')">
             <span class="side-menu-icon">🍎</span>
             <span>포스 모드</span>
             <span class="side-menu-arrow">›</span>
@@ -2969,10 +2969,10 @@ body.android-mode #calcIconPlusMinus::after {
             case 'vertical': if(!countingInterval&&!countingStartDelay){vibrateDevice();countingStartDelay=setTimeout(()=>{startCounting();countingStartDelay=null;},(parseFloat(localStorage.getItem('admin_counting_trigger_delay'))||1)*1000);} break;
             case 'up':
             case 'flat':
-                // 화면이 위로 올라오면 → 카운팅 멈춤 + 모드 해제
+                // 세는 것만 멈추고 모드는 그대로 둔다. 예전에는 모드까지 꺼져서
+                // 폰을 들어올리는 순간 끝나 버렸고, 한 번밖에 못 쓰는 것처럼 보였다.
                 if(countingStartDelay){clearTimeout(countingStartDelay);countingStartDelay=null;}
                 stopCounting();
-                if(autoCountMode){autoCountMode=false;stopOrientationDetection();currentOrientation='unknown';updateAutoCountUI();}
                 vibrateDevice();
                 break;
         }
@@ -4128,7 +4128,11 @@ body.android-mode #calcIconPlusMinus::after {
         // iOS 27 홈 화면 앱은 safe-area-top을 주면서도 innerHeight에서는 같은 높이를
         // 다시 빼는 경우가 있다. screen.height까지 레이어를 늘려야 아래 검정 띠가 생기지 않는다.
         // 키보드/확대/회전으로 줄어든 높이는 전체 화면 보정으로 취급하지 않는다.
-        const extendToScreen = navigator.standalone === true
+        // navigator.standalone은 iOS 전용이라 안드로이드 홈화면 앱이 빠져 있었다.
+        // 그래서 상태바 높이만큼 사진 아래가 잘렸다.
+        const installed = navigator.standalone === true
+            || !!(window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+        const extendToScreen = installed
             && Math.abs(screen.width - width) <= 1 && gap > 0 && gap <= 100
             && (!window.visualViewport || Math.abs(window.visualViewport.scale - 1) < 0.01);
         return {
