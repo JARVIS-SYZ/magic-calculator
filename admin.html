@@ -227,19 +227,21 @@ body.ios26-theme .top-icon { background: #1c1c1e; border: 1px solid #2c2c2e; }
 .pm-icon        { width: calc(var(--btn-w) * 0.38); height: calc(var(--btn-w) * 0.38); }
 
 /* ===== 기존 설정 모달 ===== */
+/* 포스 숫자만 받는 작은 팝업. 화면 전체를 덮어 가리면 공연 중에 불편하다. */
 .settings-modal {
     position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0,0,0,0.85);
-    backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-    display: none; align-items: center; justify-content: center;
-    z-index: 1000; animation: fadeIn 0.3s;
+    background: rgba(0,0,0,0.25);
+    display: none; align-items: flex-start; justify-content: center;
+    padding-top: calc(env(safe-area-inset-top, 0px) + 16px);
+    z-index: 1000; animation: fadeIn 0.2s;
 }
 .settings-modal.active { display: flex; }
 @keyframes fadeIn { from { opacity:0 } to { opacity:1 } }
 .settings-content {
     background: #1c1c1e; border-radius: 16px;
-    padding: 18px; width: 78%; max-width: 300px;
-    animation: slideUp 0.3s;
+    padding: 16px; width: 72%; max-width: 270px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.55);
+    animation: slideUp 0.25s;
 }
 @keyframes slideUp {
     from { transform: translateY(50px); opacity: 0; }
@@ -1023,14 +1025,6 @@ body.android-mode #calcIconPlusMinus::after {
 <div class="settings-modal" id="settingsModal">
     <div class="settings-content">
         <div class="settings-title">설정</div>
-        <div class="setting-item" id="dtSettingRow" style="display:none">
-            <div class="setting-label">날짜 계산기<br><span style="font-size:11px;color:#636366">결과로 나올 시각</span></div>
-            <select class="version-select" id="dtOffsetSelect" style="width:auto;padding:8px 30px 8px 12px;font-size:14px;border-radius:8px">
-                    <option value="0">지금 시각</option>
-                    <option value="1">1분 뒤</option>
-                    <option value="2">2분 뒤</option>
-                </select>
-        </div>
         <div class="setting-item">
             <div class="setting-label">포스 모드 숫자</div>
             <input type="number" class="force-input" id="forceNumberInput" placeholder="숫자 입력">
@@ -3398,8 +3392,6 @@ body.android-mode #calcIconPlusMinus::after {
     window.__setDateCalcEnabled = function (on) {
         dtEnabled = !!on;
         if (!dtEnabled) dtSetArmed(false);   // 쓰던 중이었어도 바로 내린다
-        const row = document.getElementById('dtSettingRow');
-        if (row) row.style.display = dtEnabled ? '' : 'none';
         const menu = document.getElementById('menuDateCalc');
         if (menu) menu.style.display = dtEnabled ? '' : 'none';
         if (!dtEnabled) {
@@ -3411,6 +3403,11 @@ body.android-mode #calcIconPlusMinus::after {
     // 설정창과 전용 페이지 두 곳에 같은 스위치가 있으므로 서로 맞춰준다
     function dtSyncOffset(min) {
         localStorage.setItem('dt_offset_min', String(min));
+        // 관객 앱에는 이 설정 화면이 없으므로 클라우드로 내려보낸다
+        if (currentAdminId) {
+            db_auth.collection('configs').doc(currentAdminId)
+                .set({ dtOffset: min }, { merge: true }).catch(() => {});
+        }
         ['dtOffsetSelect', 'dtOffsetPage'].forEach((id) => {
             const el = document.getElementById(id);
             if (el && el.value !== String(min)) el.value = String(min);

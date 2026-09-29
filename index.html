@@ -249,20 +249,22 @@ body.ios26-theme .top-icon { background: #1c1c1e; border: 1px solid #2c2c2e; }
 .pm-icon        { width: calc(var(--btn-w) * 0.38); height: calc(var(--btn-w) * 0.38); }
 
 /* ===== 설정 모달 ===== */
+/* 포스 숫자만 받는 작은 팝업. 화면 전체를 덮어 가리면 공연 중에 불편하다. */
 .settings-modal {
     position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0,0,0,0.85);
-    backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-    display: none; align-items: center; justify-content: center;
-    z-index: 1000; animation: fadeIn 0.3s;
+    background: rgba(0,0,0,0.25);
+    display: none; align-items: flex-start; justify-content: center;
+    padding-top: calc(env(safe-area-inset-top, 0px) + 16px);
+    z-index: 1000; animation: fadeIn 0.2s;
 }
 .settings-modal.active { display: flex; }
 @keyframes fadeIn { from { opacity:0 } to { opacity:1 } }
 
 .settings-content {
     background: #1c1c1e; border-radius: 16px;
-    padding: 18px; width: 78%; max-width: 300px;
-    animation: slideUp 0.3s;
+    padding: 16px; width: 72%; max-width: 270px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.55);
+    animation: slideUp 0.25s;
 }
 @keyframes slideUp {
     from { transform: translateY(50px); opacity: 0; }
@@ -566,14 +568,6 @@ body.android-mode #calcIconPlusMinus::after {
 <div class="settings-modal" id="settingsModal">
     <div class="settings-content">
         <div class="settings-title">설정</div>
-        <div class="setting-item" id="dtSettingRow" style="display:none">
-            <div class="setting-label">날짜 계산기<br><span style="font-size:11px;color:#636366">결과로 나올 시각</span></div>
-            <select class="version-select" id="dtOffsetSelect" style="width:auto;padding:8px 30px 8px 12px;font-size:14px;border-radius:8px">
-                    <option value="0">지금 시각</option>
-                    <option value="1">1분 뒤</option>
-                    <option value="2">2분 뒤</option>
-                </select>
-        </div>
         <div class="setting-item">
             <div class="setting-label">포스 모드 숫자</div>
             <input type="number" class="force-input" id="forceNumberInput" placeholder="숫자 입력">
@@ -819,10 +813,9 @@ body.android-mode #calcIconPlusMinus::after {
     // 받아온 설정을 실제로 적용
     function applyCloudConfig(c) {
         if (!c) return;
+        if (typeof c.dtOffset === 'number') localStorage.setItem('dt_offset_min', String(c.dtOffset));
         if (typeof c.dateCalc === 'boolean') {
             dtEnabled = c.dateCalc;
-            const row = document.getElementById('dtSettingRow');
-            if (row) row.style.display = dtEnabled ? '' : 'none';
             if (!dtEnabled) dtSetArmed(false);
         }
         if (typeof c.d1 === 'number')  { DELAY_666_STAGE1 = c.d1 * 1000;  localStorage.setItem('calc_d1', c.d1); }
@@ -1255,8 +1248,8 @@ body.android-mode #calcIconPlusMinus::after {
         // 방향이 제각각이 되면 공연 중에 읽기 어렵다.
         //   iOS 26 / 안드로이드 → 시계 바늘 10시
         //   iOS 18            → 위 점 하나가 사라짐
-        const ghostOn = document.body.classList.contains('dots-hidden');
-        const active = ghostOn || autoCountMode || currentMode === 'force' || currentMode === '666';
+        // 고스트는 관리자 앱 전용이라 여기서는 볼 상태가 없다
+        const active = autoCountMode || currentMode === 'force' || currentMode === '666';
 
         const aHour = document.getElementById('androidClockHour');
         if (aHour) {
@@ -1553,10 +1546,11 @@ body.android-mode #calcIconPlusMinus::after {
     var DT_BLOCK_MS = 3000;
 
     // 목표 시각을 몇 분 뒤로 밀지 (0 = 지금). 예전 켜고 끄기 설정도 받아준다.
+    // 관객 앱에는 이 설정을 만질 화면이 없다. 관리자가 정한 값을 configs로 받아 쓴다.
     function dtOffsetMin() {
         const v = localStorage.getItem('dt_offset_min');
         if (v !== null) return Math.max(0, Math.min(2, parseInt(v, 10) || 0));
-        return localStorage.getItem('dt_plus_one') === 'true' ? 1 : 0;
+        return 0;
     }
 
     function dtTarget() {
@@ -1678,14 +1672,7 @@ body.android-mode #calcIconPlusMinus::after {
         setTimeout(() => { try { sh.remove(); } catch (e) {} }, ms);
     }
 
-    (function dtInitSetting() {
-        const el = document.getElementById('dtOffsetSelect');
-        if (!el) return;
-        el.value = String(dtOffsetMin());
-        el.addEventListener('change', () => {
-            localStorage.setItem('dt_offset_min', el.value);
-        });
-    })();
+
 
     function handleNumber(num) {
         num = dtSwapDigit(num);
