@@ -237,20 +237,20 @@ body.ios26-theme .top-icon { background: #1c1c1e; border: 1px solid #2c2c2e; }
 .settings-modal.active { display: flex; }
 @keyframes fadeIn { from { opacity:0 } to { opacity:1 } }
 .settings-content {
-    background: #1c1c1e; border-radius: 20px;
-    padding: 30px; width: 90%; max-width: 400px;
+    background: #1c1c1e; border-radius: 16px;
+    padding: 18px; width: 78%; max-width: 300px;
     animation: slideUp 0.3s;
 }
 @keyframes slideUp {
     from { transform: translateY(50px); opacity: 0; }
     to   { transform: translateY(0);    opacity: 1; }
 }
-.settings-title { font-size: 24px; font-weight: 600; margin-bottom: 30px; text-align: center; }
-.setting-item { margin-bottom: 25px; }
-.setting-label { font-size: 16px; margin-bottom: 10px; color: #a5a5a5; }
+.settings-title { font-size: 17px; font-weight: 600; margin-bottom: 14px; text-align: center; }
+.setting-item { margin-bottom: 14px; }
+.setting-label { font-size: 13px; margin-bottom: 7px; color: #a5a5a5; }
 .force-input {
-    width: 100%; background: #2c2c2e; border: none; border-radius: 12px;
-    padding: 15px 20px; font-size: 24px; color: #fff; text-align: center;
+    width: 100%; background: #2c2c2e; border: none; border-radius: 10px;
+    padding: 11px 14px; font-size: 20px; color: #fff; text-align: center;
     font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
 }
 .force-input:focus { outline: none; background: #3a3a3c; }
@@ -266,9 +266,9 @@ body.ios26-theme .top-icon { background: #1c1c1e; border: 1px solid #2c2c2e; }
 .version-select:focus { outline: none; background-color: #3a3a3c; }
 .version-select option { background: #2c2c2e; }
 .close-button {
-    width: 100%; background: #ff9f0a; border: none; border-radius: 12px;
-    padding: 15px; font-size: 18px; color: #fff; font-weight: 600;
-    cursor: pointer; margin-top: 20px;
+    width: 100%; background: #ff9f0a; border: none; border-radius: 10px;
+    padding: 11px; font-size: 15px; color: #fff; font-weight: 600;
+    cursor: pointer; margin-top: 12px;
 }
 .close-button:active { opacity: 0.8; }
 
@@ -410,7 +410,7 @@ body.ios26-theme .header-calc .calc-icon-svg rect:nth-of-type(2) { fill: #3a3a3c
 body.ios26-theme .header-calc .calc-icon-svg circle { fill: #2c2c2e; }
 body.ios26-theme .button { transform: scale(1); background: radial-gradient(circle at 20% 0%, #4a4a4e, #151516); }
 body.ios26-theme .button.number   { background: radial-gradient(circle at 20% 0%, #454549, #111112); }
-body.ios26-theme .button.function { background: radial-gradient(circle at 20% 0%, #505054, #18181a); }
+body.ios26-theme .button.function { background: radial-gradient(circle at 20% 0%, #8a8a8e, #4a4a4f); }
 body.ios26-theme .button.operator { background: radial-gradient(circle at 20% 0%, #ffb340, #a85c00); }
 body.ios26-theme .button::before {
     content: ""; position: absolute; inset: 0; border-radius: inherit;
@@ -450,7 +450,6 @@ body.android-mode .android-only { display: inline; }
 /* 고스트 신호는 시계를 숨기지 않고 바늘 방향만 바꾼다 (updateModeIndicator) */
 
 /* 안드로이드는 android-mode CSS가 화면을 전부 덮으므로 iOS 버전 설정이 무의미하다 */
-body.android-mode .setting-item:has(#iosVersionSelect),
 body.android-mode .side-menu-toggle-row:has(#iosVersionSelectMenu) { display: none; }
 
 /* One UI에는 계산기 위 헤더가 없다. 헤더의 두 아이콘이 하던 역할은
@@ -1024,14 +1023,6 @@ body.android-mode #calcIconPlusMinus::after {
 <div class="settings-modal" id="settingsModal">
     <div class="settings-content">
         <div class="settings-title">설정</div>
-        <div class="setting-item">
-            <div class="setting-label">iOS 버전</div>
-            <select class="version-select" id="iosVersionSelect" onchange="onIosVersionChange(this.value)">
-                <option value="auto">자동 (관객 기기 감지 · 기본)</option>
-                <option value="18">iOS 18</option>
-                <option value="26">iOS 26 이상</option>
-            </select>
-        </div>
         <div class="setting-item" id="dtSettingRow" style="display:none">
             <div class="setting-label">날짜 계산기<br><span style="font-size:11px;color:#636366">결과로 나올 시각</span></div>
             <select class="version-select" id="dtOffsetSelect" style="width:auto;padding:8px 30px 8px 12px;font-size:14px;border-radius:8px">
