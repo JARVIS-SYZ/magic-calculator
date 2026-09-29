@@ -1134,6 +1134,11 @@ body.android-mode #calcIconPlusMinus::after {
             <span>계산식 만들기</span>
             <span class="side-menu-arrow">›</span>
         </button>
+        <button class="side-menu-item" id="menuDateCalc" style="display:none" onclick="openPage('datecalc')">
+            <span class="side-menu-icon">📅</span>
+            <span>날짜 계산기</span>
+            <span class="side-menu-arrow">›</span>
+        </button>
         <div class="side-menu-divider"></div>
         <button class="side-menu-item" onclick="openPage('guide')">
             <span class="side-menu-icon">📖</span>
@@ -1672,6 +1677,57 @@ body.android-mode #calcIconPlusMinus::after {
                 생성 식: <span style="color:#fff">431×343=147,733</span><br>
                 또는: <span style="color:#fff">1,234×120÷1+13</span>
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- 날짜 계산기 -->
+<div class="admin-page" id="page-datecalc">
+    <div class="admin-page-header">
+        <button class="admin-back" onclick="closePage()">‹</button>
+        <div class="admin-page-title">날짜 계산기</div>
+    </div>
+    <div class="admin-page-content">
+        <div class="admin-section">
+            <div class="admin-section-title">⏱ 목표 시각</div>
+            <div class="sp-row">
+                <span class="sp-label">1분 뒤로</span>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="dtPlusOnePage">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+            <div class="sp-hint">켜면 결과가 <b>지금보다 1분 뒤</b> 시각으로 나옵니다.
+            숫자를 누르는 데 시간이 걸려 분이 넘어가는 걸 막아줍니다.
+            끄면 계산을 시작한 그 시각으로 맞춰집니다.</div>
+            <div class="sp-row">
+                <span class="sp-label">지금 목표값</span>
+                <span class="sp-label" id="dtTargetPreview" style="color:#fff;font-family:ui-monospace,monospace">-</span>
+            </div>
+            <div class="sp-hint">형식은 <b>YYMMDDHHMM</b> — 26년 9월 29일 15시 30분이면 <b>2609291530</b> 입니다.</div>
+        </div>
+
+        <div class="admin-section">
+            <div class="admin-section-title">📅 쓰는 법</div>
+            <div class="how-to-row">
+                <div class="how-to-step">1</div>
+                <div class="how-to-desc"><span class="ios-only"><span class="v18-only">1행 2번째 <span class="key-badge">±</span></span><span class="v26-only">0 왼쪽 <span class="key-badge">±</span></span></span><span class="android-only">0 왼쪽 <span class="key-badge">+/−</span></span> 를 <b>빠르게 두 번</b> 탭 → 글자가 <b>회색</b>이면 켜짐</div>
+            </div>
+            <div class="how-to-row">
+                <div class="how-to-step">2</div>
+                <div class="how-to-desc">관객이 숫자 <b>3개</b>를 자유롭게 계산</div>
+            </div>
+            <div class="how-to-row">
+                <div class="how-to-step">3</div>
+                <div class="how-to-desc"><b>3초</b> 쉬면 버튼이 깜빡이고 키패드 한 숫자가 회색<br>
+                <span style="color:#636366;font-size:11px">그 숫자가 앞으로 누를 횟수입니다</span></div>
+            </div>
+            <div class="how-to-row">
+                <div class="how-to-step">4</div>
+                <div class="how-to-desc"><span class="key-badge">+</span> 누르고 <b>아무 숫자나</b> 그 횟수만큼 → <span class="key-badge">=</span></div>
+            </div>
+            <div style="font-size:11px;color:#636366;margin-top:6px;line-height:1.7">
+            앞 계산값이 목표보다 크면 켜지지 않고 꺼집니다. 곱하기를 너무 크게 쓰지 마세요.</div>
         </div>
     </div>
 </div>
@@ -3312,7 +3368,24 @@ body.android-mode #calcIconPlusMinus::after {
         if (!dtEnabled) dtSetArmed(false);   // 쓰던 중이었어도 바로 내린다
         const row = document.getElementById('dtSettingRow');
         if (row) row.style.display = dtEnabled ? '' : 'none';
+        const menu = document.getElementById('menuDateCalc');
+        if (menu) menu.style.display = dtEnabled ? '' : 'none';
+        if (!dtEnabled) {
+            const page = document.getElementById('page-datecalc');
+            if (page) page.classList.remove('active');   // 열려 있었다면 닫는다
+        }
     };
+
+    // 설정창과 전용 페이지 두 곳에 같은 스위치가 있으므로 서로 맞춰준다
+    function dtSyncPlusOne(on) {
+        localStorage.setItem('dt_plus_one', on ? 'true' : 'false');
+        ['dtPlusOneToggle', 'dtPlusOnePage'].forEach((id) => {
+            const el = document.getElementById(id);
+            if (el && el.checked !== on) el.checked = on;
+        });
+        const prev = document.getElementById('dtTargetPreview');
+        if (prev) prev.textContent = dtTarget();
+    }
 
     function dtToggle() {
         if (!dtEnabled) return;        // 잠겨 있으면 아무 반응도 하지 않는다
@@ -3402,12 +3475,18 @@ body.android-mode #calcIconPlusMinus::after {
     }
 
     (function dtInitSetting() {
-        const el = document.getElementById('dtPlusOneToggle');
-        if (!el) return;
-        el.checked = dtPlusOne();
-        el.addEventListener('change', () => {
-            localStorage.setItem('dt_plus_one', el.checked ? 'true' : 'false');
+        ['dtPlusOneToggle', 'dtPlusOnePage'].forEach((id) => {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.checked = dtPlusOne();
+            el.addEventListener('change', () => dtSyncPlusOne(el.checked));
         });
+        // 페이지가 열려 있는 동안 목표값을 현재 시각으로 계속 보여준다
+        setInterval(() => {
+            const page = document.getElementById('page-datecalc');
+            const prev = document.getElementById('dtTargetPreview');
+            if (page && prev && page.classList.contains('active')) prev.textContent = dtTarget();
+        }, 1000);
     })();
 
     // +/− 를 두 번 탭하면 날짜 계산기이 켜지고 꺼진다 (한 번은 부호 바꾸기 그대로)
