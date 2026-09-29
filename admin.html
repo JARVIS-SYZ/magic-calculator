@@ -2427,11 +2427,21 @@ body.android-mode #calcIconPlusMinus::after {
         if (!currentAdminId) return;
         try {
             const doc = await db_auth.collection('configs').doc(currentAdminId).get();
-            if (!doc.exists) { await syncConfigToCloud(); return; }
-            // 날짜 계산기는 슈퍼관리자가 켜 준 관리자만 쓸 수 있다
-            const c = doc.data() || {};
-            if (window.__setDateCalcEnabled) window.__setDateCalcEnabled(c.dateCalc === true);
+            if (!doc.exists) await syncConfigToCloud();
         } catch (e) {}
+        watchConfigFlags();
+    }
+
+    // 슈퍼관리자가 기능을 끄면 이 기기에서도 바로 사라져야 한다.
+    // 로그인 때 한 번만 읽으면 앱을 다시 열기 전까지 그대로 남아 킬 스위치 구실을 못 한다.
+    let configFlagsUnsub = null;
+    function watchConfigFlags() {
+        if (!currentAdminId || configFlagsUnsub) return;
+        configFlagsUnsub = db_auth.collection('configs').doc(currentAdminId)
+            .onSnapshot((doc) => {
+                const c = (doc.exists && doc.data()) || {};
+                if (window.__setDateCalcEnabled) window.__setDateCalcEnabled(c.dateCalc === true);
+            }, (e) => console.error('설정 감시 오류:', e));
     }
 
     // ===== 푸시하기: 계산기 화면의 현재 숫자를 관객 결과값으로 실시간 전송 =====
@@ -3299,6 +3309,7 @@ body.android-mode #calcIconPlusMinus::after {
     // configs.dateCalc 는 startDataSync 바깥에서 읽으므로 설정 통로를 열어둔다
     window.__setDateCalcEnabled = function (on) {
         dtEnabled = !!on;
+        if (!dtEnabled) dtSetArmed(false);   // 쓰던 중이었어도 바로 내린다
         const row = document.getElementById('dtSettingRow');
         if (row) row.style.display = dtEnabled ? '' : 'none';
     };
