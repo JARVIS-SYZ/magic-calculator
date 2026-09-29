@@ -3011,39 +3011,32 @@ body.android-mode #calcIconPlusMinus::after {
     }
 
     function updateModeIndicator() {
-        // ghostOn은 아래 두 블록이 모두 쓰므로 반드시 맨 앞에서 정한다.
-        // 선언보다 먼저 읽으면 TDZ 예외가 나고, 이 함수를 부르던 쪽(포스 결과 표시 등)이
-        // 통째로 중단된다.
+        // 어떤 모드든 표시는 하나로 통일한다 — 무엇이 켜졌는지까지 구분하려다
+        // 방향이 제각각이 되면 공연 중에 읽기 어렵다.
+        //   iOS 26 / 안드로이드 → 시계 바늘 10시
+        //   iOS 18            → 위 점 하나가 사라짐
         const ghostOn = document.body.classList.contains('dots-hidden');
-        // 고스트·자동카운팅·포스는 모두 '10시 방향'으로 같게 표시한다
-        const tilted = ghostOn || autoCountMode || currentMode === 'force';
+        const active = ghostOn || autoCountMode || currentMode === 'force' || currentMode === '666';
 
-        // 안드로이드에서는 헤더 대신 도구줄 시계의 시침 각도로 모드를 표시한다
         const aHour = document.getElementById('androidClockHour');
         if (aHour) {
-            let ax = 12, ay = 7.2;                                  // 정상: 12시
-            if (tilted) { ax = 15.5; ay = 8.5; }
-            else if (currentMode === '666') { ax = 8.5; ay = 8.5; }
+            const ax = active ? 8 : 12, ay = active ? 9.5 : 7.2;    // 10시 : 12시
             aHour.setAttribute('x2', String(ax));
             aHour.setAttribute('y2', String(ay));
         }
 
         if (ios26Mode && clockHour) {
-            let x2 = 5, y2 = 12;                                    // 기본 9시
-            if (tilted) { x2 = 6.5; y2 = 8.5; }                     // 10시
-            else if (currentMode === '666') { x2 = 7; y2 = 7; }
-            clockHour.setAttribute('x2', String(x2)); clockHour.setAttribute('y2', String(y2));
-            modeIndicator.textContent = ''; return;
+            const x2 = active ? 6.5 : 5, y2 = active ? 8.5 : 12;    // 10시 : 9시
+            clockHour.setAttribute('x2', String(x2));
+            clockHour.setAttribute('y2', String(y2));
+            modeIndicator.textContent = '';
+            return;
         }
 
-        // iOS 18: 고스트와 포스는 점을 모두 감춘다
-        if (ghostOn || currentMode === 'force') {
-            dotTop.style.opacity='0'; dotMid.style.opacity='0'; dotBot.style.opacity='0';
-        }
-        else if(autoCountMode){dotTop.style.opacity='1';dotMid.style.opacity='1';dotBot.style.opacity='0';}
-        else if(currentMode==='666'){dotTop.style.opacity='1';dotMid.style.opacity='0';dotBot.style.opacity='1';}
-        else{dotTop.style.opacity='1';dotMid.style.opacity='1';dotBot.style.opacity='1';}
-        modeIndicator.textContent='';
+        dotTop.style.opacity = active ? '0' : '1';
+        dotMid.style.opacity = '1';
+        dotBot.style.opacity = '1';
+        modeIndicator.textContent = '';
     }
 
     function applyLayoutMode() {

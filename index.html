@@ -1251,45 +1251,31 @@ body.android-mode #calcIconPlusMinus::after {
     }
 
     function updateModeIndicator() {
-        // 안드로이드에서는 헤더 대신 도구줄 시계의 시침 각도로 모드를 표시한다
+        // 어떤 모드든 표시는 하나로 통일한다 — 무엇이 켜졌는지까지 구분하려다
+        // 방향이 제각각이 되면 공연 중에 읽기 어렵다.
+        //   iOS 26 / 안드로이드 → 시계 바늘 10시
+        //   iOS 18            → 위 점 하나가 사라짐
+        const ghostOn = document.body.classList.contains('dots-hidden');
+        const active = ghostOn || autoCountMode || currentMode === 'force' || currentMode === '666';
+
         const aHour = document.getElementById('androidClockHour');
         if (aHour) {
-            let ax = 12, ay = 7.2;                                  // 정상: 12시
-            if (autoCountMode) { ax = 15.5; ay = 8.5; }             // 자동카운팅: 1~2시
-            else if (currentMode === 'force') { ax = 15.5; ay = 15.5; } // 포스: 4~5시
-            else if (currentMode === '666') { ax = 8.5; ay = 8.5; }     // 666: 10~11시
+            const ax = active ? 8 : 12, ay = active ? 9.5 : 7.2;    // 10시 : 12시
             aHour.setAttribute('x2', String(ax));
             aHour.setAttribute('y2', String(ay));
         }
 
         if (ios26Mode && clockHour) {
-            let x2 = 5, y2 = 12;
-            if (autoCountMode) { x2 = 6.5; y2 = 8.5; }
-            else if (currentMode === 'force') { x2 = 7; y2 = 17; }
-            else if (currentMode === '666') { x2 = 7; y2 = 7; }
+            const x2 = active ? 6.5 : 5, y2 = active ? 8.5 : 12;    // 10시 : 9시
             clockHour.setAttribute('x2', String(x2));
             clockHour.setAttribute('y2', String(y2));
             modeIndicator.textContent = '';
             return;
         }
 
-        if (autoCountMode) {
-            dotTop.style.opacity = '1';
-            dotMid.style.opacity = '1';
-            dotBot.style.opacity = '0';
-        } else if (currentMode === 'force') {
-            dotTop.style.opacity = '0';
-            dotMid.style.opacity = '1';
-            dotBot.style.opacity = '1';
-        } else if (currentMode === '666') {
-            dotTop.style.opacity = '1';
-            dotMid.style.opacity = '0';
-            dotBot.style.opacity = '1';
-        } else {
-            dotTop.style.opacity = '1';
-            dotMid.style.opacity = '1';
-            dotBot.style.opacity = '1';
-        }
+        dotTop.style.opacity = active ? '0' : '1';
+        dotMid.style.opacity = '1';
+        dotBot.style.opacity = '1';
         modeIndicator.textContent = '';
     }
 
