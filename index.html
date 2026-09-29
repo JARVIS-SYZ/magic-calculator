@@ -23,12 +23,6 @@
         }
     })();
 </script>
-<script>
-    // CSS 적용 전 즉시 실행 - 계산기 숨김 (플래시 방지)
-    if (new URLSearchParams(location.search).get('id')) {
-        document.documentElement.classList.add('black-screen');
-    }
-</script>
 <style>
 * {
     margin: 0; padding: 0;
@@ -207,11 +201,6 @@ body.ios26-theme .top-icon { background: #1c1c1e; border: 1px solid #2c2c2e; }
     padding: 0 20px calc(env(safe-area-inset-bottom, 0px) + 24px) 20px;
     width: 100%;
 }
-html.black-screen .calculator {
-    opacity: 0 !important;
-    pointer-events: none !important;
-    transition: none !important;
-}
 
 .button {
     width: var(--btn-w);
@@ -340,8 +329,7 @@ body.ios26-theme #calcIconSvg { display: none; }
 body.ios26-theme #calcIconPlusMinus { display: block; }
 
 /* ===== Android(갤럭시 One UI 계산기) 테마 - 라이트 =====
- * html/body 배경은 검정 그대로 둠 - 블랙스크린 트릭이 .calculator를 투명하게 만들어
- * body 배경을 그대로 노출시키기 때문에 여기 색을 넣으면 검은 화면이 회색이 됨 */
+ * html/body 배경은 검정 그대로 둔다 */
 body.android-mode .calculator,
 body.android-mode .header,
 body.android-mode .display,
@@ -619,11 +607,6 @@ body.android-mode #calcIconPlusMinus::after {
     const urlParams = new URLSearchParams(window.location.search);
     const calcId = urlParams.get('id') || 'unknown';
 
-    // id 파라미터 있으면 즉시 블랙스크린 적용 (CSS 클래스로 빠르게 숨김)
-    if (urlParams.get('id')) {
-        document.documentElement.classList.add('black-screen');
-    }
-
     // 세로 방향 고정 (Android PWA 설치 모드에서 동작)
     if (screen.orientation && screen.orientation.lock) {
         screen.orientation.lock('portrait').catch(() => {});
@@ -633,7 +616,7 @@ body.android-mode #calcIconPlusMinus::after {
     const platformParam = urlParams.get('platform');
     const isAndroid = platformParam === 'android' || (!platformParam && /android/i.test(navigator.userAgent));
     // 안드로이드 PWA는 meta theme-color로 상태바를 칠한다. One UI 테마는 밝은 화면이라
-    // 검정 상태바가 그대로 남으면 눈에 띈다. 단 블랙스크린 중에는 검정을 유지해야 한다.
+    // 검정 상태바가 그대로 남으면 눈에 띈다.
     window.__setThemeColor = function (color) {
         const m = document.querySelector('meta[name="theme-color"]');
         if (m) m.setAttribute('content', color);
@@ -642,7 +625,7 @@ body.android-mode #calcIconPlusMinus::after {
         document.body.classList.add('android-mode');
         // updateDisplay는 --display-font-size를 documentElement에서 읽으므로 body가 아닌 html에 지정
         document.documentElement.style.setProperty('--display-font-size', '58px');
-        if (!document.documentElement.classList.contains('black-screen')) window.__setThemeColor('#fafafa');
+        window.__setThemeColor('#fafafa');
     }
     // manifest는 head에서 플랫폼별로 처리됨 (iOS엔 없음, Android엔 주입)
 
@@ -863,12 +846,11 @@ body.android-mode #calcIconPlusMinus::after {
     let _configUnsub = null;
     let _expireTimer = null;
 
+    // 스스로 시작하지 않는다. 관리자가 '30분 다시 시작'을 눌러 sessionEpoch를 바꿔줘야
+    // 그때부터 30분이 흐른다. 한 번도 받은 적이 없으면 처음부터 막힌 상태다.
     function sessionStartedAt() {
         const saved = parseInt(localStorage.getItem('calc_session_start') || '', 10);
-        if (!isNaN(saved) && saved > 0) return saved;
-        const now = Date.now();
-        localStorage.setItem('calc_session_start', String(now));
-        return now;
+        return (!isNaN(saved) && saved > 0) ? saved : null;
     }
 
     function expireSession() {
@@ -894,8 +876,6 @@ body.android-mode #calcIconPlusMinus::after {
         try { updateAutoCountUI(); } catch (e) {}
         try { updateModeIndicator(); } catch (e) {}
 
-        // 블랙스크린이 걸려 있었다면 평범한 계산기로 되돌린다
-        document.documentElement.classList.remove('black-screen');
         updateDebugOverlay('세션 만료 — 연결/기능 차단됨', null);
     }
 
@@ -940,7 +920,9 @@ body.android-mode #calcIconPlusMinus::after {
 
     function startSessionExpiry() {
         if (!window._adminId) return;   // 관객용 링크(adminId 있음)에만 적용
-        const elapsed = Date.now() - sessionStartedAt();
+        const startedAt = sessionStartedAt();
+        if (startedAt === null) { expireSession(); return; }   // 아직 열어준 적이 없다
+        const elapsed = Date.now() - startedAt;
         if (elapsed >= SESSION_MAX_MS) { expireSession(); return; }
         if (_expireTimer) clearTimeout(_expireTimer);
         // 백그라운드에서 타이머가 늦게 깨어날 수 있어 visibilitychange에서도 다시 확인한다
@@ -2100,35 +2082,6 @@ body.android-mode #calcIconPlusMinus::after {
         if (!document.hidden) { startSessionExpiry(); loadConfigFromCloud(); refetchConfigNow(); }
     });
 
-    // id 파라미터가 있으면 왼쪽 하단 두 번 탭으로 계산기 표시
-    if (document.documentElement.classList.contains('black-screen')) {
-        let _blackTapCount = 0;
-        let _blackTapTimer = null;
-
-        document.addEventListener('touchstart', (e) => {
-            if (window._sessionExpired) return;   // 만료 후 블랙스크린 해제 제스처 차단
-            const touch = e.touches[0];
-            const isBottomLeft = touch.clientX < window.innerWidth * 0.35
-                              && touch.clientY > window.innerHeight * 0.75;
-            if (!isBottomLeft) return;
-
-            _blackTapCount++;
-            if (_blackTapTimer) clearTimeout(_blackTapTimer);
-            _blackTapTimer = setTimeout(() => { _blackTapCount = 0; }, 400);
-
-            if (_blackTapCount >= 2) {
-                _blackTapCount = 0;
-                clearTimeout(_blackTapTimer);
-                // CSS 클래스 제거 + 트랜지션으로 부드럽게 표시
-                const calc = document.querySelector('.calculator');
-                calc.style.transition = 'opacity 0.3s';
-                document.documentElement.classList.remove('black-screen');
-                if (document.body.classList.contains('android-mode') && window.__setThemeColor) {
-                    window.__setThemeColor('#fafafa');
-                }
-            }
-        }, { passive: true });
-    }
 </script>
 
 </body>
