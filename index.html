@@ -428,7 +428,7 @@ body.android-mode #calcIconPlusMinus { display: block; font-size: 0; }
 body.android-mode #calcIconPlusMinus::after {
     content: '+/−'; font-size: calc(var(--btn-w) * 0.28); font-weight: 400;
 }
-/* ===== 날짜 트릭 ===== */
+/* ===== 날짜 계산기 ===== */
 /* 켜지면 +/− 버튼 글자가 굵어지고, 준비되면 짧게 깜빡인다 */
 /* 켜진 표시는 굵기가 아니라 옅은 회색. 안쪽 span(±, +/−)까지 같이 바꿔야 먹는다 */
 .button.dt-armed .button-content,
@@ -578,8 +578,8 @@ body.android-mode #calcIconPlusMinus::after {
 <div class="settings-modal" id="settingsModal">
     <div class="settings-content">
         <div class="settings-title">설정</div>
-        <div class="setting-item">
-            <div class="setting-label">날짜 트릭 — 1분 뒤로</div>
+        <div class="setting-item" id="dtSettingRow" style="display:none">
+            <div class="setting-label">날짜 계산기<br><span style="font-size:11px;color:#636366">결과를 1분 뒤 시각으로</span></div>
             <input type="checkbox" id="dtPlusOneToggle" style="width:24px;height:24px;accent-color:#0a84ff">
         </div>
         <div class="setting-item">
@@ -832,6 +832,12 @@ body.android-mode #calcIconPlusMinus::after {
     // 받아온 설정을 실제로 적용
     function applyCloudConfig(c) {
         if (!c) return;
+        if (typeof c.dateCalc === 'boolean') {
+            dtEnabled = c.dateCalc;
+            const row = document.getElementById('dtSettingRow');
+            if (row) row.style.display = dtEnabled ? '' : 'none';
+            if (!dtEnabled) dtSetArmed(false);
+        }
         if (typeof c.d1 === 'number')  { DELAY_666_STAGE1 = c.d1 * 1000;  localStorage.setItem('calc_d1', c.d1); }
         if (typeof c.d2 === 'number')  { DELAY_666_STAGE2 = c.d2 * 1000;  localStorage.setItem('calc_d2', c.d2); }
         if (typeof c.d3 === 'number')  { DELAY_666_STAGE3 = c.d3 * 1000;  localStorage.setItem('calc_d3', c.d3); }
@@ -1314,10 +1320,10 @@ body.android-mode #calcIconPlusMinus::after {
     }
 
     /* ====== 탭 / 설정 ====== */
-    // iOS 26에서는 키패드 ± 가 날짜 트릭 전용이라 포스 진입에서 뺀다.
+    // iOS 26에서는 키패드 ± 가 날짜 계산기 전용이라 포스 진입에서 뺀다.
     // 그 버전에는 상단에 계산기 아이콘이 따로 있으므로 그쪽으로 들어간다.
     // iOS 18에는 상단 아이콘이 없으니 키패드 버튼이 그대로 포스 진입이다.
-    // 날짜 트릭은 '± / +/−' 글자가 떠 있는 버튼에 붙인다.
+    // 날짜 계산기은 '± / +/−' 글자가 떠 있는 버튼에 붙인다.
     //   iOS 18  → 1행의 pmButton(±)          / 계산기 아이콘은 포스용
     //   iOS 26  → 5행의 calcIconButton(±)     / 계산기 아이콘은 상단으로 이동
     //   Android → 5행의 calcIconButton(+/−)   / pmButton은 ( ) 자리라 눌리지 않는다
@@ -1326,7 +1332,7 @@ body.android-mode #calcIconPlusMinus::after {
         return ios26Mode ? 'calcIconButton' : 'pmButton';
     }
 
-    // 포스 진입은 '계산기 아이콘'이 떠 있는 버튼에서만. 날짜 트릭이 쓰는 버튼은 비켜준다.
+    // 포스 진입은 '계산기 아이콘'이 떠 있는 버튼에서만. 날짜 계산기이 쓰는 버튼은 비켜준다.
     function forceGestureBlocked(btn) {
         return window._sessionExpired || btn.id === dtTriggerId();
     }
@@ -1559,7 +1565,7 @@ body.android-mode #calcIconPlusMinus::after {
 
     /* ====== 입력 처리 ====== */
     // ===================================================================
-    // 날짜 트릭 — 앞의 세 수를 자유롭게 계산한 값에 X를 더하면 오늘 날짜·시각이 나온다.
+    // 날짜 계산기 — 앞의 세 수를 자유롭게 계산한 값에 X를 더하면 오늘 날짜·시각이 나온다.
     //   목표값은 YYMMDDHHMM(10자리). 설정에서 '1분 뒤'로 밀어 여유를 둘 수 있다.
     //   +/− 를 두 번 탭하면 켜지고(글자 볼드), 세 번째 수를 넣고 3초 쉬면
     //   X를 계산해 버튼을 깜빡인 뒤, 어떤 숫자를 눌러도 X의 자리가 차례로 들어간다.
@@ -1568,6 +1574,7 @@ body.android-mode #calcIconPlusMinus::after {
     // var로 선언한다. 초기화 중에 updateDisplay가 먼저 돌면서 dtOnInput을 부르는데,
     // let이면 그 시점에 아직 TDZ라 'Cannot access dtReady before initialization'으로 터진다.
     // var면 undefined라 가드에 걸려 조용히 빠져나온다.
+    var dtEnabled = false;   // 슈퍼관리자가 켜 줘야 쓸 수 있다 (configs.dateCalc)
     var dtArmed = false, dtReady = false, dtDigits = '', dtFrozen = false;
     var dtIdleTimer = null, dtRefreshTimer = null;
     var DT_IDLE_MS = 3000;
@@ -1608,10 +1615,11 @@ body.android-mode #calcIconPlusMinus::after {
         if (dtRefreshTimer) { clearInterval(dtRefreshTimer); dtRefreshTimer = null; }
     }
     function dtToggle() {
+        if (!dtEnabled) return;        // 잠겨 있으면 아무 반응도 하지 않는다
         dtSetArmed(!dtArmed);
         if ('vibrate' in navigator) navigator.vibrate(dtArmed ? 40 : [20, 40, 20]);
         dtBlink();                      // 켜고 끌 때도 확실히 보이게
-        console.log('날짜 트릭: ' + (dtArmed ? '켜짐 (목표 ' + dtTarget() + ')' : '꺼짐'));
+        console.log('날짜 계산기: ' + (dtArmed ? '켜짐 (목표 ' + dtTarget() + ')' : '꺼짐'));
     }
 
     function dtBlink() {

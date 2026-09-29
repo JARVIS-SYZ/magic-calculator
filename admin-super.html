@@ -388,6 +388,7 @@ html, body {
                 </div>
                 <div class="code-actions">
                     <button class="code-revoke" onclick="toggleRevoke('${doc.id}', ${d.revoked ? 'true' : 'false'})">${d.revoked ? '해제' : '정지'}</button>
+                    <button class="code-reset" onclick="toggleDateCalc('${doc.id}', '${d.adminId || ''}', ${d.dateCalc ? 'true' : 'false'})">${d.dateCalc ? '📅 켜짐' : '📅 꺼짐'}</button>
                     ${useCount > 0 ? `<button class="code-reset" onclick="resetCode('${doc.id}')">초기화</button>` : ''}
                     <button class="code-delete" onclick="deleteCode('${doc.id}')">삭제</button>
                 </div>
@@ -514,6 +515,21 @@ html, body {
                 alert(`${codes.length}개 코드 등록 완료!\n\n${codes.join('\n')}`);
             }
         } catch(e) {
+            alert('오류: ' + e.message);
+        }
+    }
+
+    // ===== 날짜 계산기 기능 잠금 해제 =====
+    // 기본은 잠김. 여기서 켜 준 관리자만 쓸 수 있다.
+    // admin_codes 쪽이 원본이고, 앱들이 읽는 곳은 configs라 둘 다 기록한다.
+    async function toggleDateCalc(code, adminId, isOn) {
+        const on = !isOn;
+        if (!adminId) { alert('이 코드에는 adminId가 없습니다.'); return; }
+        if (!confirm('코드 ' + code + '의 날짜 계산기를 ' + (on ? '켤까요?' : '끌까요?'))) return;
+        try {
+            await db.collection('admin_codes').doc(code).update({ dateCalc: on });
+            await db.collection('configs').doc(adminId).set({ dateCalc: on }, { merge: true });
+        } catch (e) {
             alert('오류: ' + e.message);
         }
     }
