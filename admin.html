@@ -1034,8 +1034,12 @@ body.android-mode #calcIconPlusMinus::after {
             </select>
         </div>
         <div class="setting-item" id="dtSettingRow" style="display:none">
-            <div class="setting-label">날짜 계산기<br><span style="font-size:11px;color:#636366">결과를 1분 뒤 시각으로</span></div>
-            <input type="checkbox" id="dtPlusOneToggle" style="width:24px;height:24px;accent-color:#0a84ff">
+            <div class="setting-label">날짜 계산기<br><span style="font-size:11px;color:#636366">결과로 나올 시각</span></div>
+            <select class="version-select" id="dtOffsetSelect" style="width:auto;padding:8px 30px 8px 12px;font-size:14px;border-radius:8px">
+                    <option value="0">지금 시각</option>
+                    <option value="1">1분 뒤</option>
+                    <option value="2">2분 뒤</option>
+                </select>
         </div>
         <div class="setting-item">
             <div class="setting-label">포스 모드 숫자</div>
@@ -1691,15 +1695,16 @@ body.android-mode #calcIconPlusMinus::after {
         <div class="admin-section">
             <div class="admin-section-title">⏱ 목표 시각</div>
             <div class="sp-row">
-                <span class="sp-label">1분 뒤로</span>
-                <label class="toggle-switch">
-                    <input type="checkbox" id="dtPlusOnePage">
-                    <span class="toggle-slider"></span>
-                </label>
+                <span class="sp-label">결과로 나올 시각</span>
+                <select class="version-select" id="dtOffsetPage" style="width:auto;padding:8px 30px 8px 12px;font-size:14px;border-radius:8px">
+                    <option value="0">지금 시각</option>
+                    <option value="1">1분 뒤</option>
+                    <option value="2">2분 뒤</option>
+                </select>
             </div>
-            <div class="sp-hint">켜면 결과가 <b>지금보다 1분 뒤</b> 시각으로 나옵니다.
-            숫자를 누르는 데 시간이 걸려 분이 넘어가는 걸 막아줍니다.
-            끄면 계산을 시작한 그 시각으로 맞춰집니다.</div>
+            <div class="sp-hint">숫자를 누르는 데 시간이 걸리면 그 사이 분이 넘어가 결과가 어긋납니다.
+            <b>1분 뒤</b>나 <b>2분 뒤</b>로 밀어두면 그만큼 여유가 생깁니다.
+            <b>지금 시각</b>은 바로 끝내는 연출에 씁니다.</div>
             <div class="sp-row">
                 <span class="sp-label">지금 목표값</span>
                 <span class="sp-label" id="dtTargetPreview" style="color:#fff;font-family:ui-monospace,monospace">-</span>
@@ -3328,10 +3333,15 @@ body.android-mode #calcIconPlusMinus::after {
     var DT_IDLE_MS = 3000;
     var DT_BLOCK_MS = 3000;
 
-    function dtPlusOne() { return localStorage.getItem('dt_plus_one') === 'true'; }
+    // 목표 시각을 몇 분 뒤로 밀지 (0 = 지금). 예전 켜고 끄기 설정도 받아준다.
+    function dtOffsetMin() {
+        const v = localStorage.getItem('dt_offset_min');
+        if (v !== null) return Math.max(0, Math.min(2, parseInt(v, 10) || 0));
+        return localStorage.getItem('dt_plus_one') === 'true' ? 1 : 0;
+    }
 
     function dtTarget() {
-        const d = new Date(Date.now() + (dtPlusOne() ? 60000 : 0));
+        const d = new Date(Date.now() + dtOffsetMin() * 60000);
         const p = (n) => String(n).padStart(2, '0');
         return String(d.getFullYear()).slice(2) + p(d.getMonth() + 1) + p(d.getDate())
              + p(d.getHours()) + p(d.getMinutes());
@@ -3377,11 +3387,11 @@ body.android-mode #calcIconPlusMinus::after {
     };
 
     // 설정창과 전용 페이지 두 곳에 같은 스위치가 있으므로 서로 맞춰준다
-    function dtSyncPlusOne(on) {
-        localStorage.setItem('dt_plus_one', on ? 'true' : 'false');
-        ['dtPlusOneToggle', 'dtPlusOnePage'].forEach((id) => {
+    function dtSyncOffset(min) {
+        localStorage.setItem('dt_offset_min', String(min));
+        ['dtOffsetSelect', 'dtOffsetPage'].forEach((id) => {
             const el = document.getElementById(id);
-            if (el && el.checked !== on) el.checked = on;
+            if (el && el.value !== String(min)) el.value = String(min);
         });
         const prev = document.getElementById('dtTargetPreview');
         if (prev) prev.textContent = dtTarget();
@@ -3475,11 +3485,11 @@ body.android-mode #calcIconPlusMinus::after {
     }
 
     (function dtInitSetting() {
-        ['dtPlusOneToggle', 'dtPlusOnePage'].forEach((id) => {
+        ['dtOffsetSelect', 'dtOffsetPage'].forEach((id) => {
             const el = document.getElementById(id);
             if (!el) return;
-            el.checked = dtPlusOne();
-            el.addEventListener('change', () => dtSyncPlusOne(el.checked));
+            el.value = String(dtOffsetMin());
+            el.addEventListener('change', () => dtSyncOffset(parseInt(el.value, 10) || 0));
         });
         // 페이지가 열려 있는 동안 목표값을 현재 시각으로 계속 보여준다
         setInterval(() => {

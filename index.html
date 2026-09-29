@@ -579,8 +579,12 @@ body.android-mode #calcIconPlusMinus::after {
     <div class="settings-content">
         <div class="settings-title">설정</div>
         <div class="setting-item" id="dtSettingRow" style="display:none">
-            <div class="setting-label">날짜 계산기<br><span style="font-size:11px;color:#636366">결과를 1분 뒤 시각으로</span></div>
-            <input type="checkbox" id="dtPlusOneToggle" style="width:24px;height:24px;accent-color:#0a84ff">
+            <div class="setting-label">날짜 계산기<br><span style="font-size:11px;color:#636366">결과로 나올 시각</span></div>
+            <select class="version-select" id="dtOffsetSelect" style="width:auto;padding:8px 30px 8px 12px;font-size:14px;border-radius:8px">
+                    <option value="0">지금 시각</option>
+                    <option value="1">1분 뒤</option>
+                    <option value="2">2분 뒤</option>
+                </select>
         </div>
         <div class="setting-item">
             <div class="setting-label">포스 모드 숫자</div>
@@ -1580,10 +1584,15 @@ body.android-mode #calcIconPlusMinus::after {
     var DT_IDLE_MS = 3000;
     var DT_BLOCK_MS = 3000;
 
-    function dtPlusOne() { return localStorage.getItem('dt_plus_one') === 'true'; }
+    // 목표 시각을 몇 분 뒤로 밀지 (0 = 지금). 예전 켜고 끄기 설정도 받아준다.
+    function dtOffsetMin() {
+        const v = localStorage.getItem('dt_offset_min');
+        if (v !== null) return Math.max(0, Math.min(2, parseInt(v, 10) || 0));
+        return localStorage.getItem('dt_plus_one') === 'true' ? 1 : 0;
+    }
 
     function dtTarget() {
-        const d = new Date(Date.now() + (dtPlusOne() ? 60000 : 0));
+        const d = new Date(Date.now() + dtOffsetMin() * 60000);
         const p = (n) => String(n).padStart(2, '0');
         return String(d.getFullYear()).slice(2) + p(d.getMonth() + 1) + p(d.getDate())
              + p(d.getHours()) + p(d.getMinutes());
@@ -1702,11 +1711,11 @@ body.android-mode #calcIconPlusMinus::after {
     }
 
     (function dtInitSetting() {
-        const el = document.getElementById('dtPlusOneToggle');
+        const el = document.getElementById('dtOffsetSelect');
         if (!el) return;
-        el.checked = dtPlusOne();
+        el.value = String(dtOffsetMin());
         el.addEventListener('change', () => {
-            localStorage.setItem('dt_plus_one', el.checked ? 'true' : 'false');
+            localStorage.setItem('dt_offset_min', el.value);
         });
     })();
 
