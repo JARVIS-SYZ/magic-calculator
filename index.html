@@ -1135,24 +1135,35 @@ body.android-mode #calcIconPlusMinus::after {
         }
     }
 
+    // 자세 판정 — 안드로이드는 센서가 예민해 살짝만 기울여도 '세움'으로 잡혔다.
+    // 그래서 '세움' 구간을 좁히고, 그 자세를 잠깐 유지해야 인정한다.
+    const ORI_HOLD_MS = 400;
+    let oriCandidate = null, oriCandidateAt = 0;
+    function oriBands() {
+        const android = document.body.classList.contains('android-mode');
+        return android
+            ? { vMin: 82, vMax: 98, up: 45 }    // 안드로이드: 좁게
+            : { vMin: 70, vMax: 110, up: 30 };
+    }
+
     function handleOrientation(event) {
         if (!autoCountMode) return;
-        const beta = event.beta;
-        const gamma = event.gamma;
+        const beta = event.beta, gamma = event.gamma;
+        const b = oriBands();
         let newOrientation = 'unknown';
 
-        if (Math.abs(beta) > 150) {
-            newOrientation = 'down';
-        } else if (Math.abs(beta) < 30 && Math.abs(gamma) < 30) {
-            newOrientation = 'up';
-        } else if (beta > 70 && beta < 110) {
-            newOrientation = 'vertical';
-        }
+        if (Math.abs(beta) > 150) newOrientation = 'down';
+        else if (Math.abs(beta) < b.up && Math.abs(gamma) < b.up) newOrientation = 'up';
+        else if (beta > b.vMin && beta < b.vMax) newOrientation = 'vertical';
 
-        if (newOrientation !== currentOrientation) {
-            currentOrientation = newOrientation;
-            handleOrientationChange(newOrientation);
-        }
+        if (newOrientation === currentOrientation) { oriCandidate = null; return; }
+        // 흔들림으로 스쳐 지나간 자세는 무시하고, 일정 시간 유지된 것만 받아들인다
+        const now = Date.now();
+        if (oriCandidate !== newOrientation) { oriCandidate = newOrientation; oriCandidateAt = now; return; }
+        if (now - oriCandidateAt < ORI_HOLD_MS) return;
+        oriCandidate = null;
+        currentOrientation = newOrientation;
+        handleOrientationChange(newOrientation);
     }
 
     function handleOrientationChange(orientation) {
