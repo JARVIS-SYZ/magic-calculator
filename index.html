@@ -1211,6 +1211,9 @@ body.android-mode #calcIconPlusMinus::after {
     function toggleAutoCountMode() {
         autoCountMode = !autoCountMode;
         if (autoCountMode) {
+            // 이전 자세가 남아 있으면 '변화'가 없어 다시 켜도 시작되지 않는다.
+            // 켤 때마다 초기화해서 지금 자세부터 새로 판정하게 한다.
+            currentOrientation = 'unknown';
             requestMotionPermission();
         } else {
             stopOrientationDetection();

@@ -2992,7 +2992,9 @@ body.android-mode #calcIconPlusMinus::after {
     function stopCounting() { if(countingInterval){clearInterval(countingInterval);countingInterval=null;vibrateDevice();} }
     function toggleAutoCountMode() {
         autoCountMode = !autoCountMode;
-        if (autoCountMode) requestMotionPermission(); else { stopOrientationDetection(); currentOrientation='unknown'; }
+        // 이전 자세가 남아 있으면 '변화'가 없어 다시 켜도 시작되지 않는다.
+        if (autoCountMode) { currentOrientation = 'unknown'; requestMotionPermission(); }
+        else { stopOrientationDetection(); currentOrientation='unknown'; }
         updateAutoCountUI(); vibrateDevice();
     }
     function updateAutoCountUI() { document.body.classList.toggle('auto-count-mode', autoCountMode); updateModeIndicator(); }
