@@ -814,7 +814,8 @@ body.android-mode #calcIconPlusMinus::after {
 .sp-stage-wrap .sp-empty { padding:40px 16px; text-align:center; color:#636366; font-size:13px; }
 .sp-stage-wrap.picking { cursor:crosshair; outline:2px solid #ffd60a; outline-offset:-2px; }
 
-.sp-overlay-text { position:absolute; transform:translate(-50%,-50%); white-space:nowrap; font-weight:600; }
+/* 지정한 지점이 글자의 왼쪽 끝이다 — 길어져도 왼쪽으로 넘어가지 않고 오른쪽으로만 늘어난다 */
+.sp-overlay-text { position:absolute; transform:translate(0,-50%); white-space:nowrap; font-weight:600; }
 .sp-el { position:absolute; box-sizing:border-box; }
 .sp-el.selected { outline:2px dashed #0a84ff; outline-offset:1px; }
 #spPreviewBox { }
@@ -860,7 +861,7 @@ body.android-mode #calcIconPlusMinus::after {
 }
 #screenPickExit { position:absolute; top:0; left:0; width:72px; height:72px; z-index:4; }
 #spLiveText {
-    position:absolute; transform:translate(-50%,-50%);
+    position:absolute; transform:translate(0,-50%);
     white-space:nowrap; font-weight:600; z-index:2;
     opacity:0; transition:opacity 0.15s;
 }
@@ -4664,7 +4665,7 @@ body.android-mode #calcIconPlusMinus::after {
 
         // 편집 대상 탭
         const HINTS = {
-            text: '글자를 <b>직접 집어서</b> 끌어 놓으세요. 빈 곳을 눌러도 움직이지 않습니다.',
+            text: '글자를 <b>직접 집어서</b> 끌어 놓으세요. 지정한 자리가 글자의 <b>왼쪽 끝</b>이라, 길어지면 오른쪽으로만 늘어납니다.',
             tap: '터치 영역을 <b>직접 집어서</b> 계산기 아이콘 위로 끌어 놓으세요. 공연 화면에서는 보이지 않습니다.'
         };
         document.querySelectorAll('.sp-tab').forEach((tab) => {
