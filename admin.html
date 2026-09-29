@@ -2955,13 +2955,12 @@ body.android-mode #calcIconPlusMinus::after {
     }
     // 자세 판정 — 안드로이드는 센서가 예민해 살짝만 기울여도 '세움'으로 잡혔다.
     // 그래서 '세움' 구간을 좁히고, 그 자세를 잠깐 유지해야 인정한다.
-    const ORI_HOLD_MS = 400;
+    // 완전히 세웠을 때만 시작하고, 완전히 눕혔을 때만 멈춘다.
+    // 그 사이 어중간한 각도는 '모름'이라 아무 일도 일어나지 않는다.
+    const ORI_HOLD_MS = 100;
     let oriCandidate = null, oriCandidateAt = 0;
     function oriBands() {
-        const android = document.body.classList.contains('android-mode');
-        return android
-            ? { vMin: 82, vMax: 98, up: 45 }    // 안드로이드: 좁게
-            : { vMin: 70, vMax: 110, up: 30 };
+        return { vMin: 85, vMax: 95, up: 15 };
     }
 
     function handleOrientation(event) {
