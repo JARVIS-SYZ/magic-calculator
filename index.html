@@ -1315,7 +1315,9 @@ body.android-mode #calcIconPlusMinus::after {
     }
 
     // 포스 진입은 '계산기 아이콘'이 떠 있는 버튼에서만. 날짜 계산기이 쓰는 버튼은 비켜준다.
+    // 안드로이드에서는 메뉴에서 감춰만 둘 게 아니라 제스처 자체를 받지 않는다 (666과 같다).
     function forceGestureBlocked(btn) {
+        if (document.body.classList.contains('android-mode')) return true;
         return window._sessionExpired || btn.id === dtTriggerId();
     }
 
@@ -1572,8 +1574,10 @@ body.android-mode #calcIconPlusMinus::after {
     // let이면 그 시점에 아직 TDZ라 'Cannot access dtReady before initialization'으로 터진다.
     // var면 undefined라 가드에 걸려 조용히 빠져나온다.
     var dtEnabled = false;   // 슈퍼관리자가 켜 줘야 쓸 수 있다 (configs.dateCalc)
-    var dtArmed = false, dtReady = false, dtDigits = '', dtFrozen = false;
-    var dtIdleTimer = null, dtRefreshTimer = null;
+    var dtArmed = false, dtReady = false, dtDigits = '';
+    var dtIdleTimer = null;
+    // 목표 시각의 기준 — 세 번째 수가 들어온 그 순간으로 못박는다 (0이면 아직 없음)
+    var dtAnchorAt = 0;
     var DT_IDLE_MS = 3000;
     var DT_BLOCK_MS = 3000;
 
@@ -1585,12 +1589,14 @@ body.android-mode #calcIconPlusMinus::after {
         return 0;
     }
 
-    function dtTarget() {
-        const d = new Date(Date.now() + dtOffsetMin() * 60000);
+    function dtTargetAt(base) {
+        const d = new Date(base + dtOffsetMin() * 60000);
         const p = (n) => String(n).padStart(2, '0');
         return String(d.getFullYear()).slice(2) + p(d.getMonth() + 1) + p(d.getDate())
              + p(d.getHours()) + p(d.getMinutes());
     }
+    // 기준 시각이 잡혀 있으면 그 시각으로, 아직이면 지금으로 계산한다
+    function dtTarget() { return dtTargetAt(dtAnchorAt || Date.now()); }
 
     function dtButton() { return document.getElementById('calcIconButton'); }
 
@@ -1611,11 +1617,10 @@ body.android-mode #calcIconPlusMinus::after {
 
     function dtSetArmed(on) {
         dtArmed = !!on;
-        if (!dtArmed) { dtReady = false; dtDigits = ''; dtFrozen = false; dtClearHint(); }
+        if (!dtArmed) { dtReady = false; dtDigits = ''; dtAnchorAt = 0; dtClearHint(); }
         const b = dtButton();
         if (b) b.classList.toggle('dt-armed', dtArmed);
         if (dtIdleTimer) { clearTimeout(dtIdleTimer); dtIdleTimer = null; }
-        if (dtRefreshTimer) { clearInterval(dtRefreshTimer); dtRefreshTimer = null; }
     }
     function dtToggle() {
         if (!dtEnabled) return;        // 잠겨 있으면 아무 반응도 하지 않는다
@@ -1657,6 +1662,9 @@ body.android-mode #calcIconPlusMinus::after {
         const expr = String(fullExpression || '').replace(/,/g, '');
         if (dtOperandCount(expr) < 3) return;
         if (/[+×÷−.]$/.test(expr)) return;      // 연산자로 끝나면 아직 입력 중
+        // 목표 시각은 세 번째 수를 입력한 이 순간으로 정한다. 3초를 기다리는 사이에
+        // 분이 넘어가도, 그 뒤 X를 채워 넣는 동안에도 목표는 움직이지 않는다.
+        dtAnchorAt = Date.now();
         dtIdleTimer = setTimeout(dtActivate, DT_IDLE_MS);
     }
 
@@ -1665,24 +1673,14 @@ body.android-mode #calcIconPlusMinus::after {
         if (!x) { dtBlink(); dtSetArmed(false); return; }   // 더할 수 없는 계산값
         dtDigits = x;
         dtReady = true;
-        dtFrozen = false;
         dtBlink();
         dtShowHint(x.length);
-        // 첫 자리를 누르기 전까지는 분이 바뀌어도 맞도록 다시 계산한다
-        if (dtRefreshTimer) clearInterval(dtRefreshTimer);
-        dtRefreshTimer = setInterval(() => {
-            if (!dtReady || dtFrozen) return;
-            const nx = dtComputeX();
-            if (nx) { dtDigits = nx; dtShowHint(nx.length); }
-        }, 5000);
     }
 
     // handleNumber 첫머리에서 호출 — 누른 숫자를 X의 다음 자리로 바꿔치기한다
     function dtSwapDigit(num) {
         if (!dtReady || !dtDigits.length) return num;
         if (!/^[0-9]$/.test(String(num))) return num;   // 소수점 등은 그대로
-        dtFrozen = true;                                 // 첫 자리부터 목표값 고정
-        if (dtRefreshTimer) { clearInterval(dtRefreshTimer); dtRefreshTimer = null; }
         const d = dtDigits[0];
         dtDigits = dtDigits.slice(1);
         // 힌트는 3초 시점에 한 번만 띄운다. 누를 때마다 바뀌면 오히려 눈에 띈다.

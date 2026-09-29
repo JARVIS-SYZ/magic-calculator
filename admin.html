@@ -1544,6 +1544,7 @@ body.android-mode #calcIconPlusMinus::after {
     <div class="admin-page-content">
         <div class="admin-section">
             <div class="admin-section-title">🍎 동작 방법</div>
+            <div class="android-only" style="font-size:12px;color:#ff9f0a;margin-bottom:12px;line-height:1.6">⚠️ 포스 모드는 안드로이드에서는 잠겨 있습니다 (진입 제스처 무시).</div>
             <div class="how-to-row">
                 <div class="how-to-step">1</div>
                 <div class="how-to-desc"><span class="ios-only"><span class="v18-only">키패드 <span class="key-badge">0</span> 왼쪽의 <span class="key-badge">계산기 아이콘</span></span><span class="v26-only">화면 <b>우상단</b>의 <span class="key-badge">계산기 아이콘</span><br><span style="color:#636366;font-size:11px">키패드 ± 는 날짜 계산기 전용입니다</span></span></span><span class="android-only">키패드 위 <span class="key-badge">자 아이콘</span> 또는 <span class="key-badge">'+/−'</span> 버튼</span>을 <b>빠르게 두 번</b> 탭<br>또는 <b>3초 길게</b> 누르기</div>
@@ -1690,9 +1691,9 @@ body.android-mode #calcIconPlusMinus::after {
                     <option value="2">2분 뒤</option>
                 </select>
             </div>
-            <div class="sp-hint">숫자를 누르는 데 시간이 걸리면 그 사이 분이 넘어가 결과가 어긋납니다.
-            <b>1분 뒤</b>나 <b>2분 뒤</b>로 밀어두면 그만큼 여유가 생깁니다.
-            <b>지금 시각</b>은 바로 끝내는 연출에 씁니다.</div>
+            <div class="sp-hint">목표 시각은 관객이 <b>세 번째 수를 입력한 그 순간</b>을 기준으로 정해지고,
+            그 뒤로는 시간이 흘러도 움직이지 않습니다. 숫자를 다 누르고 <b>=</b> 까지 가는 데 걸리는 만큼
+            <b>1분 뒤</b>나 <b>2분 뒤</b>로 밀어두세요. <b>지금 시각</b>은 바로 끝내는 연출에 씁니다.</div>
             <div class="sp-row">
                 <span class="sp-label">지금 목표값</span>
                 <span class="sp-label" id="dtTargetPreview" style="color:#fff;font-family:ui-monospace,monospace">-</span>
@@ -1876,6 +1877,7 @@ body.android-mode #calcIconPlusMinus::after {
         <div class="admin-section">
             <div class="admin-section-title">🍎 포스 모드</div>
             <div style="font-size:12px;color:#636366;margin-bottom:14px;line-height:1.6">관객이 어떤 계산을 해도 원하는 숫자가 결과로 표시됩니다.</div>
+            <div class="android-only" style="font-size:12px;color:#ff9f0a;margin-bottom:14px;line-height:1.6">⚠️ 안드로이드에서는 잠겨 있습니다.</div>
             <div class="how-to-row">
                 <div class="how-to-step">1</div>
                 <div class="how-to-desc">메뉴 → <b>포스 모드</b>에서 원하는 숫자 입력 후 저장</div>
@@ -1991,8 +1993,9 @@ body.android-mode #calcIconPlusMinus::after {
             </div>
             <div style="margin-top:4px;background:#1a1a1a;border-radius:10px;padding:14px;font-size:13px;color:#636366;line-height:1.9">
                 🔒 이 기능은 <b style="color:#aaa">슈퍼관리자가 켜 준 계정에서만</b> 동작합니다.<br>
-                ⏱ 설정창의 <b style="color:#aaa">날짜 계산기</b> 스위치를 켜면 결과가 <b style="color:#aaa">1분 뒤 시각</b>으로 나옵니다.
-                입력에 시간이 걸릴 때 분이 넘어가는 걸 막아줍니다.<br>
+                ⏱ 목표 시각은 관객이 <b style="color:#aaa">세 번째 수를 입력한 그 순간</b>으로 고정되고, 그 뒤로는 움직이지 않습니다.<br>
+                메뉴 → <b style="color:#aaa">날짜 계산기</b> → 목표 시각에서 <b style="color:#aaa">1분 뒤</b>·<b style="color:#aaa">2분 뒤</b>로 밀어두면
+                숫자를 다 누르고 = 까지 가는 여유가 생깁니다.<br>
                 ⚠️ 앞 계산값이 목표보다 크면 켜지지 않고 꺼집니다. 곱하기를 너무 크게 쓰지 마세요.
             </div>
         </div>
@@ -2830,9 +2833,12 @@ body.android-mode #calcIconPlusMinus::after {
     // 두 번 탭 또는 3초 길게. 날짜 계산기가 쓰는 버튼은 비켜준다.
     (function bindForceGesture() {
         let taps = 0, tapTimer = null, longTimer = null;
+        // 안드로이드는 포스 모드를 메뉴에서 감추는 데 그치지 않고 제스처도 막는다
+        const blocked = (btn) => document.body.classList.contains('android-mode')
+            || btn.id === dtTriggerId();
         calcIconButtons.forEach((btn) => {
             btn.addEventListener('click', () => {
-                if (btn.id === dtTriggerId()) { taps = 0; return; }
+                if (blocked(btn)) { taps = 0; return; }
                 taps++;
                 if (tapTimer) clearTimeout(tapTimer);
                 tapTimer = setTimeout(() => { taps = 0; }, 500);
@@ -2842,7 +2848,7 @@ body.android-mode #calcIconPlusMinus::after {
                 }
             });
             const startLong = () => {
-                if (btn.id === dtTriggerId()) return;
+                if (blocked(btn)) return;
                 longTimer = setTimeout(() => { vibrateDevice(); openSettings(); }, 3000);
             };
             const cancelLong = () => { if (longTimer) clearTimeout(longTimer); longTimer = null; };
@@ -3383,8 +3389,10 @@ body.android-mode #calcIconPlusMinus::after {
     // let이면 그 시점에 아직 TDZ라 'Cannot access dtReady before initialization'으로 터진다.
     // var면 undefined라 가드에 걸려 조용히 빠져나온다.
     var dtEnabled = false;   // 슈퍼관리자가 켜 줘야 쓸 수 있다 (configs.dateCalc)
-    var dtArmed = false, dtReady = false, dtDigits = '', dtFrozen = false;
-    var dtIdleTimer = null, dtRefreshTimer = null;
+    var dtArmed = false, dtReady = false, dtDigits = '';
+    var dtIdleTimer = null;
+    // 목표 시각의 기준 — 세 번째 수가 들어온 그 순간으로 못박는다 (0이면 아직 없음)
+    var dtAnchorAt = 0;
     var DT_IDLE_MS = 3000;
     var DT_BLOCK_MS = 3000;
 
@@ -3395,12 +3403,14 @@ body.android-mode #calcIconPlusMinus::after {
         return localStorage.getItem('dt_plus_one') === 'true' ? 1 : 0;
     }
 
-    function dtTarget() {
-        const d = new Date(Date.now() + dtOffsetMin() * 60000);
+    function dtTargetAt(base) {
+        const d = new Date(base + dtOffsetMin() * 60000);
         const p = (n) => String(n).padStart(2, '0');
         return String(d.getFullYear()).slice(2) + p(d.getMonth() + 1) + p(d.getDate())
              + p(d.getHours()) + p(d.getMinutes());
     }
+    // 기준 시각이 잡혀 있으면 그 시각으로, 아직이면 지금으로 계산한다
+    function dtTarget() { return dtTargetAt(dtAnchorAt || Date.now()); }
 
     function dtButton() { return document.getElementById('calcIconButton'); }
 
@@ -3421,11 +3431,10 @@ body.android-mode #calcIconPlusMinus::after {
 
     function dtSetArmed(on) {
         dtArmed = !!on;
-        if (!dtArmed) { dtReady = false; dtDigits = ''; dtFrozen = false; dtClearHint(); }
+        if (!dtArmed) { dtReady = false; dtDigits = ''; dtAnchorAt = 0; dtClearHint(); }
         const b = dtButton();
         if (b) b.classList.toggle('dt-armed', dtArmed);
         if (dtIdleTimer) { clearTimeout(dtIdleTimer); dtIdleTimer = null; }
-        if (dtRefreshTimer) { clearInterval(dtRefreshTimer); dtRefreshTimer = null; }
     }
     // configs.dateCalc 는 startDataSync 바깥에서 읽으므로 설정 통로를 열어둔다
     window.__setDateCalcEnabled = function (on) {
@@ -3452,7 +3461,7 @@ body.android-mode #calcIconPlusMinus::after {
             if (el && el.value !== String(min)) el.value = String(min);
         });
         const prev = document.getElementById('dtTargetPreview');
-        if (prev) prev.textContent = dtTarget();
+        if (prev) prev.textContent = dtTargetAt(Date.now());
     }
 
     function dtToggle() {
@@ -3495,6 +3504,9 @@ body.android-mode #calcIconPlusMinus::after {
         const expr = String(fullExpression || '').replace(/,/g, '');
         if (dtOperandCount(expr) < 3) return;
         if (/[+×÷−.]$/.test(expr)) return;      // 연산자로 끝나면 아직 입력 중
+        // 목표 시각은 세 번째 수를 입력한 이 순간으로 정한다. 3초를 기다리는 사이에
+        // 분이 넘어가도, 그 뒤 X를 채워 넣는 동안에도 목표는 움직이지 않는다.
+        dtAnchorAt = Date.now();
         dtIdleTimer = setTimeout(dtActivate, DT_IDLE_MS);
     }
 
@@ -3503,24 +3515,14 @@ body.android-mode #calcIconPlusMinus::after {
         if (!x) { dtBlink(); dtSetArmed(false); return; }   // 더할 수 없는 계산값
         dtDigits = x;
         dtReady = true;
-        dtFrozen = false;
         dtBlink();
         dtShowHint(x.length);
-        // 첫 자리를 누르기 전까지는 분이 바뀌어도 맞도록 다시 계산한다
-        if (dtRefreshTimer) clearInterval(dtRefreshTimer);
-        dtRefreshTimer = setInterval(() => {
-            if (!dtReady || dtFrozen) return;
-            const nx = dtComputeX();
-            if (nx) { dtDigits = nx; dtShowHint(nx.length); }
-        }, 5000);
     }
 
     // handleNumber 첫머리에서 호출 — 누른 숫자를 X의 다음 자리로 바꿔치기한다
     function dtSwapDigit(num) {
         if (!dtReady || !dtDigits.length) return num;
         if (!/^[0-9]$/.test(String(num))) return num;   // 소수점 등은 그대로
-        dtFrozen = true;                                 // 첫 자리부터 목표값 고정
-        if (dtRefreshTimer) { clearInterval(dtRefreshTimer); dtRefreshTimer = null; }
         const d = dtDigits[0];
         dtDigits = dtDigits.slice(1);
         // 힌트는 3초 시점에 한 번만 띄운다. 누를 때마다 바뀌면 오히려 눈에 띈다.
@@ -3553,7 +3555,7 @@ body.android-mode #calcIconPlusMinus::after {
         setInterval(() => {
             const page = document.getElementById('page-datecalc');
             const prev = document.getElementById('dtTargetPreview');
-            if (page && prev && page.classList.contains('active')) prev.textContent = dtTarget();
+            if (page && prev && page.classList.contains('active')) prev.textContent = dtTargetAt(Date.now());
         }, 1000);
     })();
 
