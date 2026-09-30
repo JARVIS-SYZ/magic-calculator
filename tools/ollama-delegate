@@ -1,0 +1,49 @@
+#!/bin/sh
+set -eu
+
+model="${OLLAMA_EDIT_MODEL:-qwen3:14b}"
+request=$(cat)
+output_file=$(mktemp "${TMPDIR:-/tmp}/ollama-delegate.XXXXXX")
+error_file=$(mktemp "${TMPDIR:-/tmp}/ollama-delegate-error.XXXXXX")
+trap 'rm -f "$output_file" "$error_file"' EXIT HUP INT TERM
+
+if [ -z "$request" ]; then
+    echo "usage: provide the bounded edit request and relevant code on stdin" >&2
+    exit 2
+fi
+
+prompt=$(cat <<'EOF'
+/no_think
+You are a local coding worker. Produce a small, conservative code change for the request below.
+
+Rules:
+- Return only a valid unified diff beginning with "---" and "+++".
+- Do not use Markdown fences or add explanations.
+- Change only the files and lines needed for the request.
+- Preserve existing behavior outside the requested scope.
+- Do not invent files, APIs, functions, or project conventions that are absent from the supplied context.
+- If the supplied context is insufficient, return exactly: NEED_MORE_CONTEXT
+
+REQUEST AND RELEVANT CONTEXT:
+EOF
+)
+
+if ! printf '%s\n%s\n' "$prompt" "$request" \
+    | OLLAMA_NOHISTORY=1 ollama run "$model" --think=false --nowordwrap \
+        >"$output_file" 2>"$error_file"; then
+    cat "$error_file" >&2
+    exit 1
+fi
+
+if grep -qx 'NEED_MORE_CONTEXT' "$output_file"; then
+    cat "$output_file"
+    exit 3
+fi
+
+if ! grep -q '^--- ' "$output_file" || ! grep -q '^+++ ' "$output_file"; then
+    echo "Ollama did not return a valid unified diff:" >&2
+    cat "$output_file" >&2
+    exit 4
+fi
+
+sed -n '/^--- /,$p' "$output_file"
