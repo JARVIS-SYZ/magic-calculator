@@ -381,11 +381,7 @@ body.ios26-theme .top-icon { background: #1c1c1e; border: 1px solid #2c2c2e; }
     to   { opacity: 1; transform: translateY(0); }
 }
 .log-expr { font-size: 20px; font-weight: 600; margin-bottom: 6px; }
-.log-meta { display: flex; justify-content: space-between; font-size: 12px; color: #636366; }
-.log-id {
-    background: #3a3a3c; border-radius: 6px; padding: 2px 8px;
-    font-size: 11px; color: #ff9f0a; font-family: monospace;
-}
+.log-meta { display: flex; justify-content: flex-end; font-size: 12px; color: #636366; }
 .empty-msg { text-align: center; color: #48484a; font-size: 14px; padding: 28px 0; }
 .badge {
     display: inline-block; background: #ff453a; color: #fff;
@@ -1077,7 +1073,7 @@ body.android-mode #calcIconPlusMinus::after {
         </button>
         <button class="side-menu-item" onclick="openPage('api')">
             <span class="side-menu-icon">🔑</span>
-            <span>라우터 URL</span>
+            <span>외부 앱 연동</span>
             <span class="side-menu-arrow">›</span>
         </button>
         <button class="side-menu-item" onclick="openPage('logs')">
@@ -1218,13 +1214,13 @@ body.android-mode #calcIconPlusMinus::after {
 <div class="admin-page" id="page-api">
     <div class="admin-page-header">
         <button class="admin-back" onclick="closePage()">‹</button>
-        <div class="admin-page-title">라우터 URL</div>
+        <div class="admin-page-title">외부 앱 연동</div>
     </div>
     <div class="admin-page-content">
         <div class="admin-section">
-            <div class="admin-section-title">📡 라우터 조회 전용 URL</div>
+            <div class="admin-section-title">📡 외부 앱 조회 URL</div>
             <div style="font-size:12px;color:#636366;line-height:1.7">
-            수신 내역 <b style="color:#aaa">1개</b>를 읽을 수 있는 주소입니다. 응답에서 <b style="color:#aaa">value</b> 값만 가져다 쓰면 됩니다.</div>
+            외부 앱에서 최신 수신 계산 <b style="color:#aaa">1개</b>를 읽을 수 있는 주소입니다. 응답에서 <b style="color:#aaa">value</b> 값만 가져다 쓰면 됩니다.</div>
             <button class="gen-btn" id="issueViewerUrlBtn" style="margin-top:14px" onclick="issueViewerUrl()">조회 URL 발급</button>
             <div class="api-status" id="viewerUrlStatus"></div>
             <div class="api-label">주소</div>
@@ -2664,7 +2660,6 @@ body.android-mode #calcIconPlusMinus::after {
         item.innerHTML = `
             <div class="log-expr">${d.isForce ? '🍎 ' : ''}${d.expression}</div>
             <div class="log-meta">
-                <span class="log-id">${d.calcId || ''}</span>
                 <span>${time}</span>
             </div>`;
         list.insertBefore(item, list.firstChild);
@@ -3827,7 +3822,6 @@ body.android-mode #calcIconPlusMinus::after {
                     item.innerHTML = `
                         <div class="log-expr">${d.isForce ? '🍎 ' : ''}${d.expression}</div>
                         <div class="log-meta">
-                            <span class="log-id">${d.calcId || ''}</span>
                             <span>${time}</span>
                         </div>`;
                     list.appendChild(item);

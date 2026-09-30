@@ -29,20 +29,22 @@ test('latest calculations include new records beyond 20 and exclude other admini
     assert.throws(() => c.latestCalculations(1), /관리자 인증/);
 });
 
-test('admin push reports success only after the server write succeeds', async () => {
-    const messages = [];
+test('admin push blinks only after the server write succeeds', async () => {
+    const messages = [], blinks = [];
     let resolveWrite, rejectWrite;
     const c = vm.createContext({currentValue:'1,234', currentAdminId:'mine', window:{_authReady:Promise.resolve()},
-        vibrateDevice() {}, showPushToast:m => messages.push(m), db_auth:{collection:() => ({doc:() => ({set:() => new Promise((resolve,reject) => {resolveWrite=resolve;rejectWrite=reject;})})})}});
+        vibrateDevice() {}, blinkPushDot:() => blinks.push(true), showPushToast:m => messages.push(m),
+        db_auth:{collection:() => ({doc:() => ({set:() => new Promise((resolve,reject) => {resolveWrite=resolve;rejectWrite=reject;})})})}});
     vm.runInContext(between(admin, '    async function pushCurrentValueToAudience()', '    // 디스플레이 영역을'), c);
     let pending = c.pushCurrentValueToAudience();
     await new Promise(setImmediate);
-    assert.deepEqual(messages, ['전송 중: 1234']);
+    assert.deepEqual(blinks, []);
     resolveWrite(); await pending;
-    assert.equal(messages.at(-1), '보냄: 1234');
+    assert.deepEqual(blinks, [true]);
     pending = c.pushCurrentValueToAudience(); await new Promise(setImmediate);
     rejectWrite(new Error('permission-denied')); await pending;
     assert.equal(messages.at(-1), 'ERR: permission-denied');
+    assert.deepEqual(blinks, [true]);
 });
 
 function audienceFixture() {
@@ -53,7 +55,7 @@ function audienceFixture() {
         firebase:{firestore:() => ({collection:() => ({doc:() => ({onSnapshot(value,error) {
             onValue=value;onError=error;subscriptions++;return () => {};
         }})})}), auth:() => ({currentUser:{getIdToken:async () => {refreshes++;}}})},
-        updateDebugOverlay() {}, applyCloudConfig() {}, showPushedResult:value => shown.push(value),
+        updateDebugOverlay() {}, applySessionEpoch() {}, applyCloudConfig() {}, showPushedResult:value => shown.push(value),
         setTimeout:fn => {timer=fn;return 1;}, clearTimeout() {}, console
     });
     vm.runInContext('let _configUnsub = null;\n' + between(audience, '    let _configSubscribed', '    // 안드로이드 PWA는'), c);
@@ -165,4 +167,21 @@ test('expired storage blocks both directions on the old link, but the new link r
     assert.equal(load('?admin=mine').expired,true);
     const fresh=load('?admin=mine&session=fresh');
     assert.equal(fresh.expired,false);assert.equal(fresh.timer,30*60*1000);
+});
+
+test('external app wording replaces router-only wording', () => {
+    assert.match(admin, />외부 앱 연동</);
+    assert.match(admin, /📡 외부 앱 조회 URL/);
+    assert.match(admin, /외부 앱에서 최신 수신 계산/);
+    assert.doesNotMatch(admin, />라우터 URL</);
+    assert.doesNotMatch(admin, /라우터 조회 전용 URL/);
+});
+
+test('received history shows expressions and timestamps without calculator IDs', () => {
+    const logCode = between(admin, '    function addLogItem', '    const db2');
+    const initialLogCode = between(admin, '            if (isFirstLoad)', '            } else {');
+    assert.doesNotMatch(logCode, /calcId|log-id/);
+    assert.doesNotMatch(initialLogCode, /calcId|log-id/);
+    assert.doesNotMatch(admin, /\.log-id\s*\{/);
+    assert.match(admin, /\.log-meta\s*\{[^}]*justify-content:\s*flex-end/);
 });
