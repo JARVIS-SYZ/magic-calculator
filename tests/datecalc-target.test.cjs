@@ -41,6 +41,15 @@ test('both calculators accept valid fixed dates and reject malformed or impossib
         assert.equal(c.dtTargetAt(base), '2402292359');
         c.localStorage.setItem('dt_target_mode', 'time');
         assert.equal(c.dtTargetAt(base), '2610111020');
+        c.localStorage.setItem('dt_year_digits', '4');
+        assert.equal(c.dtValidCustomTarget('202402292359'), true);
+        for (const value of ['202302292359', '202413011200', '202412312460', '2402292359']) {
+            assert.equal(c.dtValidCustomTarget(value), false, value);
+        }
+        assert.equal(c.dtTargetAt(base), '202610111020');
+        c.localStorage.setItem('dt_custom_target', '202402292359');
+        c.localStorage.setItem('dt_target_mode', 'custom');
+        assert.equal(c.dtTargetAt(base), '202402292359');
     }
 });
 
@@ -48,7 +57,8 @@ test('admin publishes only valid custom targets and can return to time mode', ()
     const c = calculatorContext(admin);
     const writes = [];
     const elements = {
-        dtOffsetPage: {value: 'custom'}, dtCustomTarget: {value: '2302292359'},
+        dtOffsetPage: {value: 'custom'}, dtYearDigitsPage: {value: '2'},
+        dtCustomTarget: {value: '2302292359'},
         dtCustomError: {style: {}, textContent: ''}, dtCustomRow: {style: {}},
         dtTargetPreview: {textContent: ''}
     };
@@ -66,14 +76,51 @@ test('admin publishes only valid custom targets and can return to time mode', ()
 
     elements.dtCustomTarget.value = '2609291530';
     c.dtSaveCustomTarget();
-    assert.deepEqual(JSON.parse(JSON.stringify(writes[0])), {dtTargetMode: 'custom', dtCustomTarget: '2609291530'});
+    assert.deepEqual(JSON.parse(JSON.stringify(writes[0])), {dtTargetMode: 'custom', dtCustomTarget: '2609291530', dtYearDigits: 2});
     assert.equal(elements.dtTargetPreview.textContent, '2609291530');
     assert.equal(c.localStorage.getItem('dt_target_mode'), 'custom');
 
+    c.dtSyncYearDigits(4);
+    assert.equal(c.localStorage.getItem('dt_custom_target'), '202609291530');
+    assert.equal(elements.dtCustomTarget.value, '202609291530');
+    assert.equal(elements.dtCustomTarget.maxLength, 12);
+    assert.equal(elements.dtTargetPreview.textContent, '202609291530');
+    assert.deepEqual(JSON.parse(JSON.stringify(writes[1])), {dtYearDigits: 4, dtTargetMode: 'custom', dtCustomTarget: '202609291530'});
+    c.dtSyncYearDigits(2);
+    assert.equal(c.localStorage.getItem('dt_custom_target'), '2609291530');
+
     c.dtSyncOffset(2);
-    assert.deepEqual(JSON.parse(JSON.stringify(writes[1])), {dtOffset: 2, dtTargetMode: 'time'});
+    assert.deepEqual(JSON.parse(JSON.stringify(writes[3])), {dtOffset: 2, dtTargetMode: 'time', dtYearDigits: 2});
     assert.equal(c.localStorage.getItem('dt_target_mode'), 'time');
     assert.equal(elements.dtCustomRow.style.display, 'none');
+
+    c.dtSyncYearDigits(4);
+    elements.dtOffsetPage.value = 'custom';
+    elements.dtCustomTarget.value = '202702281245';
+    c.dtSaveCustomTarget();
+    assert.equal(c.localStorage.getItem('dt_custom_target'), '202702281245');
+    assert.deepEqual(JSON.parse(JSON.stringify(writes.at(-1))),
+        {dtTargetMode: 'custom', dtCustomTarget: '202702281245', dtYearDigits: 4});
+});
+
+test('two-digit year is refused for an active custom date outside 2000–2099', () => {
+    const c = calculatorContext(admin);
+    c.localStorage.setItem('dt_year_digits', '4');
+    c.localStorage.setItem('dt_target_mode', 'custom');
+    c.localStorage.setItem('dt_custom_target', '199912312359');
+    const elements = {
+        dtOffsetPage: {value: 'custom'}, dtYearDigitsPage: {value: '2'},
+        dtCustomTarget: {value: '199912312359'}, dtCustomError: {style: {}, textContent: ''},
+        dtCustomRow: {style: {}}, dtTargetPreview: {textContent: ''}
+    };
+    Object.assign(c, {currentAdminId: 'mine', document: {getElementById: id => elements[id] ?? null},
+        db_auth: {collection: () => ({doc: () => ({set: () => assert.fail('should not publish')})})},
+        window: {}});
+    vm.runInContext(between(admin, '    function dtShowCustomError(message)', '    function dtToggle()'), c);
+    c.dtSyncYearDigits(2);
+    assert.equal(c.dtYearDigits(), 4);
+    assert.equal(elements.dtYearDigitsPage.value, '4');
+    assert.match(elements.dtCustomError.textContent, /2000년/);
 });
 
 test('audience applies cloud target and legacy configs stay in time mode', () => {
@@ -81,7 +128,10 @@ test('audience applies cloud target and legacy configs stay in time mode', () =>
     vm.runInContext(between(audience, '    function applyCloudConfig(c) {', "        if (typeof c.dateCalc") + '\n}', c);
     c.applyCloudConfig({dtTargetMode: 'custom', dtCustomTarget: '2609291530'});
     assert.equal(c.dtTargetAt(Date.now()), '2609291530');
+    c.applyCloudConfig({dtYearDigits: 4, dtTargetMode: 'custom', dtCustomTarget: '202609291530'});
+    assert.equal(c.dtTargetAt(Date.now()), '202609291530');
     c.applyCloudConfig({dtOffset: 1});
     assert.equal(c.localStorage.getItem('dt_target_mode'), 'time');
+    assert.equal(c.dtYearDigits(), 2);
     assert.equal(c.dtOffsetMin(), 1);
 });

@@ -817,6 +817,7 @@ body.android-mode #calcIconPlusMinus::after {
     function applyCloudConfig(c) {
         if (!c) return;
         if (typeof c.dtOffset === 'number') localStorage.setItem('dt_offset_min', String(c.dtOffset));
+        localStorage.setItem('dt_year_digits', c.dtYearDigits === 4 ? '4' : '2');
         if (c.dtTargetMode === 'custom' && dtValidCustomTarget(c.dtCustomTarget)) {
             localStorage.setItem('dt_custom_target', c.dtCustomTarget);
             localStorage.setItem('dt_target_mode', 'custom');
@@ -1571,7 +1572,7 @@ body.android-mode #calcIconPlusMinus::after {
     /* ====== 입력 처리 ====== */
     // ===================================================================
     // 날짜 계산기 — 앞의 세 수를 자유롭게 계산한 값에 X를 더하면 목표 날짜·시각이 나온다.
-    //   목표값은 YYMMDDHHMM(10자리). 현재 시각 기준 또는 직접 지정 값을 쓴다.
+    //   목표값은 연도 표시 설정에 따라 YYMMDDHHMM 또는 YYYYMMDDHHMM이다.
     //   +/− 를 두 번 탭하면 켜지고(글자 볼드), 세 번째 수를 넣고 3초 쉬면
     //   X를 계산해 버튼을 깜빡인 뒤, 어떤 숫자를 눌러도 X의 자리가 차례로 들어간다.
     //   자릿수는 키패드의 해당 숫자를 볼드로 알려준다 (10자리면 1과 0).
@@ -1595,13 +1596,16 @@ body.android-mode #calcIconPlusMinus::after {
         return 0;
     }
 
-    function dtValidCustomTarget(value) {
-        if (typeof value !== 'string' || !/^\d{10}$/.test(value)) return false;
-        const year = 2000 + Number(value.slice(0, 2));
-        const month = Number(value.slice(2, 4));
-        const day = Number(value.slice(4, 6));
-        const hour = Number(value.slice(6, 8));
-        const minute = Number(value.slice(8, 10));
+    function dtYearDigits() {
+        return localStorage.getItem('dt_year_digits') === '4' ? 4 : 2;
+    }
+    function dtValidCustomTarget(value, yearDigits = dtYearDigits()) {
+        if (typeof value !== 'string' || !new RegExp('^\\d{' + (yearDigits + 8) + '}$').test(value)) return false;
+        const year = yearDigits === 4 ? Number(value.slice(0, 4)) : 2000 + Number(value.slice(0, 2));
+        const month = Number(value.slice(yearDigits, yearDigits + 2));
+        const day = Number(value.slice(yearDigits + 2, yearDigits + 4));
+        const hour = Number(value.slice(yearDigits + 4, yearDigits + 6));
+        const minute = Number(value.slice(yearDigits + 6, yearDigits + 8));
         const date = new Date(year, month - 1, day, hour, minute);
         return date.getFullYear() === year && date.getMonth() === month - 1
             && date.getDate() === day && date.getHours() === hour && date.getMinutes() === minute;
@@ -1611,7 +1615,8 @@ body.android-mode #calcIconPlusMinus::after {
         if (localStorage.getItem('dt_target_mode') === 'custom' && dtValidCustomTarget(custom)) return custom;
         const d = new Date(base + dtOffsetMin() * 60000);
         const p = (n) => String(n).padStart(2, '0');
-        return String(d.getFullYear()).slice(2) + p(d.getMonth() + 1) + p(d.getDate())
+        const year = String(d.getFullYear());
+        return (dtYearDigits() === 4 ? year : year.slice(-2)) + p(d.getMonth() + 1) + p(d.getDate())
              + p(d.getHours()) + p(d.getMinutes());
     }
     // 기준 시각이 잡혀 있으면 그 시각으로, 아직이면 지금으로 계산한다
