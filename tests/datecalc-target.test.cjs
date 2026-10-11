@@ -26,112 +26,100 @@ function calculatorContext(source) {
     vm.runInContext(between(source, '    function dtOffsetMin()', '    function dtButton()'), context);
     return context;
 }
+function adminSettingsFixture() {
+    const c = calculatorContext(admin);
+    const writes = [];
+    const element = extra => ({value: '', style: {}, listeners: {},
+        addEventListener(type, callback) {this.listeners[type] = callback;}, ...extra});
+    const elements = {
+        dtTargetModePage: element({value: 'time'}), dtOffsetPage: element({value: '0'}),
+        dtOffsetRow: element(), dtYearRow: element(), dtCustomRow: element(),
+        dtCustomTarget: element(), dtCustomApply: element(), dtCustomError: element(),
+        dtYearDigitsPage: element(), dtTargetPreview: element()
+    };
+    Object.assign(c, {currentAdminId: 'mine', console, setInterval() {},
+        document: {getElementById: id => elements[id] ?? null},
+        db_auth: {collection: () => ({doc: () => ({set: value => {writes.push(value); return Promise.resolve();}})})},
+        window: {}});
+    vm.runInContext(between(admin, '    var dtCustomPending = false;', '    function dtToggle()'), c);
+    vm.runInContext(between(admin, '    (function dtInitSetting() {', '    // +/− 를 두 번 탭'), c);
+    return {c, elements, writes};
+}
 
-test('both calculators accept valid fixed dates and reject malformed or impossible dates', () => {
+test('current time uses 10 or 12 digits, while a custom birthday uses eight', () => {
+    const base = new Date(2026, 9, 11, 10, 20).getTime();
     for (const source of [admin, audience]) {
         const c = calculatorContext(source);
-        assert.equal(c.dtValidCustomTarget('2402292359'), true);
-        for (const value of ['2302292359', '2413011200', '2412312460', '240101120', 'not-a-date']) {
-            assert.equal(c.dtValidCustomTarget(value), false, value);
-        }
-        const base = new Date(2026, 9, 11, 10, 20).getTime();
-        assert.equal(c.dtTargetAt(base), '2610111020');
-        c.localStorage.setItem('dt_custom_target', '2402292359');
-        c.localStorage.setItem('dt_target_mode', 'custom');
-        assert.equal(c.dtTargetAt(base), '2402292359');
-        c.localStorage.setItem('dt_target_mode', 'time');
         assert.equal(c.dtTargetAt(base), '2610111020');
         c.localStorage.setItem('dt_year_digits', '4');
-        assert.equal(c.dtValidCustomTarget('202402292359'), true);
-        for (const value of ['202302292359', '202413011200', '202412312460', '2402292359']) {
+        assert.equal(c.dtTargetAt(base), '202610111020');
+        c.localStorage.setItem('dt_custom_target', '19950327');
+        c.localStorage.setItem('dt_target_mode', 'custom');
+        assert.equal(c.dtTargetAt(base), '19950327');
+        assert.equal(c.dtValidCustomTarget('20000229'), true);
+        for (const value of ['19000229', '19951327', '19950332', '950327']) {
             assert.equal(c.dtValidCustomTarget(value), false, value);
         }
-        assert.equal(c.dtTargetAt(base), '202610111020');
-        c.localStorage.setItem('dt_custom_target', '202402292359');
-        c.localStorage.setItem('dt_target_mode', 'custom');
-        assert.equal(c.dtTargetAt(base), '202402292359');
     }
 });
 
-test('admin publishes only valid custom targets and can return to time mode', () => {
+test('the birthday picker converts dates and ignores invalid selections', () => {
     const c = calculatorContext(admin);
-    const writes = [];
-    const elements = {
-        dtOffsetPage: {value: 'custom'}, dtYearDigitsPage: {value: '2'},
-        dtCustomTarget: {value: '2302292359'},
-        dtCustomError: {style: {}, textContent: ''}, dtCustomRow: {style: {}},
-        dtTargetPreview: {textContent: ''}
-    };
-    Object.assign(c, {
-        currentAdminId: 'mine', console,
-        document: {getElementById: id => elements[id] ?? null},
-        db_auth: {collection: () => ({doc: () => ({set: value => {writes.push(value); return Promise.resolve();}})})},
-        window: {}
-    });
-    vm.runInContext(between(admin, '    function dtShowCustomError(message)', '    function dtToggle()'), c);
-    c.dtSaveCustomTarget();
+    assert.match(admin, /id="dtCustomTarget" type="date"/);
+    assert.equal(c.dtDateToTarget('1995-03-27'), '19950327');
+    assert.equal(c.dtTargetToDate('19950327'), '1995-03-27');
+    assert.equal(c.dtDateToTarget('2023-02-29'), null);
+    assert.equal(c.dtNormalizeCustomTarget('2609291530'), '20260929');
+    assert.equal(c.dtNormalizeCustomTarget('202609291530'), '20260929');
+    assert.equal(c.dtNormalizeCustomTarget('202609292560'), null);
+});
+
+test('custom mode hides time controls and publishes only the selected birthday', () => {
+    const {c, elements, writes} = adminSettingsFixture();
+    elements.dtTargetModePage.value = 'custom';
+    elements.dtTargetModePage.listeners.change();
+    assert.equal(elements.dtOffsetRow.style.display, 'none');
+    assert.equal(elements.dtYearRow.style.display, 'none');
+    assert.equal(elements.dtCustomRow.style.display, '');
+    assert.equal(elements.dtTargetPreview.textContent, '적용 전');
     assert.equal(writes.length, 0);
-    assert.equal(c.localStorage.getItem('dt_target_mode'), null);
-    assert.match(elements.dtCustomError.textContent, /10자리/);
 
-    elements.dtCustomTarget.value = '2609291530';
-    c.dtSaveCustomTarget();
-    assert.deepEqual(JSON.parse(JSON.stringify(writes[0])), {dtTargetMode: 'custom', dtCustomTarget: '2609291530', dtYearDigits: 2});
-    assert.equal(elements.dtTargetPreview.textContent, '2609291530');
+    elements.dtCustomTarget.value = '2023-02-29';
+    elements.dtCustomApply.listeners.click();
+    assert.equal(writes.length, 0);
+    assert.match(elements.dtCustomError.textContent, /생년월일/);
+
+    elements.dtCustomTarget.value = '1995-03-27';
+    elements.dtCustomApply.listeners.click();
+    assert.deepEqual(JSON.parse(JSON.stringify(writes[0])),
+        {dtTargetMode: 'custom', dtCustomTarget: '19950327'});
     assert.equal(c.localStorage.getItem('dt_target_mode'), 'custom');
+    assert.equal(elements.dtTargetPreview.textContent, '19950327');
 
-    c.dtSyncYearDigits(4);
-    assert.equal(c.localStorage.getItem('dt_custom_target'), '202609291530');
-    assert.equal(elements.dtCustomTarget.value, '202609291530');
-    assert.equal(elements.dtCustomTarget.maxLength, 12);
-    assert.equal(elements.dtTargetPreview.textContent, '202609291530');
-    assert.deepEqual(JSON.parse(JSON.stringify(writes[1])), {dtYearDigits: 4, dtTargetMode: 'custom', dtCustomTarget: '202609291530'});
-    c.dtSyncYearDigits(2);
-    assert.equal(c.localStorage.getItem('dt_custom_target'), '2609291530');
-
-    c.dtSyncOffset(2);
-    assert.deepEqual(JSON.parse(JSON.stringify(writes[3])), {dtOffset: 2, dtTargetMode: 'time', dtYearDigits: 2});
-    assert.equal(c.localStorage.getItem('dt_target_mode'), 'time');
+    elements.dtTargetModePage.value = 'time';
+    elements.dtTargetModePage.listeners.change();
+    assert.equal(elements.dtOffsetRow.style.display, '');
+    assert.equal(elements.dtYearRow.style.display, '');
     assert.equal(elements.dtCustomRow.style.display, 'none');
-
-    c.dtSyncYearDigits(4);
-    elements.dtOffsetPage.value = 'custom';
-    elements.dtCustomTarget.value = '202702281245';
-    c.dtSaveCustomTarget();
-    assert.equal(c.localStorage.getItem('dt_custom_target'), '202702281245');
-    assert.deepEqual(JSON.parse(JSON.stringify(writes.at(-1))),
-        {dtTargetMode: 'custom', dtCustomTarget: '202702281245', dtYearDigits: 4});
+    assert.equal(writes[1].dtTargetMode, 'time');
+    elements.dtYearDigitsPage.listeners.change({target: {value: '4'}});
+    assert.equal(c.dtTargetAt(new Date(2026, 9, 11, 10, 20).getTime()), '202610111020');
 });
 
-test('two-digit year is refused for an active custom date outside 2000–2099', () => {
-    const c = calculatorContext(admin);
-    c.localStorage.setItem('dt_year_digits', '4');
-    c.localStorage.setItem('dt_target_mode', 'custom');
-    c.localStorage.setItem('dt_custom_target', '199912312359');
-    const elements = {
-        dtOffsetPage: {value: 'custom'}, dtYearDigitsPage: {value: '2'},
-        dtCustomTarget: {value: '199912312359'}, dtCustomError: {style: {}, textContent: ''},
-        dtCustomRow: {style: {}}, dtTargetPreview: {textContent: ''}
-    };
-    Object.assign(c, {currentAdminId: 'mine', document: {getElementById: id => elements[id] ?? null},
-        db_auth: {collection: () => ({doc: () => ({set: () => assert.fail('should not publish')})})},
-        window: {}});
-    vm.runInContext(between(admin, '    function dtShowCustomError(message)', '    function dtToggle()'), c);
-    c.dtSyncYearDigits(2);
-    assert.equal(c.dtYearDigits(), 4);
-    assert.equal(elements.dtYearDigitsPage.value, '4');
-    assert.match(elements.dtCustomError.textContent, /2000년/);
-});
+test('admin and audience read the same birthday from cloud settings', () => {
+    const adminFixture = adminSettingsFixture();
+    adminFixture.c.window.__setDateCalcTargetConfig({dtTargetMode: 'custom', dtCustomTarget: '19950327', dtYearDigits: 4});
+    assert.equal(adminFixture.elements.dtTargetModePage.value, 'custom');
+    assert.equal(adminFixture.elements.dtCustomTarget.value, '1995-03-27');
+    assert.equal(adminFixture.elements.dtOffsetRow.style.display, 'none');
 
-test('audience applies cloud target and legacy configs stay in time mode', () => {
     const c = calculatorContext(audience);
     vm.runInContext(between(audience, '    function applyCloudConfig(c) {', "        if (typeof c.dateCalc") + '\n}', c);
+    c.applyCloudConfig({dtTargetMode: 'custom', dtCustomTarget: '19950327', dtYearDigits: 4});
+    assert.equal(c.dtTargetAt(Date.now()), '19950327');
     c.applyCloudConfig({dtTargetMode: 'custom', dtCustomTarget: '2609291530'});
-    assert.equal(c.dtTargetAt(Date.now()), '2609291530');
-    c.applyCloudConfig({dtYearDigits: 4, dtTargetMode: 'custom', dtCustomTarget: '202609291530'});
-    assert.equal(c.dtTargetAt(Date.now()), '202609291530');
+    assert.equal(c.dtTargetAt(Date.now()), '20260929');
     c.applyCloudConfig({dtOffset: 1});
     assert.equal(c.localStorage.getItem('dt_target_mode'), 'time');
     assert.equal(c.dtYearDigits(), 2);
-    assert.equal(c.dtOffsetMin(), 1);
 });

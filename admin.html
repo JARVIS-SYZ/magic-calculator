@@ -1680,35 +1680,41 @@ body.android-mode #calcIconPlusMinus::after {
         <div class="admin-section">
             <div class="admin-section-title">⏱ 목표 시각</div>
             <div class="sp-row">
-                <span class="sp-label">결과로 나올 시각</span>
+                <label class="sp-label" for="dtTargetModePage">목표 방식</label>
+                <select class="version-select" id="dtTargetModePage" style="width:auto;padding:8px 30px 8px 12px;font-size:14px;border-radius:8px">
+                    <option value="time">현재 시각</option>
+                    <option value="custom">사용자 지정</option>
+                </select>
+            </div>
+            <div class="sp-row" id="dtOffsetRow">
+                <label class="sp-label" for="dtOffsetPage">결과로 나올 시각</label>
                 <select class="version-select" id="dtOffsetPage" style="width:auto;padding:8px 30px 8px 12px;font-size:14px;border-radius:8px">
                     <option value="0">지금 시각</option>
                     <option value="1">1분 뒤</option>
                     <option value="2">2분 뒤</option>
-                    <option value="custom">직접 지정</option>
                 </select>
             </div>
-            <div class="sp-row">
-                <label class="sp-label" for="dtYearDigitsPage">연도 표시</label>
+            <div class="sp-row" id="dtYearRow">
+                <label class="sp-label" for="dtYearDigitsPage">결과 자리수</label>
                 <select class="version-select" id="dtYearDigitsPage" style="width:auto;padding:8px 30px 8px 12px;font-size:14px;border-radius:8px">
-                    <option value="2">26 (2자리)</option>
-                    <option value="4">2026 (4자리)</option>
+                    <option value="2">10자리 (26…)</option>
+                    <option value="4">12자리 (2026…)</option>
                 </select>
             </div>
             <div class="sp-row" id="dtCustomRow" style="display:none;flex-wrap:wrap">
-                <label class="sp-label" for="dtCustomTarget">직접 지정 목표값</label>
-                <input id="dtCustomTarget" type="text" inputmode="numeric" maxlength="10" placeholder="2609291530" autocomplete="off" style="width:140px;padding:8px 10px;border:1px solid #3a3a3c;border-radius:8px;background:#2c2c2e;color:#fff;font-size:14px;font-family:ui-monospace,monospace">
+                <label class="sp-label" for="dtCustomTarget">생년월일</label>
+                <input id="dtCustomTarget" type="date" style="width:170px;max-width:100%;padding:8px 10px;border:1px solid #3a3a3c;border-radius:8px;background:#2c2c2e;color:#fff;color-scheme:dark;font-size:14px">
                 <button type="button" id="dtCustomApply" style="padding:8px 12px;border:0;border-radius:8px;background:#ff9f0a;color:#000;font-weight:600">적용</button>
             </div>
             <div class="sp-hint" id="dtCustomError" role="status" style="display:none;color:#ff9f0a"></div>
-            <div class="sp-hint">지금/1분 뒤/2분 뒤 옵션은 관객이 <b>세 번째 수를 입력한 그 순간</b>을 기준으로 정해지고,
+            <div class="sp-hint">현재 시각 모드의 지금/1분 뒤/2분 뒤 옵션은 관객이 <b>세 번째 수를 입력한 그 순간</b>을 기준으로 정해지고,
             그 뒤로는 시간이 흘러도 움직이지 않습니다. 숫자를 다 누르고 <b>=</b> 까지 가는 데 걸리는 만큼
-            <b>1분 뒤</b>나 <b>2분 뒤</b>로 밀어두세요. <b>지금 시각</b>은 바로 끝내는 연출에 씁니다. <b>직접 지정</b>은 입력한 시각을 목표로 고정합니다.</div>
+            <b>1분 뒤</b>나 <b>2분 뒤</b>로 밀어두세요. <b>지금 시각</b>은 바로 끝내는 연출에 씁니다. <b>사용자 지정</b>에서는 생년월일을 고르고 <b>적용</b>을 누르세요.</div>
             <div class="sp-row">
                 <span class="sp-label">지금 목표값</span>
                 <span class="sp-label" id="dtTargetPreview" style="color:#fff;font-family:ui-monospace,monospace">-</span>
             </div>
-            <div class="sp-hint">2자리 연도는 <b>YYMMDDHHMM</b> (예: 2609291530), 4자리 연도는 <b>YYYYMMDDHHMM</b> (예: 202609291530) 형식입니다.</div>
+            <div class="sp-hint">현재 시각은 <b>YYMMDDHHMM</b> 10자리 또는 <b>YYYYMMDDHHMM</b> 12자리입니다. 사용자 지정 생년월일은 <b>YYYYMMDD</b> 8자리입니다. 예: <b>19950327</b>.</div>
         </div>
 
         <div class="admin-section">
@@ -3390,7 +3396,7 @@ body.android-mode #calcIconPlusMinus::after {
     // ===== 입력 처리 =====
     // ===================================================================
     // 날짜 계산기 — 앞의 세 수를 자유롭게 계산한 값에 X를 더하면 목표 날짜·시각이 나온다.
-    //   목표값은 연도 표시 설정에 따라 YYMMDDHHMM 또는 YYYYMMDDHHMM이다.
+    //   현재 시각은 YYMMDDHHMM/ YYYYMMDDHHMM, 사용자 지정 생년월일은 YYYYMMDD다.
     //   +/− 를 두 번 탭하면 켜지고(글자 볼드), 세 번째 수를 넣고 3초 쉬면
     //   X를 계산해 버튼을 깜빡인 뒤, 어떤 숫자를 눌러도 X의 자리가 차례로 들어간다.
     //   자릿수는 키패드의 해당 숫자를 볼드로 알려준다 (10자리면 1과 0).
@@ -3416,20 +3422,37 @@ body.android-mode #calcIconPlusMinus::after {
     function dtYearDigits() {
         return localStorage.getItem('dt_year_digits') === '4' ? 4 : 2;
     }
-    function dtValidCustomTarget(value, yearDigits = dtYearDigits()) {
-        if (typeof value !== 'string' || !new RegExp('^\\d{' + (yearDigits + 8) + '}$').test(value)) return false;
-        const year = yearDigits === 4 ? Number(value.slice(0, 4)) : 2000 + Number(value.slice(0, 2));
-        const month = Number(value.slice(yearDigits, yearDigits + 2));
-        const day = Number(value.slice(yearDigits + 2, yearDigits + 4));
-        const hour = Number(value.slice(yearDigits + 4, yearDigits + 6));
-        const minute = Number(value.slice(yearDigits + 6, yearDigits + 8));
-        const date = new Date(year, month - 1, day, hour, minute);
+    function dtValidCustomTarget(value) {
+        if (typeof value !== 'string' || !/^\d{8}$/.test(value)) return false;
+        const year = Number(value.slice(0, 4));
+        const month = Number(value.slice(4, 6));
+        const day = Number(value.slice(6, 8));
+        const date = new Date(year, month - 1, day);
         return date.getFullYear() === year && date.getMonth() === month - 1
-            && date.getDate() === day && date.getHours() === hour && date.getMinutes() === minute;
+            && date.getDate() === day;
+    }
+    function dtNormalizeCustomTarget(value) {
+        if (dtValidCustomTarget(value)) return value;
+        if (typeof value !== 'string') return null;
+        // 이전 버전에서 저장한 날짜·시각 목표값은 날짜만 남긴다.
+        const date = /^\d{10}$/.test(value) ? '20' + value.slice(0, 6)
+            : /^\d{12}$/.test(value) ? value.slice(0, 8) : null;
+        const time = value.slice(-4);
+        return dtValidCustomTarget(date) && Number(time.slice(0, 2)) < 24
+            && Number(time.slice(2)) < 60 ? date : null;
+    }
+    function dtTargetToDate(value) {
+        const target = dtNormalizeCustomTarget(value);
+        return target ? target.slice(0, 4) + '-' + target.slice(4, 6) + '-' + target.slice(6) : '';
+    }
+    function dtDateToTarget(value) {
+        const parts = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+        const target = parts ? parts[1] + parts[2] + parts[3] : null;
+        return dtValidCustomTarget(target) ? target : null;
     }
     function dtCustomTarget() {
         const value = localStorage.getItem('dt_custom_target');
-        return dtValidCustomTarget(value) ? value : null;
+        return dtNormalizeCustomTarget(value);
     }
     function dtUsesCustomTarget() {
         return localStorage.getItem('dt_target_mode') === 'custom' && !!dtCustomTarget();
@@ -3481,6 +3504,7 @@ body.android-mode #calcIconPlusMinus::after {
         }
     };
 
+    var dtCustomPending = false;
     function dtShowCustomError(message) {
         const el = document.getElementById('dtCustomError');
         if (!el) return;
@@ -3488,18 +3512,14 @@ body.android-mode #calcIconPlusMinus::after {
         el.style.display = message ? '' : 'none';
     }
     function dtUpdateSettingUI() {
-        const select = document.getElementById('dtOffsetPage');
-        const row = document.getElementById('dtCustomRow');
-        if (row && select) row.style.display = select.value === 'custom' ? '' : 'none';
+        const custom = document.getElementById('dtTargetModePage').value === 'custom';
+        document.getElementById('dtOffsetRow').style.display = custom ? 'none' : '';
+        document.getElementById('dtYearRow').style.display = custom ? 'none' : '';
+        document.getElementById('dtCustomRow').style.display = custom ? '' : 'none';
         const yearSelect = document.getElementById('dtYearDigitsPage');
         if (yearSelect) yearSelect.value = String(dtYearDigits());
-        const input = document.getElementById('dtCustomTarget');
-        if (input) {
-            input.maxLength = dtYearDigits() + 8;
-            input.placeholder = dtYearDigits() === 4 ? '202609291530' : '2609291530';
-        }
         const prev = document.getElementById('dtTargetPreview');
-        if (prev) prev.textContent = dtTargetAt(Date.now());
+        if (prev) prev.textContent = dtCustomPending ? '적용 전' : dtTargetAt(Date.now());
     }
     function dtPublishTarget(setting) {
         if (!currentAdminId) return;
@@ -3511,71 +3531,52 @@ body.android-mode #calcIconPlusMinus::after {
     }
     // 기존 시간 기준 옵션은 이전 설정과 같이 동작한다.
     function dtSyncOffset(min) {
+        dtCustomPending = false;
         localStorage.setItem('dt_offset_min', String(min));
         localStorage.setItem('dt_target_mode', 'time');
         dtPublishTarget({ dtOffset: min, dtTargetMode: 'time', dtYearDigits: dtYearDigits() });
-        ['dtOffsetSelect', 'dtOffsetPage'].forEach((id) => {
-            const el = document.getElementById(id);
-            if (el && el.value !== String(min)) el.value = String(min);
-        });
+        document.getElementById('dtTargetModePage').value = 'time';
+        document.getElementById('dtOffsetPage').value = String(min);
         dtShowCustomError('');
         dtUpdateSettingUI();
     }
     function dtSaveCustomTarget() {
         const input = document.getElementById('dtCustomTarget');
-        const value = input.value.trim();
-        if (!dtValidCustomTarget(value)) {
-            dtShowCustomError(dtYearDigits() === 4
-                ? '실제 날짜와 시각을 YYYYMMDDHHMM 12자리로 입력해 주세요.'
-                : '실제 날짜와 시각을 YYMMDDHHMM 10자리로 입력해 주세요.');
+        const value = dtDateToTarget(input.value);
+        if (!value) {
+            dtShowCustomError('실제 생년월일을 선택해 주세요.');
             return;
         }
         localStorage.setItem('dt_custom_target', value);
         localStorage.setItem('dt_target_mode', 'custom');
-        dtPublishTarget({ dtTargetMode: 'custom', dtCustomTarget: value, dtYearDigits: dtYearDigits() });
+        dtCustomPending = false;
+        document.getElementById('dtTargetModePage').value = 'custom';
+        dtPublishTarget({ dtTargetMode: 'custom', dtCustomTarget: value });
         dtShowCustomError('');
         dtUpdateSettingUI();
     }
-    function dtConvertTarget(value, fromDigits, toDigits) {
-        if (!dtValidCustomTarget(value, fromDigits)) return null;
-        if (fromDigits === toDigits) return value;
-        if (toDigits === 4) return '20' + value;
-        return value.startsWith('20') ? value.slice(2) : null;
-    }
     function dtSyncYearDigits(digits) {
-        const oldDigits = dtYearDigits();
-        if (digits === oldDigits) return;
-        const saved = dtConvertTarget(localStorage.getItem('dt_custom_target'), oldDigits, digits);
-        const wasCustom = dtUsesCustomTarget();
-        if (wasCustom && !saved) {
-            dtShowCustomError('2000년부터 2099년까지의 날짜만 2자리 연도로 표시할 수 있습니다.');
-            document.getElementById('dtYearDigitsPage').value = String(oldDigits);
-            return;
-        }
-        const input = document.getElementById('dtCustomTarget');
-        const edited = dtConvertTarget(input.value.trim(), oldDigits, digits);
+        if (digits === dtYearDigits()) return;
         localStorage.setItem('dt_year_digits', String(digits));
-        if (saved) localStorage.setItem('dt_custom_target', saved);
-        input.value = edited || saved || '';
-        const setting = { dtYearDigits: digits, dtTargetMode: wasCustom ? 'custom' : 'time' };
-        if (wasCustom) setting.dtCustomTarget = saved;
-        dtPublishTarget(setting);
+        if (!dtCustomPending) dtPublishTarget({ dtYearDigits: digits });
         dtShowCustomError('');
         dtUpdateSettingUI();
     }
     window.__setDateCalcTargetConfig = function (c) {
         if (typeof c.dtOffset === 'number') localStorage.setItem('dt_offset_min', String(c.dtOffset));
-        localStorage.setItem('dt_year_digits', c.dtYearDigits === 4 ? '4' : '2');
-        if (c.dtTargetMode === 'custom' && dtValidCustomTarget(c.dtCustomTarget)) {
-            localStorage.setItem('dt_custom_target', c.dtCustomTarget);
+        if (!dtCustomPending) localStorage.setItem('dt_year_digits', c.dtYearDigits === 4 ? '4' : '2');
+        const customTarget = dtNormalizeCustomTarget(c.dtCustomTarget);
+        if (c.dtTargetMode === 'custom' && customTarget) {
+            localStorage.setItem('dt_custom_target', customTarget);
             localStorage.setItem('dt_target_mode', 'custom');
         } else {
             localStorage.setItem('dt_target_mode', 'time');
         }
-        const select = document.getElementById('dtOffsetPage');
-        if (select) select.value = dtUsesCustomTarget() ? 'custom' : String(dtOffsetMin());
+        const modeSelect = document.getElementById('dtTargetModePage');
+        if (modeSelect && !dtCustomPending) modeSelect.value = dtUsesCustomTarget() ? 'custom' : 'time';
+        document.getElementById('dtOffsetPage').value = String(dtOffsetMin());
         const input = document.getElementById('dtCustomTarget');
-        if (input) input.value = dtCustomTarget() || '';
+        if (input && !dtCustomPending) input.value = dtTargetToDate(dtCustomTarget());
         dtUpdateSettingUI();
     }
 
@@ -3660,17 +3661,21 @@ body.android-mode #calcIconPlusMinus::after {
     }
 
     (function dtInitSetting() {
-        const select = document.getElementById('dtOffsetPage');
+        const modeSelect = document.getElementById('dtTargetModePage');
+        const offsetSelect = document.getElementById('dtOffsetPage');
         const input = document.getElementById('dtCustomTarget');
-        select.value = dtUsesCustomTarget() ? 'custom' : String(dtOffsetMin());
-        input.value = dtCustomTarget() || '';
-        select.addEventListener('change', () => {
-            if (select.value === 'custom') {
+        modeSelect.value = dtUsesCustomTarget() ? 'custom' : 'time';
+        offsetSelect.value = String(dtOffsetMin());
+        input.value = dtTargetToDate(dtCustomTarget());
+        modeSelect.addEventListener('change', () => {
+            if (modeSelect.value === 'custom') {
+                dtCustomPending = !dtDateToTarget(input.value);
                 dtUpdateSettingUI();
-                if (dtValidCustomTarget(input.value)) dtSaveCustomTarget();
-                else dtShowCustomError('목표값을 입력한 뒤 적용해 주세요.');
-            } else dtSyncOffset(Number(select.value));
+                if (!dtCustomPending) dtSaveCustomTarget();
+                else dtShowCustomError('생년월일을 선택한 뒤 적용해 주세요.');
+            } else dtSyncOffset(Number(offsetSelect.value));
         });
+        offsetSelect.addEventListener('change', () => dtSyncOffset(Number(offsetSelect.value)));
         input.addEventListener('input', () => dtShowCustomError(''));
         document.getElementById('dtYearDigitsPage').addEventListener('change', (event) => {
             dtSyncYearDigits(Number(event.target.value));
@@ -3681,7 +3686,7 @@ body.android-mode #calcIconPlusMinus::after {
         setInterval(() => {
             const page = document.getElementById('page-datecalc');
             const prev = document.getElementById('dtTargetPreview');
-            if (page && prev && page.classList.contains('active')) prev.textContent = dtTargetAt(Date.now());
+            if (page && prev && page.classList.contains('active')) prev.textContent = dtCustomPending ? '적용 전' : dtTargetAt(Date.now());
         }, 1000);
     })();
 
