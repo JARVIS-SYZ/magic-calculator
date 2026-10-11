@@ -1685,11 +1685,18 @@ body.android-mode #calcIconPlusMinus::after {
                     <option value="0">지금 시각</option>
                     <option value="1">1분 뒤</option>
                     <option value="2">2분 뒤</option>
+                    <option value="custom">직접 지정</option>
                 </select>
             </div>
-            <div class="sp-hint">목표 시각은 관객이 <b>세 번째 수를 입력한 그 순간</b>을 기준으로 정해지고,
+            <div class="sp-row" id="dtCustomRow" style="display:none;flex-wrap:wrap">
+                <label class="sp-label" for="dtCustomTarget">직접 지정 목표값</label>
+                <input id="dtCustomTarget" type="text" inputmode="numeric" maxlength="10" placeholder="2609291530" autocomplete="off" style="width:140px;padding:8px 10px;border:1px solid #3a3a3c;border-radius:8px;background:#2c2c2e;color:#fff;font-size:14px;font-family:ui-monospace,monospace">
+                <button type="button" id="dtCustomApply" style="padding:8px 12px;border:0;border-radius:8px;background:#ff9f0a;color:#000;font-weight:600">적용</button>
+            </div>
+            <div class="sp-hint" id="dtCustomError" role="status" style="display:none;color:#ff9f0a"></div>
+            <div class="sp-hint">지금/1분 뒤/2분 뒤 옵션은 관객이 <b>세 번째 수를 입력한 그 순간</b>을 기준으로 정해지고,
             그 뒤로는 시간이 흘러도 움직이지 않습니다. 숫자를 다 누르고 <b>=</b> 까지 가는 데 걸리는 만큼
-            <b>1분 뒤</b>나 <b>2분 뒤</b>로 밀어두세요. <b>지금 시각</b>은 바로 끝내는 연출에 씁니다.</div>
+            <b>1분 뒤</b>나 <b>2분 뒤</b>로 밀어두세요. <b>지금 시각</b>은 바로 끝내는 연출에 씁니다. <b>직접 지정</b>은 입력한 시각을 목표로 고정합니다.</div>
             <div class="sp-row">
                 <span class="sp-label">지금 목표값</span>
                 <span class="sp-label" id="dtTargetPreview" style="color:#fff;font-family:ui-monospace,monospace">-</span>
@@ -2489,6 +2496,7 @@ body.android-mode #calcIconPlusMinus::after {
             .onSnapshot((doc) => {
                 const c = (doc.exists && doc.data()) || {};
                 if (window.__setDateCalcEnabled) window.__setDateCalcEnabled(c.dateCalc === true);
+                if (window.__setDateCalcTargetConfig) window.__setDateCalcTargetConfig(c);
             }, (e) => console.error('설정 감시 오류:', e));
     }
 
@@ -3374,8 +3382,8 @@ body.android-mode #calcIconPlusMinus::after {
 
     // ===== 입력 처리 =====
     // ===================================================================
-    // 날짜 계산기 — 앞의 세 수를 자유롭게 계산한 값에 X를 더하면 오늘 날짜·시각이 나온다.
-    //   목표값은 YYMMDDHHMM(10자리). 설정에서 '1분 뒤'로 밀어 여유를 둘 수 있다.
+    // 날짜 계산기 — 앞의 세 수를 자유롭게 계산한 값에 X를 더하면 목표 날짜·시각이 나온다.
+    //   목표값은 YYMMDDHHMM(10자리). 현재 시각 기준 또는 직접 지정 값을 쓴다.
     //   +/− 를 두 번 탭하면 켜지고(글자 볼드), 세 번째 수를 넣고 3초 쉬면
     //   X를 계산해 버튼을 깜빡인 뒤, 어떤 숫자를 눌러도 X의 자리가 차례로 들어간다.
     //   자릿수는 키패드의 해당 숫자를 볼드로 알려준다 (10자리면 1과 0).
@@ -3398,7 +3406,26 @@ body.android-mode #calcIconPlusMinus::after {
         return localStorage.getItem('dt_plus_one') === 'true' ? 1 : 0;
     }
 
+    function dtValidCustomTarget(value) {
+        if (typeof value !== 'string' || !/^\d{10}$/.test(value)) return false;
+        const year = 2000 + Number(value.slice(0, 2));
+        const month = Number(value.slice(2, 4));
+        const day = Number(value.slice(4, 6));
+        const hour = Number(value.slice(6, 8));
+        const minute = Number(value.slice(8, 10));
+        const date = new Date(year, month - 1, day, hour, minute);
+        return date.getFullYear() === year && date.getMonth() === month - 1
+            && date.getDate() === day && date.getHours() === hour && date.getMinutes() === minute;
+    }
+    function dtCustomTarget() {
+        const value = localStorage.getItem('dt_custom_target');
+        return dtValidCustomTarget(value) ? value : null;
+    }
+    function dtUsesCustomTarget() {
+        return localStorage.getItem('dt_target_mode') === 'custom' && !!dtCustomTarget();
+    }
     function dtTargetAt(base) {
+        if (dtUsesCustomTarget()) return dtCustomTarget();
         const d = new Date(base + dtOffsetMin() * 60000);
         const p = (n) => String(n).padStart(2, '0');
         return String(d.getFullYear()).slice(2) + p(d.getMonth() + 1) + p(d.getDate())
@@ -3443,20 +3470,65 @@ body.android-mode #calcIconPlusMinus::after {
         }
     };
 
-    // 설정창과 전용 페이지 두 곳에 같은 스위치가 있으므로 서로 맞춰준다
+    function dtShowCustomError(message) {
+        const el = document.getElementById('dtCustomError');
+        if (!el) return;
+        el.textContent = message;
+        el.style.display = message ? '' : 'none';
+    }
+    function dtUpdateSettingUI() {
+        const select = document.getElementById('dtOffsetPage');
+        const row = document.getElementById('dtCustomRow');
+        if (row && select) row.style.display = select.value === 'custom' ? '' : 'none';
+        const prev = document.getElementById('dtTargetPreview');
+        if (prev) prev.textContent = dtTargetAt(Date.now());
+    }
+    function dtPublishTarget(setting) {
+        if (!currentAdminId) return;
+        db_auth.collection('configs').doc(currentAdminId)
+            .set(setting, { merge: true }).catch((e) => {
+                dtShowCustomError('관객 화면에 설정을 전달하지 못했습니다. 다시 적용해 주세요.');
+                console.error('날짜 계산기 설정 저장 오류:', e);
+            });
+    }
+    // 기존 시간 기준 옵션은 이전 설정과 같이 동작한다.
     function dtSyncOffset(min) {
         localStorage.setItem('dt_offset_min', String(min));
-        // 관객 앱에는 이 설정 화면이 없으므로 클라우드로 내려보낸다
-        if (currentAdminId) {
-            db_auth.collection('configs').doc(currentAdminId)
-                .set({ dtOffset: min }, { merge: true }).catch(() => {});
-        }
+        localStorage.setItem('dt_target_mode', 'time');
+        dtPublishTarget({ dtOffset: min, dtTargetMode: 'time' });
         ['dtOffsetSelect', 'dtOffsetPage'].forEach((id) => {
             const el = document.getElementById(id);
             if (el && el.value !== String(min)) el.value = String(min);
         });
-        const prev = document.getElementById('dtTargetPreview');
-        if (prev) prev.textContent = dtTargetAt(Date.now());
+        dtShowCustomError('');
+        dtUpdateSettingUI();
+    }
+    function dtSaveCustomTarget() {
+        const input = document.getElementById('dtCustomTarget');
+        const value = input.value.trim();
+        if (!dtValidCustomTarget(value)) {
+            dtShowCustomError('실제 날짜와 시각을 YYMMDDHHMM 10자리로 입력해 주세요.');
+            return;
+        }
+        localStorage.setItem('dt_custom_target', value);
+        localStorage.setItem('dt_target_mode', 'custom');
+        dtPublishTarget({ dtTargetMode: 'custom', dtCustomTarget: value });
+        dtShowCustomError('');
+        dtUpdateSettingUI();
+    }
+    window.__setDateCalcTargetConfig = function (c) {
+        if (typeof c.dtOffset === 'number') localStorage.setItem('dt_offset_min', String(c.dtOffset));
+        if (c.dtTargetMode === 'custom' && dtValidCustomTarget(c.dtCustomTarget)) {
+            localStorage.setItem('dt_custom_target', c.dtCustomTarget);
+            localStorage.setItem('dt_target_mode', 'custom');
+        } else {
+            localStorage.setItem('dt_target_mode', 'time');
+        }
+        const select = document.getElementById('dtOffsetPage');
+        if (select) select.value = dtUsesCustomTarget() ? 'custom' : String(dtOffsetMin());
+        const input = document.getElementById('dtCustomTarget');
+        if (input && dtCustomTarget()) input.value = dtCustomTarget();
+        dtUpdateSettingUI();
     }
 
     function dtToggle() {
@@ -3540,13 +3612,21 @@ body.android-mode #calcIconPlusMinus::after {
     }
 
     (function dtInitSetting() {
-        ['dtOffsetSelect', 'dtOffsetPage'].forEach((id) => {
-            const el = document.getElementById(id);
-            if (!el) return;
-            el.value = String(dtOffsetMin());
-            el.addEventListener('change', () => dtSyncOffset(parseInt(el.value, 10) || 0));
+        const select = document.getElementById('dtOffsetPage');
+        const input = document.getElementById('dtCustomTarget');
+        select.value = dtUsesCustomTarget() ? 'custom' : String(dtOffsetMin());
+        input.value = dtCustomTarget() || '';
+        select.addEventListener('change', () => {
+            if (select.value === 'custom') {
+                dtUpdateSettingUI();
+                if (dtValidCustomTarget(input.value)) dtSaveCustomTarget();
+                else dtShowCustomError('목표값을 입력한 뒤 적용해 주세요.');
+            } else dtSyncOffset(Number(select.value));
         });
-        // 페이지가 열려 있는 동안 목표값을 현재 시각으로 계속 보여준다
+        input.addEventListener('input', () => dtShowCustomError(''));
+        document.getElementById('dtCustomApply').addEventListener('click', dtSaveCustomTarget);
+        dtUpdateSettingUI();
+        // 페이지가 열려 있는 동안 시간 기준 목표값을 갱신한다 (직접 지정 값은 고정).
         setInterval(() => {
             const page = document.getElementById('page-datecalc');
             const prev = document.getElementById('dtTargetPreview');

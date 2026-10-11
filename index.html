@@ -817,6 +817,12 @@ body.android-mode #calcIconPlusMinus::after {
     function applyCloudConfig(c) {
         if (!c) return;
         if (typeof c.dtOffset === 'number') localStorage.setItem('dt_offset_min', String(c.dtOffset));
+        if (c.dtTargetMode === 'custom' && dtValidCustomTarget(c.dtCustomTarget)) {
+            localStorage.setItem('dt_custom_target', c.dtCustomTarget);
+            localStorage.setItem('dt_target_mode', 'custom');
+        } else {
+            localStorage.setItem('dt_target_mode', 'time');
+        }
         if (typeof c.dateCalc === 'boolean') {
             dtEnabled = c.dateCalc;
             if (!dtEnabled) dtSetArmed(false);
@@ -1564,8 +1570,8 @@ body.android-mode #calcIconPlusMinus::after {
 
     /* ====== 입력 처리 ====== */
     // ===================================================================
-    // 날짜 계산기 — 앞의 세 수를 자유롭게 계산한 값에 X를 더하면 오늘 날짜·시각이 나온다.
-    //   목표값은 YYMMDDHHMM(10자리). 설정에서 '1분 뒤'로 밀어 여유를 둘 수 있다.
+    // 날짜 계산기 — 앞의 세 수를 자유롭게 계산한 값에 X를 더하면 목표 날짜·시각이 나온다.
+    //   목표값은 YYMMDDHHMM(10자리). 현재 시각 기준 또는 직접 지정 값을 쓴다.
     //   +/− 를 두 번 탭하면 켜지고(글자 볼드), 세 번째 수를 넣고 3초 쉬면
     //   X를 계산해 버튼을 깜빡인 뒤, 어떤 숫자를 눌러도 X의 자리가 차례로 들어간다.
     //   자릿수는 키패드의 해당 숫자를 볼드로 알려준다 (10자리면 1과 0).
@@ -1589,7 +1595,20 @@ body.android-mode #calcIconPlusMinus::after {
         return 0;
     }
 
+    function dtValidCustomTarget(value) {
+        if (typeof value !== 'string' || !/^\d{10}$/.test(value)) return false;
+        const year = 2000 + Number(value.slice(0, 2));
+        const month = Number(value.slice(2, 4));
+        const day = Number(value.slice(4, 6));
+        const hour = Number(value.slice(6, 8));
+        const minute = Number(value.slice(8, 10));
+        const date = new Date(year, month - 1, day, hour, minute);
+        return date.getFullYear() === year && date.getMonth() === month - 1
+            && date.getDate() === day && date.getHours() === hour && date.getMinutes() === minute;
+    }
     function dtTargetAt(base) {
+        const custom = localStorage.getItem('dt_custom_target');
+        if (localStorage.getItem('dt_target_mode') === 'custom' && dtValidCustomTarget(custom)) return custom;
         const d = new Date(base + dtOffsetMin() * 60000);
         const p = (n) => String(n).padStart(2, '0');
         return String(d.getFullYear()).slice(2) + p(d.getMonth() + 1) + p(d.getDate())
