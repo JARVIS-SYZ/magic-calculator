@@ -239,6 +239,7 @@ html, body {
             <div class="code-create-row">
                 <input class="code-name-input" id="newCodeName" placeholder="보안코드 (예: 123456, 789012)" type="text" inputmode="numeric">
                 <button class="create-btn" onclick="createCode()">등록</button>
+                <button class="create-btn" onclick="createRandomCodes()">무작위 10개 생성</button>
             </div>
         </div>
         <div class="section">
@@ -517,6 +518,15 @@ html, body {
         } catch(e) {
             alert('오류: ' + e.message);
         }
+    }
+
+    function createRandomCodes() {
+        const codes = new Set();
+        while (codes.size < 10) {
+            codes.add(String(Math.floor(100000 + Math.random() * 900000)));
+        }
+        document.getElementById('newCodeName').value = Array.from(codes).join(', ');
+        createCode();
     }
 
     // ===== 날짜 계산기 기능 잠금 해제 =====
