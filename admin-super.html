@@ -126,6 +126,13 @@ html, body {
     font-size:13px; font-family:monospace;
     color:#ff9f0a; letter-spacing:2px;
 }
+.code-value-row { display:flex; align-items:center; gap:8px; }
+.code-copy {
+    background:#ff9f0a22; border:none; border-radius:6px;
+    padding:3px 7px; font-size:11px; color:#ff9f0a;
+    cursor:pointer; font-weight:600;
+}
+.code-copy:active { opacity:0.7; }
 .code-status {
     font-size:11px; color:#30d158; font-weight:600;
 }
@@ -383,7 +390,10 @@ html, body {
             item.className = 'code-item' + (d.used ? ' used' : '');
             item.innerHTML = `
                 <div class="code-info">
-                    <div class="code-val" style="font-size:17px">${doc.id}</div>
+                    <div class="code-value-row">
+                        <div class="code-val" style="font-size:17px">${doc.id}</div>
+                        <button class="code-copy" type="button" onclick="copyCode('${doc.id}', this)">복사</button>
+                    </div>
                     ${d.name ? `<div class="code-name" style="font-size:13px;color:#aaa;margin-top:3px">${d.name}</div>` : ''}
                     <div class="code-status ${d.used ? 'used' : ''}">${d.revoked ? '● 정지됨' : (d.used ? `● 사용됨 (${useCount}회)` : '● 미사용')}</div>
                 </div>
@@ -396,6 +406,28 @@ html, body {
             `;
             list.appendChild(item);
         });
+    }
+
+    async function copyCode(code, button) {
+        try {
+            if (navigator.clipboard && window.isSecureContext) {
+                await navigator.clipboard.writeText(code);
+            } else {
+                const textarea = document.createElement('textarea');
+                textarea.value = code;
+                textarea.style.position = 'fixed';
+                textarea.style.opacity = '0';
+                document.body.appendChild(textarea);
+                textarea.select();
+                const copied = document.execCommand('copy');
+                textarea.remove();
+                if (!copied) throw new Error('copy failed');
+            }
+            button.textContent = '복사됨';
+            setTimeout(() => { button.textContent = '복사'; }, 1500);
+        } catch (e) {
+            alert('코드를 복사하지 못했습니다.');
+        }
     }
 
     function updateStats(codesSnapshot) {
