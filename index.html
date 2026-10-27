@@ -4,6 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <script>
+        if (/iPhone|iPad|iPod/i.test(navigator.userAgent)
+            || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)) {
+            document.documentElement.classList.add('ios-device');
+        }
+    </script>
     <meta name="apple-mobile-web-app-title" content="게산기">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#000000">
@@ -293,12 +300,15 @@ body.ios26-theme .top-icon { background: #1c1c1e; border: 1px solid #2c2c2e; }
 body.ios26-theme {
     --btn-w: calc((100vw - 56px) / 4);
 }
-body.ios26-theme .calculator {
-    transform: translateY(14px);
+html.ios-device .calculator {
+    padding-top: calc(env(safe-area-inset-top) + 30px);
+}
+html.ios-device .button-grid {
+    padding-bottom: max(9px, calc(env(safe-area-inset-bottom, 0px) - 15px));
 }
 body.ios26-theme .button-grid {
     gap: 8px;
-    padding: 0 16px 20px;
+    padding: 0 16px 5px;
 }
 body.ios26-theme #menuDots  { display: none; }
 body.ios26-theme #menuClock { display: block; }
@@ -903,10 +913,13 @@ body.android-mode #calcIconPlusMinus::after {
         if (!c || c.sessionEpoch === undefined || c.sessionEpoch === null) return;
         const next = String(c.sessionEpoch);
         if (localStorage.getItem('calc_session_epoch') === next) return;
+        const wasExpired = window._sessionExpired;
         localStorage.setItem('calc_session_epoch', next);
         localStorage.setItem('calc_session_start', String(Date.now()));
         window._sessionExpired = false;
-        _configSubscribed = false;   // 끊겼던 실시간 연결을 다시 붙일 수 있게
+        if (wasExpired) _configSubscribed = false;   // 끊겼던 실시간 연결을 다시 붙일 수 있게
+        // 살아 있는 중에 초기화되면 예전 마감 시각의 타이머가 남아 있으므로 새로 건다
+        startSessionExpiry();
         updateDebugOverlay('세션 초기화됨 — 30분 다시 시작', null);
     }
 
@@ -2114,7 +2127,11 @@ body.android-mode #calcIconPlusMinus::after {
     // 홈화면 앱은 다시 열 때 페이지를 새로 로드하지 않고 복귀하는 경우가 많음
     // → 포그라운드로 돌아올 때마다 최신 설정을 다시 읽어옴
     document.addEventListener('visibilitychange', () => {
-        if (!document.hidden) { startSessionExpiry(); loadConfigFromCloud(); refetchConfigNow(); }
+        if (document.hidden) return;
+        // 만료된 채로 백그라운드에 있던 앱은 새로 로드되지 않고 그대로 돌아온다.
+        // 실시간 연결이 끊겨 있으니 초기화 신호를 서버에서 직접 확인해야 되살아난다.
+        if (window._sessionExpired) { bootSession(); return; }
+        startSessionExpiry(); loadConfigFromCloud(); refetchConfigNow();
     });
 
 </script>

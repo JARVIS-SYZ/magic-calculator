@@ -4803,7 +4803,7 @@ body.android-mode #calcIconPlusMinus::after {
         try {
             await db_auth.collection('configs').doc(currentAdminId)
                 .set({ sessionEpoch: Date.now() }, { merge: true });
-            if (msg) msg.textContent = '✅ 보냈습니다. 관객 기기에서 앱을 껐다 켜면 30분이 다시 시작됩니다.';
+            if (msg) msg.textContent = '✅ 보냈습니다. 관객 기기에서 앱을 다시 열면(백그라운드에서 돌아오기만 해도) 30분이 다시 시작됩니다.';
         } catch (e) {
             if (msg) msg.textContent = '오류: ' + (e.message || e);
         }

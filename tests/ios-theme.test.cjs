@@ -30,14 +30,13 @@ for (const file of ['index.html', 'admin.html']) {
         const html = read(file);
 
         assert.match(html, /body\.ios26-theme \{\s*--btn-w: calc\(\(100vw - 56px\) \/ 4\);\s*\}/);
-        if (file === 'admin.html') {
-            assert.match(html, /document\.documentElement\.classList\.add\('ios-device'\)/);
-            assert.match(html, /html\.ios-device \.calculator \{\s*padding-top: calc\(env\(safe-area-inset-top\) \+ 30px\);\s*\}/);
-            assert.match(html, /html\.ios-device \.button-grid \{\s*padding-bottom: max\(9px, calc\(env\(safe-area-inset-bottom, 0px\) - 15px\)\);\s*\}/);
-        } else {
-            assert.match(html, /body\.ios26-theme \.calculator \{\s*transform: translateY\(14px\);\s*\}/);
-        }
-        const keypadBottom = file === 'admin.html' ? 5 : 20;
+        // 관객용도 관리자와 같은 위치에 키패드가 놓여야 한다
+        assert.match(html, /apple-mobile-web-app-status-bar-style" content="black-translucent"/);
+        assert.match(html, /document\.documentElement\.classList\.add\('ios-device'\)/);
+        assert.match(html, /html\.ios-device \.calculator \{\s*padding-top: calc\(env\(safe-area-inset-top\) \+ 30px\);\s*\}/);
+        assert.match(html, /html\.ios-device \.button-grid \{\s*padding-bottom: max\(9px, calc\(env\(safe-area-inset-bottom, 0px\) - 15px\)\);\s*\}/);
+        assert.doesNotMatch(html, /body\.ios26-theme \.calculator \{\s*transform/);
+        const keypadBottom = 5;
         assert.match(html, new RegExp(`body\\.ios26-theme \\.button-grid \\{\\s*gap: 8px;\\s*padding: 0 16px ${keypadBottom}px;\\s*\\}`));
         assert.match(html, /body\.ios26-theme \.button(?:\s|\{)[\s\S]*?transform: scale\(1\)/);
     });
