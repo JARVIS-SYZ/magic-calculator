@@ -884,21 +884,22 @@ body.android-mode #calcIconPlusMinus::after {
 
 
 /* 관리자 전용 동작 가이드 — 실제 계산기 복제 화면 위에서 회색 손가락 점이 동작을 시연한다 */
-.guide-watch { display:none; }
-body.guide-enabled .guide-watch { display:flex; }
+.guide-watch { display:flex; }
+.guide-menu-item { display:none !important; }
+body.guide-enabled .guide-menu-item { display:flex !important; }
 .guide-watch { width:100%; align-items:center; justify-content:center; gap:8px; border:0; background:linear-gradient(135deg,#3a2a12,#2a2116); color:#ffb340; border-radius:12px; padding:12px; font-size:14px; font-weight:600; margin:12px 0 4px; cursor:pointer; box-shadow:inset 0 0 0 1px rgba(255,159,10,.35); }
 .guide-watch::before { content:''; width:0; height:0; border-left:9px solid #ff9f0a; border-top:6px solid transparent; border-bottom:6px solid transparent; }
-.guide-overlay { position:fixed; inset:0; z-index:7000; background:rgba(0,0,0,.95); -webkit-backdrop-filter:blur(8px); backdrop-filter:blur(8px); display:none; flex-direction:column; align-items:center; overflow-y:auto; padding:max(14px,env(safe-area-inset-top)) 16px max(18px,env(safe-area-inset-bottom)); }
+.guide-overlay { position:fixed; inset:0; z-index:7000; background:rgba(0,0,0,.96); -webkit-backdrop-filter:blur(8px); backdrop-filter:blur(8px); display:none; flex-direction:column; align-items:center; overflow:hidden; padding:calc(env(safe-area-inset-top,0px) + 10px) 16px calc(env(safe-area-inset-bottom,0px) + 12px); }
 .guide-overlay.active { display:flex; }
-.gd-top { width:min(100%,360px); display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:12px; }
-.gd-title { font-size:20px; font-weight:700; color:#fff; letter-spacing:-.3px; }
-.gd-who { display:inline-block; margin-top:4px; font-size:12px; font-weight:600; color:#ff9f0a; background:rgba(255,159,10,.14); padding:3px 9px; border-radius:20px; transition:background .3s,color .3s; }
+.gd-top { flex:none; width:min(100%,360px); display:flex; align-items:center; gap:10px; margin-bottom:8px; }
+.gd-title { font-size:19px; font-weight:700; color:#fff; letter-spacing:-.3px; white-space:nowrap; }
+.gd-who { flex:none; font-size:12px; font-weight:600; color:#ff9f0a; background:rgba(255,159,10,.14); padding:3px 9px; border-radius:20px; transition:background .3s,color .3s; }
 .gd-who.audience { color:#64d2ff; background:rgba(100,210,255,.14); }
-.gd-close { flex:none; border:0; background:#2c2c2e; color:#fff; width:34px; height:34px; border-radius:50%; font-size:20px; line-height:1; cursor:pointer; }
-.gd-stage { perspective:900px; margin:2px 0 14px; }
-.gd-phone { width:clamp(170px, min(62vw, calc((100dvh - 400px) * .5)), 240px); padding:8px; border-radius:38px; background:#1b1b1d; box-shadow:0 0 0 1.5px #3a3a3c, 0 24px 60px rgba(0,0,0,.7); transform-origin:50% 85%; transition:transform .9s cubic-bezier(.3,.7,.2,1); }
+.gd-close { flex:none; margin-left:auto; border:0; background:#2c2c2e; color:#fff; width:32px; height:32px; border-radius:50%; font-size:20px; line-height:1; cursor:pointer; }
+.gd-stage { flex:1 1 0; min-height:0; width:100%; display:flex; align-items:center; justify-content:center; perspective:900px; container-type:size; }
+.gd-phone { box-sizing:border-box; width:min(70cqw, 49cqh, 250px); aspect-ratio:9/18.3; display:flex; padding:7px; border-radius:36px; background:#1b1b1d; box-shadow:0 0 0 1.5px #3a3a3c, 0 20px 50px rgba(0,0,0,.7); transform-origin:50% 85%; transition:transform .9s cubic-bezier(.3,.7,.2,1); }
 .gd-phone.flat { transform:rotateX(62deg) scale(.92); }
-.gd-screen { position:relative; overflow:hidden; border-radius:31px; background:#000; aspect-ratio:9/18.5; display:flex; flex-direction:column; padding:10px 12px 14px; user-select:none; -webkit-user-select:none; }
+.gd-screen { flex:1; position:relative; overflow:hidden; border-radius:30px; background:#000; display:flex; flex-direction:column; padding:8px 10px 12px; user-select:none; -webkit-user-select:none; container-type:inline-size; }
 .gd-head { display:flex; justify-content:space-between; align-items:center; height:30px; margin-top:6px; }
 .gd-menu, .gd-hcalc { width:28px; height:28px; display:flex; align-items:center; justify-content:center; border-radius:50%; transition:opacity .3s; }
 .gd-menu svg { width:20px; height:16px; }
@@ -914,15 +915,15 @@ body.guide-enabled .guide-watch { display:flex; }
 .gd-screen.v-new .gd-hcalc { visibility:visible; }
 .gd-hcalc svg { width:16px; height:16px; }
 .gd-display { flex:1; display:flex; flex-direction:column; justify-content:flex-end; align-items:flex-end; padding:0 4px 8px; min-height:0; }
-.gd-expr { color:#8e8e93; font-size:15px; min-height:20px; white-space:nowrap; transition:color .3s; }
-.gd-num { color:#fff; font-size:46px; font-weight:300; line-height:1.1; white-space:nowrap; letter-spacing:-1px; transition:font-size .15s; }
+.gd-expr { color:#8e8e93; font-size:7cqw; min-height:1.3em; white-space:nowrap; }
+.gd-num { color:#fff; font-size:20cqw; font-weight:300; line-height:1.1; white-space:nowrap; letter-spacing:-.04em; }
 .gd-num.glow { animation:gdGlow 1.4s ease-in-out infinite; }
 @keyframes gdGlow { 50% { color:#ffd27a; text-shadow:0 0 18px rgba(255,159,10,.75); } }
-.gd-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
-.gd-key { position:relative; aspect-ratio:1; border-radius:50%; display:flex; align-items:center; justify-content:center; color:#fff; font-size:20px; transition:filter .12s, transform .12s; }
+.gd-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:3.6cqw; }
+.gd-key { position:relative; aspect-ratio:1; border-radius:50%; display:flex; align-items:center; justify-content:center; color:#fff; font-size:9cqw; transition:filter .12s, transform .12s; }
 .gd-key.num { background:#333; }
-.gd-key.fn { background:#505050; font-size:16px; }
-.gd-key.op { background:#ff9f0a; font-size:24px; }
+.gd-key.fn { background:#505050; font-size:7.2cqw; }
+.gd-key.op { background:#ff9f0a; font-size:11cqw; }
 .gd-key > span { display:flex; align-items:center; justify-content:center; width:100%; height:100%; }
 .gd-key svg { width:46%; height:46%; }
 .gd-key.down { filter:brightness(1.75); transform:scale(.94); }
@@ -962,20 +963,23 @@ body.guide-enabled .guide-watch { display:flex; }
 .gd-peek.on { opacity:1; }
 .gd-peek div { color:#fff; font-size:30px; font-weight:600; padding:4px 0; }
 .gd-peek div:not(:last-child) { border-bottom:1px solid #333; }
-.gd-panel { width:min(100%,360px); }
-.gd-steps { display:flex; flex-direction:column; gap:2px; }
-.gd-step { display:flex; gap:10px; align-items:flex-start; padding:8px 12px; border-radius:12px; color:#636366; font-size:13.5px; line-height:1.45; transition:background .25s, color .25s; }
+.gd-panel { flex:none; width:min(100%,360px); margin-top:10px; }
+.gd-slot { display:grid; min-height:132px; }
+.gd-slot > * { grid-area:1/1; }
+.gd-steps { display:flex; flex-direction:column; justify-content:center; gap:2px; transition:opacity .3s; }
+.gd-slot.finished .gd-steps { opacity:0; }
+.gd-step { display:flex; gap:10px; align-items:flex-start; padding:7px 12px; border-radius:12px; color:#636366; font-size:14px; line-height:1.45; transition:background .25s, color .25s; }
 .gd-step b { flex:none; width:22px; height:22px; border-radius:50%; background:#2c2c2e; color:#8e8e93; font-size:12px; display:flex; align-items:center; justify-content:center; margin-top:1px; transition:background .25s, color .25s; }
 .gd-step.on { background:#1c1c1e; color:#fff; }
 .gd-step.on b { background:#ff9f0a; color:#000; }
 .gd-step.done { color:#a1a1a6; }
 .gd-step.done b { background:#3a3a3c; color:#ff9f0a; }
-.gd-result { scroll-margin-bottom:84px; margin-top:10px; border-radius:14px; padding:14px; background:linear-gradient(135deg,rgba(255,159,10,.18),rgba(255,159,10,.06)); box-shadow:inset 0 0 0 1px rgba(255,159,10,.4); opacity:0; transform:translateY(6px); transition:opacity .35s, transform .35s; }
+.gd-result { align-self:center; border-radius:14px; padding:14px 16px; background:linear-gradient(135deg,rgba(255,159,10,.18),rgba(255,159,10,.06)); box-shadow:inset 0 0 0 1px rgba(255,159,10,.4); opacity:0; transform:translateY(6px); transition:opacity .35s, transform .35s; pointer-events:none; }
 .gd-result.on { opacity:1; transform:none; }
 .gd-result-k { font-size:11px; font-weight:700; color:#ff9f0a; letter-spacing:1px; }
-.gd-result-v { color:#fff; font-size:16px; font-weight:600; margin-top:4px; line-height:1.45; }
+.gd-result-v { color:#fff; font-size:17px; font-weight:600; margin-top:4px; line-height:1.4; }
 .gd-result-s { color:#a1a1a6; font-size:12.5px; margin-top:4px; line-height:1.55; }
-.gd-actions { position:sticky; bottom:0; display:flex; gap:8px; margin-top:6px; padding-top:12px; background:linear-gradient(to bottom, transparent, rgba(0,0,0,.95) 40%); }
+.gd-actions { display:flex; gap:8px; margin-top:10px; }
 .gd-actions button { flex:1; padding:12px; border:0; border-radius:12px; background:#2c2c2e; color:#fff; font-size:15px; font-weight:600; cursor:pointer; }
 .gd-actions button.primary { background:#ff9f0a; color:#000; }
 @media (prefers-reduced-motion: reduce) { .gd-finger, .gd-phone { transition-duration:.01s; } .gd-num.glow { animation:none; color:#ffd27a; } }
@@ -1133,7 +1137,7 @@ body.guide-enabled .guide-watch { display:flex; }
 
 <div class="guide-overlay" id="motionGuide" role="dialog" aria-modal="true" aria-labelledby="motionGuideTitle">
     <div class="gd-top">
-        <div><div class="gd-title" id="motionGuideTitle">동작 가이드</div><span class="gd-who" id="gdWho">관리자 계산기</span></div>
+        <div class="gd-title" id="motionGuideTitle">동작 가이드</div><span class="gd-who" id="gdWho">관리자 계산기</span>
         <button type="button" class="gd-close" onclick="closeMotionGuide()" aria-label="가이드 닫기">×</button>
     </div>
     <div class="gd-stage" aria-hidden="true">
@@ -1171,15 +1175,17 @@ body.guide-enabled .guide-watch { display:flex; }
         </div>
     </div>
     <div class="gd-panel">
-        <div class="gd-steps" id="gdSteps"></div>
-        <div class="gd-result" id="gdResult">
-            <div class="gd-result-k">결과</div>
-            <div class="gd-result-v" id="gdResultV"></div>
-            <div class="gd-result-s" id="gdResultS"></div>
+        <div class="gd-slot" id="gdSlot">
+            <div class="gd-steps" id="gdSteps"></div>
+            <div class="gd-result" id="gdResult">
+                <div class="gd-result-k">결과</div>
+                <div class="gd-result-v" id="gdResultV"></div>
+                <div class="gd-result-s" id="gdResultS"></div>
+            </div>
         </div>
         <div class="gd-actions">
             <button type="button" onclick="replayMotionGuide()">↻ 다시 보기</button>
-            <button type="button" class="primary" onclick="closeMotionGuide()">확인</button>
+            <button type="button" class="primary" onclick="closeMotionGuide()">닫기</button>
         </div>
     </div>
 </div>
@@ -1286,7 +1292,7 @@ body.guide-enabled .guide-watch { display:flex; }
             <span class="side-menu-arrow">›</span>
         </button>
         <div class="side-menu-divider"></div>
-        <button class="side-menu-item" onclick="openMotionGuide('settings')">
+        <button class="side-menu-item guide-menu-item" onclick="openMotionGuide('settings')">
             <span class="side-menu-icon">▶</span><span>설정 열기 가이드</span><span class="side-menu-arrow">›</span>
         </button>
         <button class="side-menu-item" onclick="openPage('guide')">
@@ -2581,21 +2587,25 @@ body.guide-enabled .guide-watch { display:flex; }
         function release(k) { finger.classList.remove('press', 'hold'); keyDown(k, false); setTag(''); finger.style.setProperty('--p', 0); }
 
         // ----- 복제 계산기 상태 -----
-        let st = { entry: '0', expr: '', fresh: true };
-        function fmt(s) {
-            s = String(s);
-            if (!/^-?\d+(\.\d*)?$/.test(s)) return s;
-            const parts = s.split('.');
-            const int = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-            return parts.length > 1 ? int + '.' + parts[1] : int;
-        }
+        // 실제 계산기와 같게: 입력 중에는 큰 화면에 식 전체(333+333), = 뒤에는 위 줄에 식(333+333=)과 아래 결과
+        let st = { full: '', reset: false };
+        const fmt = s => String(s).replace(/\d+(\.\d*)?/g, m => {
+            const parts = m.split('.');
+            parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+            return parts.join('.');
+        });
         function setNum(s) {
-            const n = $g('gdNum'), t = fmt(s);
+            const n = $g('gdNum'), t = fmt(s || '0');
             n.textContent = t;
-            n.style.fontSize = t.length > 13 ? '22px' : t.length > 10 ? '27px' : t.length > 7 ? '34px' : '46px';
+            n.style.fontSize = t.length > 17 ? '8cqw' : t.length > 13 ? '10cqw' : t.length > 10 ? '12.5cqw' : t.length > 7 ? '15cqw' : '20cqw';
         }
-        function setExpr(s) { $g('gdExpr').textContent = s || ''; }
-        function resetCalc() { st = { entry: '0', expr: '', fresh: true }; setNum('0'); setExpr(''); $g('gdNum').classList.remove('glow'); }
+        function setExpr(s) {
+            const e = $g('gdExpr'), t = s ? fmt(s) : '';
+            e.textContent = t;
+            e.style.fontSize = t.length > 20 ? '5cqw' : '7cqw';
+        }
+        function setFull(s) { st = { full: s, reset: false }; setNum(s); }
+        function resetCalc() { st = { full: '', reset: false }; setNum('0'); setExpr(''); $g('gdNum').classList.remove('glow'); }
         function evaluate(full) {
             const t = full.match(/\d+(\.\d+)?|[+−×÷]/g) || ['0'];
             const vals = [parseFloat(t[0])], ops = [];
@@ -2611,14 +2621,19 @@ body.guide-enabled .guide-watch { display:flex; }
         }
         function input(ch, forced) {
             if (/[0-9.]/.test(ch)) {
-                st.entry = (st.fresh || st.entry === '0') && ch !== '.' ? ch : st.entry + ch;
-                st.fresh = false; setNum(st.entry);
+                if (st.reset) { st.full = ''; st.reset = false; setExpr(''); }
+                const last = st.full.match(/[\d.]+$/);
+                st.full = last && last[0] === '0' && ch !== '.' ? st.full.slice(0, -1) + ch : st.full + ch;
+                setNum(st.full);
             } else if ('+−×÷'.includes(ch)) {
-                st.expr += st.entry + ch; st.fresh = true; setExpr(st.expr);
+                if (st.reset) { st.reset = false; setExpr(''); }   // 결과에 이어서 계산 (666 → 666+)
+                if (!st.full) st.full = '0';
+                st.full = /[+−×÷]$/.test(st.full) ? st.full.slice(0, -1) + ch : st.full + ch;
+                setNum(st.full);
             } else if (ch === '=') {
-                const full = st.expr + st.entry, r = forced != null ? String(forced) : evaluate(full);
-                setExpr(full); setNum(r);
-                st = { entry: r, expr: '', fresh: true };
+                const r = forced != null ? String(forced) : evaluate(st.full);
+                setExpr(st.full + '='); setNum(r);
+                st = { full: r, reset: true };
             }
         }
         const keyOf = ch => (ch === '-' ? '−' : ch);
@@ -2643,6 +2658,12 @@ body.guide-enabled .guide-watch { display:flex; }
             w.classList.toggle('audience', kind === 'audience');
         }
         function blink(k) { const e = el(k); e.classList.remove('blink'); void e.offsetWidth; e.classList.add('blink'); later(() => e.classList.remove('blink'), 1100); }
+        // 666 트릭의 파란 점: 계산기 아이콘 버튼 아래에 잠깐 켜졌다 꺼진다
+        async function blueDot() {
+            await wait(600); el('icon').classList.add('blue-on'); chip('파란 점');
+            await wait(1300); el('icon').classList.remove('blue-on'); chip('');
+            await wait(600);
+        }
 
         // ----- 단계 표시 -----
         let stepEls = [];
@@ -2651,17 +2672,19 @@ body.guide-enabled .guide-watch { display:flex; }
             stepEls = Array.from($g('gdSteps').children);
         }
         function step(i) { stepEls.forEach((e, j) => { e.classList.toggle('on', j === i); e.classList.toggle('done', j < i); }); }
-        function done(main, sub) {
+        async function done(main, sub) {
             stepEls.forEach(e => { e.classList.remove('on'); e.classList.add('done'); });
+            await wait(900);
             $g('gdResultV').textContent = main;
             $g('gdResultS').textContent = sub || '';
+            $g('gdSlot').classList.add('finished');
             $g('gdResult').classList.add('on');
-            later(() => $g('gdResult').scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 150);
         }
         function resetStage() {
             hideFinger(); chip(''); resetCalc();
             screen.classList.remove('ghost');
             phone.classList.remove('flat');
+            $g('gdSlot').classList.remove('finished');
             ['gdMenuPanel', 'gdSheet', 'gdPeek', 'gdResult'].forEach(id => $g(id).classList.remove('on'));
             screen.querySelectorAll('.gd-key').forEach(k => k.classList.remove('down', 'gray', 'armed', 'blink', 'blue-on'));
             screen.querySelectorAll('.gd-mi').forEach(k => k.classList.remove('down'));
@@ -2678,74 +2701,73 @@ body.guide-enabled .guide-watch { display:flex; }
         // ----- 기능별 시연 -----
         const G = {
             settings: {
-                title: '설정 화면 열기', who: 'admin',
-                steps: () => ['계산기 왼쪽 위 메뉴 아이콘을 탭하세요.', '메뉴에서 원하는 기능을 고르세요.'],
+                title: '설정 열기', who: 'admin',
+                steps: () => ['왼쪽 위 메뉴 아이콘 탭', '원하는 기능 선택'],
                 run: async () => {
                     step(0); await wait(500);
                     await tap('menu', { after: () => $g('gdMenuPanel').classList.add('on') });
                     step(1); await wait(500);
                     await tap('mi-ghost', { after: () => el('mi-ghost').classList.add('down') });
                     hideFinger();
-                    done('기능별 설정·설명 화면이 열려요', '각 화면의 ▶ 가이드 버튼으로 이 시연을 다시 볼 수 있어요.');
+                    await done('기능별 설정 화면이 열림', '각 설정 화면의 ▶ 버튼으로 동작 가이드를 볼 수 있어요');
                 }
             },
             ghost: {
                 title: '고스트 모드', who: 'admin',
-                steps: () => ['점(.) 버튼을 빠르게 두 번 탭', variant() === 'ios18' ? '왼쪽 위 점 3개가 사라지면 대기 중' : '왼쪽 위 시계가 사라지면 대기 중',
-                              sec('admin_auto_delay', 3) + '초 뒤 관객 결과가 한 자리씩 자동 입력'],
+                steps: () => ['점(.)을 빠르게 두 번 탭', variant() === 'ios18' ? '왼쪽 위 점 3개가 사라짐 (대기 중)' : '왼쪽 위 시계가 사라짐 (대기 중)',
+                              sec('admin_auto_delay', 3) + '초 뒤 최신 결과값이 한 자리씩 입력됨'],
                 run: async () => {
                     step(0); await wait(400);
                     await dbl('.', () => input('.'), () => resetCalc());
                     hideFinger();
                     step(1); screen.classList.add('ghost');
                     const delay = sec('admin_auto_delay', 3);
-                    for (let n = Math.ceil(delay); n > 0; n--) { chip('⏱ ' + n + '초 후 자동 입력'); await wait(Math.min(1000, 2400 / Math.ceil(delay))); }
+                    for (let n = Math.ceil(delay); n > 0; n--) { chip(n + '초'); await wait(Math.min(1000, 2400 / Math.ceil(delay))); }
                     chip('');
                     step(2); screen.classList.remove('ghost');
                     const gap = Math.min(600, sec('admin_digit_interval', 0.3) * 1000);
-                    for (const d of '147733') await autoKey(d, gap);
+                    for (const d of '147833') await autoKey(d, gap);
                     $g('gdNum').classList.add('glow');
-                    done('관객이 낸 결과 147,733이 직접 누른 것처럼 입력돼요', '버튼이 눌리는 애니메이션까지 그대로라 자연스러워요.');
+                    await done('관객 결과값 147,833이 자동으로 입력됨', '숫자 사이 속도는 고스트 모드 설정에서 바꿀 수 있어요');
                 }
             },
             counting: {
                 title: '자동 카운팅', who: 'audience',
-                steps: () => ['숫자 하나(1~9)를 누르고 = 을 누르세요', '기기를 세로로 세우면', '0부터 1씩 자동으로 올라가요'],
+                steps: () => ['숫자 하나(1~9) 입력 후 =', '폰을 세로로 세우기', '0부터 1씩 올라감'],
                 run: async () => {
                     step(0); await wait(400);
                     await type('7=');
                     hideFinger(); await wait(300);
-                    step(1); phone.classList.add('flat'); chip('📱 바닥에 놓인 상태');
+                    step(1); phone.classList.add('flat'); chip('눕혀 둔 상태');
                     await wait(1200);
-                    chip('📱 세로로 세우기'); phone.classList.remove('flat');
+                    chip('세로로 세움'); phone.classList.remove('flat');
                     await wait(1000 + Math.min(1500, sec('admin_counting_trigger_delay', 1) * 1000));
                     chip(''); step(2); setExpr('');
                     for (let i = 0; i <= 9; i++) { setNum(String(i)); await wait(420); }
-                    done('세워 둔 동안 숫자가 계속 올라가요', '화면을 위로 눕히면 멈추고 모드 해제, 뒤집으면 0으로 리셋돼요.');
+                    await done('세워 두는 동안 계속 올라감', '화면을 위로 눕히면 멈춤 · 뒤집으면 0부터 다시');
                 }
             },
             trick666: {
                 title: '666 트릭', who: 'audience',
-                steps: () => ['= 을 빠르게 두 번 탭해 666 모드 켜기', '333 + 333 = → 666', '이어서 666 + 666 입력 → 파란 점 뒤 식이 999 + 999로 바뀜', '= 을 누르면 → 파란 점 뒤 666 + 666 = 1,332'],
+                steps: () => ['=을 빠르게 두 번 탭 (666 모드 켜기)', '333+333= 입력 → 666', '이어서 +666 입력 → 잠시 뒤 999+999로 바뀜', '= 누르면 1,998 → 위 식이 666+666=, 결과가 1,332로 바뀜'],
                 run: async () => {
                     step(0); await wait(400);
                     await dbl('=');
                     step(1); await type('333+333=');
-                    await wait(500);
-                    step(2); await type('666+666');
-                    hideFinger();
-                    await wait(700); el('icon').classList.add('blue-on'); chip('파란 점 = 곧 바뀜 신호');
-                    await wait(1400); el('icon').classList.remove('blue-on'); chip('');
                     await wait(700);
-                    st = { entry: '999', expr: '999+', fresh: false }; setExpr('999+'); setNum('999');
-                    await wait(900);
-                    step(3); await tap('=', { after: () => { setExpr('999+999'); setNum('1998'); } });
+                    step(2); await type('+666');
                     hideFinger();
-                    await wait(700); el('icon').classList.add('blue-on');
-                    await wait(1400); el('icon').classList.remove('blue-on');
-                    await wait(700);
-                    setExpr('666+666'); setNum('1332'); $g('gdNum').classList.add('glow');
-                    done('식과 결과가 666 + 666 = 1,332로 바뀌어요', '실제 대기 시간은 666 트릭 설정값을 따라요. 끝나면 일반 모드로 돌아와요.');
+                    await blueDot();
+                    setFull('999+999');
+                    await wait(1200);
+                    step(3);
+                    await tap('=', { after: () => input('=') });
+                    hideFinger();
+                    await blueDot();
+                    setExpr('666+666=');
+                    await blueDot();
+                    setNum('1332'); $g('gdNum').classList.add('glow');
+                    await done('666+666=1,332', '실제 대기 시간은 666 트릭 설정값대로 · 끝나면 일반 모드로 돌아감');
                 }
             },
             force: {
@@ -2753,7 +2775,7 @@ body.guide-enabled .guide-watch { display:flex; }
                 steps: () => {
                     const v = variant();
                     const where = v === 'ios18' ? '0 왼쪽 계산기 아이콘' : v === 'ios26' ? '오른쪽 위 계산기 아이콘' : '+/− 버튼';
-                    return [(v === 'android' ? '⚠️ 안드로이드 관객 기기에서는 잠겨 있어요. ' : '') + where + '을 빠르게 두 번 탭 (또는 3초 길게)', '원하는 결과값을 입력하고 완료', '관객이 아무 계산이나 하고 = 을 누르면'];
+                    return [(v === 'android' ? '(안드로이드 관객 기기는 잠김) ' : '') + where + ' 빠르게 두 번 탭 (또는 3초 누르기)', '보여줄 결과값 입력 후 완료', '아무 계산이나 하고 ='];
                 },
                 run: async () => {
                     const k = variant() === 'ios26' ? 'hcalc' : 'icon';
@@ -2768,27 +2790,27 @@ body.guide-enabled .guide-watch { display:flex; }
                     step(2); await wait(300);
                     await type('48×19=', { forced: 2026 });
                     hideFinger(); $g('gdNum').classList.add('glow');
-                    done('어떤 계산이든 결과는 2,026', '48 × 19의 실제 값은 912지만 설정한 숫자가 나와요. 수신 내역에는 🍎로 표시돼요.');
+                    await done('48×19= 결과가 2,026으로 나옴', '실제 값(912)과 관계없이 입력한 숫자가 나와요 · 수신 내역에 🍎 표시');
                 }
             },
             push: {
                 title: '푸시하기', who: 'admin',
-                steps: () => ['보낼 숫자를 입력하세요', '숫자 화면을 빠르게 두 번 탭', '0 옆 점(.)이 두 번 깜박이면 전송 완료', '관객 계산기에 그 숫자가 결과로 떠요'],
+                steps: () => ['보낼 숫자 입력', '숫자 화면을 빠르게 두 번 탭', '점(.) 버튼이 두 번 깜박이면 전송 완료', '관객 계산기에 결과로 뜸'],
                 run: async () => {
                     step(0); await wait(400);
                     await type('2026');
                     step(1); await dbl('display');
                     hideFinger();
-                    step(2); await wait(300); blink('.'); chip('점이 깜박 · 깜박');
-                    await wait(1500); chip('');
+                    step(2); await wait(300); blink('.');
+                    await wait(1500);
                     step(3); who('audience'); resetCalc(); await wait(700);
                     setNum('2026'); $g('gdNum').classList.add('glow');
-                    done('관객 화면에 2,026이 결과값으로 바로 표시돼요', '관객 앱이 켜져 있어야 해요. 화면에 글자가 뜨지 않아 관객은 눈치채지 못해요.');
+                    await done('관객 화면에 2,026이 뜸', '관객 앱이 켜져 있어야 바로 들어가요');
                 }
             },
             preview: {
                 title: '미리보기', who: 'admin',
-                steps: () => ['= 버튼을 1초 이상 길게 누르세요', '누르는 동안 최근 수신 식의 숫자가 보여요', '손을 떼면 바로 사라져요'],
+                steps: () => ['=을 1초 이상 길게 누르기', '최근 수신 식의 숫자가 팝업으로 보임', '손을 떼면 사라짐'],
                 run: async () => {
                     step(0); await wait(400);
                     const peek = $g('gdPeek');
@@ -2797,32 +2819,32 @@ body.guide-enabled .guide-watch { display:flex; }
                     step(1); await wait(2000);
                     step(2); release('='); peek.classList.remove('on');
                     await wait(600); hideFinger();
-                    done('관객이 친 48 × 19 + 7 = 919를 몰래 확인해요', '손을 떼는 순간 팝업이 사라져 계산기 화면만 남아요.');
+                    await done('관객이 입력한 48×19+7=919 확인', '');
                 }
             },
             magic: {
                 title: '계산식 만들기', who: 'admin',
-                steps: () => ['% 를 빠르게 두 번 탭 → 아래 작은 회색 점(대기)', '관객 결과가 들어오면 새 계산식이 자동으로 채워짐', '= 을 누르면 같은 결과값'],
+                steps: () => ['%를 빠르게 두 번 탭 (아래 회색 점 = 대기)', '관객 결과가 오면 새 계산식이 자동 입력됨', '= 누르면 같은 결과값'],
                 run: async () => {
                     step(0); await wait(400);
                     await dbl('%', null, () => el('%').classList.add('armed'));
                     hideFinger();
                     step(1); await wait(800);
-                    chip('📥 관객 결과 수신 · 147,733'); await wait(1300);
+                    chip('관객 결과 수신: 147,833'); await wait(1300);
                     el('%').classList.remove('armed'); chip('');
-                    st = { entry: '0', expr: '431×343', fresh: true }; setNum('431×343');
+                    setFull('431×343');
                     await wait(1200);
                     step(2);
-                    await tap('=', { after: () => { setExpr('431×343'); setNum('147733'); } });
+                    await tap('=', { after: () => input('=') });
                     hideFinger(); $g('gdNum').classList.add('glow');
-                    done('전혀 다른 식 431 × 343으로 같은 147,733이 나와요', '대기 중에 % 를 한 번 누르면 취소돼요.');
+                    await done('431×343=147,833', '대기 중에 %를 한 번 누르면 취소');
                 }
             },
             datecalc: {
                 title: '날짜 계산기', who: 'audience',
                 steps: () => {
-                    const where = variant() === 'ios18' ? '1행 2번째 ±' : variant() === 'android' ? '0 왼쪽 +/−' : '0 왼쪽 ±';
-                    return [where + ' 를 빠르게 두 번 탭 → 글자가 회색이면 켜짐', '관객이 숫자 3개로 자유롭게 계산', '3초 쉬면 버튼이 깜박이고 키패드 숫자가 회색 → 누를 횟수', '+ 누르고 아무 숫자나 그 횟수만큼 → ='];
+                    const where = variant() === 'ios18' ? '첫 줄 ±' : variant() === 'android' ? '0 왼쪽 +/−' : '0 왼쪽 ±';
+                    return [where + '를 빠르게 두 번 탭 (글자가 회색이면 켜짐)', '숫자 3개로 아무 계산', '3초 기다리면 버튼 깜박임, 회색 숫자 = 누를 횟수', '+ 누르고 아무 숫자나 그 횟수만큼, 그리고 ='];
                 },
                 run: async () => {
                     const k = variant() === 'ios18' ? 'pm' : 'icon';
@@ -2831,24 +2853,24 @@ body.guide-enabled .guide-watch { display:flex; }
                     step(1); await type('25×13−7');
                     hideFinger();
                     step(2);
-                    for (let n = 3; n > 0; n--) { chip('⏱ ' + n + '초 쉬기'); await wait(700); }
+                    for (let n = 3; n > 0; n--) { chip(n + '초'); await wait(700); }
                     chip('');
                     const target = dtTargetSample();
-                    const x = String(Number(target) - 318);
+                    const x = String(Number(target) - Number(evaluate('25×13−7')));
                     blink(k);
                     String(x.length).split('').forEach(d => el(d).classList.add('gray'));
-                    chip('회색 ' + String(x.length).split('').join('·') + ' → ' + x.length + '번 누르기'); await wait(1800); chip('');
+                    chip('회색 ' + String(x.length).split('').join(', ') + ' → ' + x.length + '번'); await wait(1800); chip('');
                     step(3);
                     await type('+');
                     let i = 0;
-                    await type('8352719406', { swap: () => x[i++] });
+                    await type('8352719406'.slice(0, x.length).padEnd(x.length, '5'), { swap: () => x[i++] });
                     screen.querySelectorAll('.gd-key.gray').forEach(e => e.classList.remove('gray'));
                     await wait(300);
                     await tap('=', { after: () => input('=', target) });
                     hideFinger(); $g('gdNum').classList.add('glow');
                     const t = target;
-                    done('결과가 지금 시각 ' + t.slice(0, 2) + '년 ' + t.slice(2, 4) + '월 ' + t.slice(4, 6) + '일 ' + t.slice(6, 8) + ':' + t.slice(8, 10) + ' 이 돼요',
-                         '아무 숫자를 눌러도 화면에는 필요한 숫자가 대신 들어가요. 날짜 계산기 설정에서 생년월일 같은 다른 목표도 고를 수 있어요.');
+                    await done(t + ' (' + t.slice(0, 2) + '.' + t.slice(2, 4) + '.' + t.slice(4, 6) + ' ' + t.slice(6, 8) + ':' + t.slice(8, 10) + ')',
+                               '아무 숫자나 눌러도 필요한 숫자로 바뀌어 들어가요');
                 }
             }
         };
@@ -2863,7 +2885,6 @@ body.guide-enabled .guide-watch { display:flex; }
             who(g.who);
             renderSteps(g.steps());
             resetStage();
-            overlay.scrollTop = 0;
             await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
             try { await wait(300); await g.run(); }
             catch (e) { if (e !== CANCEL) console.error('가이드 오류:', e); }
@@ -2878,13 +2899,15 @@ body.guide-enabled .guide-watch { display:flex; }
             stopAll(); current = null;
             overlay.classList.remove('active');
         };
+        // 토글은 처음부터 켜져 있다 (저장값이 'false'일 때만 꺼짐).
+        // 기능별 ▶ 가이드 버튼은 토글과 관계없이 항상 보이고, 토글은 메뉴의 '설정 열기 가이드' 항목만 켜고 끈다.
         window.setGuideEnabled = function (enabled) {
             localStorage.setItem('admin_guide_enabled', enabled ? 'true' : 'false');
             document.body.classList.toggle('guide-enabled', enabled);
             if (enabled) openMotionGuide('settings');
             else closeMotionGuide();
         };
-        const guideEnabled = localStorage.getItem('admin_guide_enabled') === 'true';
+        const guideEnabled = localStorage.getItem('admin_guide_enabled') !== 'false';
         $g('guideToggle').checked = guideEnabled;
         document.body.classList.toggle('guide-enabled', guideEnabled);
         overlay.addEventListener('click', e => { if (e.target === overlay) closeMotionGuide(); });
