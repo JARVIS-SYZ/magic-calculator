@@ -1,7 +1,7 @@
 {
   "id": "gesangi-admin-2",
-  "name": "계산기 관리자",
-  "short_name": "관리자",
+  "name": "이퀄스",
+  "short_name": "이퀄스",
   "start_url": "/magic-calculator/admin.html",
   "scope": "/magic-calculator/admin.html",
   "display": "standalone",
