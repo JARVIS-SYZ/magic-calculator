@@ -1336,7 +1336,7 @@ body.android-mode #calcIconPlusMinus::after {
     }
 
     // 포스 진입은 '계산기 아이콘'이 떠 있는 버튼에서만. 날짜 계산기이 쓰는 버튼은 비켜준다.
-    // 안드로이드에서는 메뉴에서 감춰만 둘 게 아니라 제스처 자체를 받지 않는다 (666과 같다).
+    // 안드로이드에서는 메뉴에서 감춰만 둘 게 아니라 제스처 자체를 받지 않는다.
     function forceGestureBlocked(btn) {
         if (document.body.classList.contains('android-mode')) return true;
         return window._sessionExpired || btn.id === dtTriggerId();
@@ -1394,9 +1394,6 @@ body.android-mode #calcIconPlusMinus::after {
             if (equalsTapCount === 2) {   // 세 번 → 두 번으로 통일
                 equalsTapCount = 0;
                 clearTimeout(equalsTapTimer);
-                // 안드로이드에서는 666 모드 잠금 - 진동도 주지 않아야 제스처 존재가 드러나지 않음
-                // (isAndroid는 다른 script 블록 소속이라 클래스로 판별)
-                if (document.body.classList.contains('android-mode')) return;
                 vibrateDevice();
                 clearAllDelayTimers();
                 specialSequenceActive = false;
@@ -1549,9 +1546,7 @@ body.android-mode #calcIconPlusMinus::after {
 
         let text = '';
         if (hasOperator && !endsOpen && !settled && !autoCountMode) {
-            if (currentMode === '666') {
-                text = '';
-            } else if (currentMode === 'force' && forceNumber !== null) {
+            if (currentMode === 'force' && forceNumber !== null) {
                 text = formatNumber(forceNumber);
             } else {
                 const r = evaluateExpression(expr);
@@ -1795,6 +1790,13 @@ body.android-mode #calcIconPlusMinus::after {
                     if (!specialSequenceActive || currentMode !== '666') return;
                     fullExpression = '999+999';
                     currentValue = '999';
+                    // 갤럭시: 식과 미리보기 결과(1,998)가 함께 바뀌는 것으로 끝. 이후 =은 일반 계산
+                    if (document.body.classList.contains('android-mode')) {
+                        specialSequenceActive = false;
+                        sequenceStarted = false;
+                        currentMode = 'normal';
+                        updateModeIndicator();
+                    }
                     updateDisplay(fullExpression);
                     updateClearButtonState();
                 });

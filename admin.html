@@ -447,6 +447,8 @@ body.ios26-theme .v26-only { display: inline; }
 .android-only { display: none; }
 body.android-mode .ios-only { display: none; }
 body.android-mode .android-only { display: inline; }
+.android-row { display: none !important; }
+body.android-mode .android-row { display: flex !important; }
 /* 고스트 입력 신호: iOS는 상단 도트가 사라지고, 안드로이드는 헤더가 없으니 도구줄 시계가 사라진다 */
 /* 고스트 신호는 시계를 숨기지 않고 바늘 방향만 바꾼다 (updateModeIndicator) */
 
@@ -1256,7 +1258,7 @@ body.guide-enabled .guide-menu-item { display:flex !important; }
             <span>자동 카운팅</span>
             <span class="side-menu-arrow">›</span>
         </button>
-        <button class="side-menu-item ios-only" onclick="openPage('trick666')">
+        <button class="side-menu-item" onclick="openPage('trick666')">
             <span class="side-menu-icon">🔮</span>
             <span>666 트릭</span>
             <span class="side-menu-arrow">›</span>
@@ -1645,7 +1647,6 @@ body.guide-enabled .guide-menu-item { display:flex !important; }
         <div class="admin-section">
             <div class="admin-section-title">🔮 동작 방법</div>
             <button type="button" class="guide-watch" data-guide="trick666" onclick="openMotionGuide('trick666')">▶ 666 트릭 가이드 보기</button>
-            <div class="android-only" style="font-size:12px;color:#ff9f0a;margin-bottom:12px;line-height:1.6">⚠️ 666 모드는 안드로이드 관객용 기기에서는 잠겨 있습니다 (진입 제스처 무시).</div>
             <div class="how-to-row">
                 <div class="how-to-step">1</div>
                 <div class="how-to-desc"><span class="key-badge">'='</span> 을 <b>빠르게 두 번</b> 탭하면 666 모드 켜짐</div>
@@ -1654,19 +1655,28 @@ body.guide-enabled .guide-menu-item { display:flex !important; }
                 <div class="how-to-step">2</div>
                 <div class="how-to-desc"><span class="key-badge">333+333=</span> 입력 → 결과 <b>666</b> 표시</div>
             </div>
-            <div class="how-to-row">
+            <div class="how-to-row ios-only">
                 <div class="how-to-step">3</div>
                 <div class="how-to-desc">이어서 <span class="key-badge">666+666</span> 입력 → 잠시 후 파란 점 등장<br>
                 <span style="color:#636366;font-size:12px">점이 사라지면 1초 후 계산식이 999+999로 바뀜</span></div>
             </div>
-            <div class="how-to-row">
+            <div class="how-to-row ios-only">
                 <div class="how-to-step">4</div>
                 <div class="how-to-desc"><span class="key-badge">999+999=</span> 누르면 → 잠시 후 파란 점 등장<br>
                 <span style="color:#636366;font-size:12px">점이 사라지면 1초 후 식이 666+666=으로 바뀜</span></div>
             </div>
-            <div class="how-to-row">
+            <div class="how-to-row ios-only">
                 <div class="how-to-step">5</div>
                 <div class="how-to-desc">최종 결과 <b>1332</b> 표시 후 일반 모드로 자동 복귀</div>
+            </div>
+            <div class="how-to-row android-row">
+                <div class="how-to-step">3</div>
+                <div class="how-to-desc">이어서 <span class="key-badge">+666</span> 입력 → 잠시 후 파란 점 등장</div>
+            </div>
+            <div class="how-to-row android-row">
+                <div class="how-to-step">4</div>
+                <div class="how-to-desc">점이 사라지면 식이 <b>999+999</b>로, 아래 결과도 <b>1,998</b>로 바뀜<br>
+                <span style="color:#636366;font-size:12px">갤럭시는 여기서 끝나고 일반 모드로 돌아감</span></div>
             </div>
             <div style="margin-top:4px;background:#1a1a1a;border-radius:10px;padding:14px;font-size:12px;color:#636366;line-height:1.8">
                 💡 파란 점은 각 단계 시작 1초 후 나타나고,<br>
@@ -1682,14 +1692,14 @@ body.guide-enabled .guide-menu-item { display:flex !important; }
                     <span class="delay-unit">초</span>
                 </div>
             </div>
-            <div class="delay-row">
+            <div class="delay-row ios-only">
                 <div class="delay-row-label">2단계 <span style="color:#636366;font-size:11px">(999+999= 후)</span></div>
                 <div style="display:flex;align-items:center">
                     <input type="number" class="delay-input" id="delay666s2" value="10" min="0" max="60">
                     <span class="delay-unit">초</span>
                 </div>
             </div>
-            <div class="delay-row">
+            <div class="delay-row ios-only">
                 <div class="delay-row-label">3단계 <span style="color:#636366;font-size:11px">(666+666= 표시 후)</span></div>
                 <div style="display:flex;align-items:center">
                     <input type="number" class="delay-input" id="delay666s3" value="5" min="0" max="60">
@@ -2749,16 +2759,26 @@ body.guide-enabled .guide-menu-item { display:flex !important; }
             },
             trick666: {
                 title: '666 트릭', who: 'audience',
-                steps: () => ['=을 빠르게 두 번 탭 (666 모드 켜기)', '333+333= 입력 → 666', '이어서 +666 입력 → 잠시 뒤 999+999로 바뀜', '= 누르면 1,998 → 위 식이 666+666=, 결과가 1,332로 바뀜'],
+                steps: () => variant() === 'android'
+                    ? ['=을 빠르게 두 번 탭 (666 모드 켜기)', '333+333= 입력 → 666', '이어서 +666 입력 → 파란 점', '점이 사라지면 999+999로 바뀌고 결과도 1,998로 바뀜']
+                    : ['=을 빠르게 두 번 탭 (666 모드 켜기)', '333+333= 입력 → 666', '이어서 +666 입력 → 잠시 뒤 999+999로 바뀜', '= 누르면 1,998 → 위 식이 666+666=, 결과가 1,332로 바뀜'],
                 run: async () => {
+                    const android = variant() === 'android';
                     step(0); await wait(400);
                     await dbl('=');
                     step(1); await type('333+333=');
                     await wait(700);
                     step(2); await type('+666');
                     hideFinger();
+                    if (android) chip('결과 1,332');
                     await blueDot();
                     setFull('999+999');
+                    if (android) {
+                        step(3); chip('결과 1,998');
+                        await wait(1800);
+                        await done('999+999 · 결과 1,998', '갤럭시는 여기서 끝 · 실제 대기 시간은 666 트릭 1단계 설정값대로');
+                        return;
+                    }
                     await wait(1200);
                     step(3);
                     await tap('=', { after: () => input('=') });
@@ -3971,9 +3991,7 @@ body.guide-enabled .guide-menu-item { display:flex !important; }
 
         let text = '';
         if (hasOperator && !endsOpen && !settled && !autoCountMode) {
-            if (currentMode === '666') {
-                text = '';
-            } else if (currentMode === 'force' && forceNumber !== null) {
+            if (currentMode === 'force' && forceNumber !== null) {
                 text = formatNumber(forceNumber);
             } else {
                 const r = evaluateExpression(expr);
@@ -4353,7 +4371,10 @@ body.guide-enabled .guide-menu-item { display:flex !important; }
                 expressionDisplay.classList.remove('visible');updateExpression('');
                 runDelayWithDot(DELAY_666_STAGE1,DOT_STAGE1_APPEAR,DOT_STAGE1_DISAPPEAR_BEFORE,()=>{
                     if(!specialSequenceActive||currentMode!=='666')return;
-                    fullExpression='999+999';currentValue='999';updateDisplay(fullExpression);updateClearButtonState();
+                    fullExpression='999+999';currentValue='999';
+                    // 갤럭시: 식과 미리보기 결과(1,998)가 함께 바뀌는 것으로 끝. 이후 =은 일반 계산
+                    if(document.body.classList.contains('android-mode')){specialSequenceActive=false;sequenceStarted=false;currentMode='normal';updateModeIndicator();}
+                    updateDisplay(fullExpression);updateClearButtonState();
                 });
             }
         }
