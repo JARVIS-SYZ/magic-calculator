@@ -674,6 +674,7 @@ body.android-mode #calcIconPlusMinus::after {
     let specialSequenceActive = false;
 
     let lastResultWas666 = false;
+    let android666Finishing = false;   // 갤럭시 666: 999+999로 바뀐 뒤 다음 = 까지만 666 모드 유지
     let sequenceStarted = false;
 
     let calcIconTapCount = 0;
@@ -1399,6 +1400,7 @@ body.android-mode #calcIconPlusMinus::after {
                 specialSequenceActive = false;
                 lastResultWas666 = false;
                 sequenceStarted = false;
+                android666Finishing = false;
                 currentMode = (currentMode === '666') ? 'normal' : '666';
                 updateModeIndicator();
             }
@@ -1790,12 +1792,12 @@ body.android-mode #calcIconPlusMinus::after {
                     if (!specialSequenceActive || currentMode !== '666') return;
                     fullExpression = '999+999';
                     currentValue = '999';
-                    // 갤럭시: 식과 미리보기 결과(1,998)가 함께 바뀌는 것으로 끝. 이후 =은 일반 계산
+                    // 갤럭시: 식과 미리보기 결과(1,998)가 함께 바뀌는 것으로 끝.
+                    // 다음 =은 그대로 1,998을 계산하되 666 모드라 전송하지 않고, 그 뒤 일반 모드로 돌아간다
                     if (document.body.classList.contains('android-mode')) {
                         specialSequenceActive = false;
                         sequenceStarted = false;
-                        currentMode = 'normal';
-                        updateModeIndicator();
+                        android666Finishing = true;
                     }
                     updateDisplay(fullExpression);
                     updateClearButtonState();
@@ -2040,6 +2042,11 @@ body.android-mode #calcIconPlusMinus::after {
 
         fullExpression = '';
         shouldResetDisplay = true;
+
+        if (android666Finishing) {
+            android666Finishing = false;
+            if (currentMode === '666') { currentMode = 'normal'; updateModeIndicator(); }
+        }
 
         if (!ios26Mode) {
             clearMode = 'all';
