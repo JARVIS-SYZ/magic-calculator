@@ -4109,7 +4109,8 @@ body.guide-enabled .guide-menu-item { display:flex !important; }
     // 기준 시각이 잡혀 있으면 그 시각으로, 아직이면 지금으로 계산한다
     function dtTarget() { return dtTargetAt(dtAnchorAt || Date.now()); }
 
-    function dtButton() { return document.getElementById('calcIconButton'); }
+    // 켜짐(회색)·깜빡임은 날짜 계산기를 켠 그 버튼에 보여준다 (iOS 18은 1행 ±)
+    function dtButton() { return document.getElementById(dtTriggerId()); }
 
     function dtClearHint() {
         document.querySelectorAll('.dt-hint').forEach((el) => el.classList.remove('dt-hint'));
@@ -4129,6 +4130,7 @@ body.guide-enabled .guide-menu-item { display:flex !important; }
     function dtSetArmed(on) {
         dtArmed = !!on;
         if (!dtArmed) { dtReady = false; dtDigits = ''; dtAnchorAt = 0; dtClearHint(); }
+        ['calcIconButton', 'pmButton'].forEach((id) => { const e = document.getElementById(id); if (e) e.classList.remove('dt-armed'); });
         const b = dtButton();
         if (b) b.classList.toggle('dt-armed', dtArmed);
         if (dtIdleTimer) { clearTimeout(dtIdleTimer); dtIdleTimer = null; }
