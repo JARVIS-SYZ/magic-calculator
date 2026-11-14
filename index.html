@@ -1233,7 +1233,7 @@ body.android-mode #calcIconPlusMinus::after {
             updateClearButtonState();
             // 자동카운팅은 숫자가 올라가는 이 순간에만 아주 약한 틱을 준다
             if ('vibrate' in navigator) navigator.vibrate(COUNT_TICK_VIBRATE_MS);
-        }, 1000);
+        }, 700);   // 0.7초마다 1씩
         vibrateDevice();
     }
 
