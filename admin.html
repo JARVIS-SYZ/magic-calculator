@@ -10,6 +10,20 @@
         if (/iPhone|iPad|iPod/i.test(navigator.userAgent)
             || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)) {
             document.documentElement.classList.add('ios-device');
+            // 홈 화면 앱(전체 화면)에서 iOS 27은 화면을 맨 위부터 그리면서도 페이지 높이는
+            // 상태바만큼 짧게 준다. 그 차이를 재 두었다가 키패드 아래 여백에서 뺀다.
+            // (키보드가 열린 상태는 피하려고 처음 열 때와 화면 회전 때만 잰다)
+            var setGap = function () {
+                var gap = 0;
+                if (navigator.standalone === true) {
+                    var sh = Math.max(screen.height, screen.width) === screen.height ? screen.height : screen.width;
+                    gap = Math.round(sh - window.innerHeight);
+                    if (!(gap > 0 && gap < 100)) gap = 0;
+                }
+                document.documentElement.style.setProperty('--standalone-gap', gap + 'px');
+            };
+            setGap();
+            window.addEventListener('orientationchange', function () { setTimeout(setGap, 300); });
         }
     </script>
     <meta name="mobile-web-app-capable" content="yes">
@@ -449,7 +463,7 @@ body.ios27-theme #calcIconPm27 .pm-icon { width: calc(var(--btn-w) * 0.63); heig
 html.ios-device body.ios27-theme .calculator { padding-top: env(safe-area-inset-top); }
 body.ios27-theme .header { padding-left: 16px; padding-right: 16px; height: 43px; }
 body.ios27-theme .top-icon { width: 43px; height: 43px; }
-html.ios-device body.ios27-theme .button-grid { padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 29px); }
+html.ios-device body.ios27-theme .button-grid { padding-bottom: max(0px, calc(env(safe-area-inset-bottom, 0px) + 29px - var(--standalone-gap, 0px))); }
 body.ios27-theme .display { padding-bottom: 14px; padding-right: 20px; }
 body.ios27-theme .expression-text { font-size: clamp(27px, 6.8vw, 39px); margin-bottom: 6px; }
 
