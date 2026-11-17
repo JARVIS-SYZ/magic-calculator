@@ -287,13 +287,16 @@ async function grantAdmin(uid, code, codeData, deviceId, name) {
         used: true,
         useCount: (codeData.useCount || 0) + 1,
     };
-    if (name) patch.name = name;
+    // 이름은 처음 등록할 때만 저장한다. 이후에는 슈퍼관리자가 정한 이름을 유지한다.
+    const savedName = (typeof codeData.name === "string" && codeData.name.trim()) ? codeData.name : "";
+    if (name && !savedName) patch.name = name;
+    const finalName = savedName || name || "";
 
     await db.collection("admin_codes").doc(code).update(patch);
     await db.collection("admin_sessions").doc(deviceId).set({
         adminId: codeData.adminId,
         code,
-        name: name || codeData.name || "",
+        name: finalName,
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
     });
     await admin.auth().setCustomUserClaims(uid, {
@@ -301,7 +304,7 @@ async function grantAdmin(uid, code, codeData, deviceId, name) {
         deviceId,
         code,
     });
-    return { adminId: codeData.adminId, name: name || codeData.name || "" };
+    return { adminId: codeData.adminId, name: finalName };
 }
 
 exports.authApi = onRequest(

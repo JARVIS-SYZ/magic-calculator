@@ -627,9 +627,10 @@ html, body {
 
     // ===== 사용횟수 초기화 =====
     async function resetCode(code) {
-        if (!confirm(`코드 ${code}의 사용횟수를 초기화할까요?\n(다시 사용할 수 있게 됩니다)`)) return;
+        if (!confirm(`코드 ${code}의 사용횟수를 초기화할까요?\n(다시 사용할 수 있게 되고, 등록된 이름도 지워집니다)`)) return;
         try {
-            await db.collection('admin_codes').doc(code).update({ used: false, useCount: 0, activeDeviceId: null, revoked: false });
+            // 이름은 처음 로그인할 때만 저장되므로, 다른 사람에게 다시 줄 코드는 이름도 비운다
+            await db.collection('admin_codes').doc(code).update({ used: false, useCount: 0, activeDeviceId: null, revoked: false, name: firebase.firestore.FieldValue.delete() });
         } catch(e) {
             alert('오류: ' + e.message);
         }
