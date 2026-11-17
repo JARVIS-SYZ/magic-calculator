@@ -64,24 +64,33 @@ service cloud.firestore {
     // adminAliveAt: 담당 관리자만 갱신 (관리자 앱이 열려 있다는 신호)
     // viewer/viewerAt: 관객 페이지가 열릴 때 자기 기기 값으로 덮어쓴다 (가장 최근 기기만 동작)
     match /presence/{adminId} {
+      // 테스트 모드: 관리자가 켠 뒤 10분(서버 시각) 동안은 밀려난 기기도 다시 주인이 될 수 있다
+      function testModeOn() {
+        return resource.data.get('testStartedAt', null) is timestamp
+            && request.time < resource.data.testStartedAt + duration.value(10, 'm');
+      }
+      function oldBlocked() { return resource.data.get('blocked', []); }
+      function newBlocked() { return request.resource.data.get('blocked', []); }
+
       allow get: if signedIn();
       allow list, delete: if false;
       // 관리자: 하트비트 갱신, 밀려난 기기 목록 초기화, 테스트 모드
       allow create, update: if myAdmin() == adminId
                     && request.resource.data.keys().hasOnly(['adminAliveAt', 'viewer', 'viewerAt', 'blocked', 'testStartedAt']);
-      // 관객: 자기 기기를 주인으로 등록. 밀려난 기기는 다시 등록할 수 없고, 목록에서 지울 수도 없다
+      // 관객: 자기 기기를 주인으로 등록. 밀려난 기기는 (테스트 모드가 아니면) 다시 등록할 수 없고, 목록에서 지울 수도 없다
       allow create: if signedIn()
                     && request.resource.data.keys().hasOnly(['viewer', 'viewerAt', 'blocked'])
                     && request.resource.data.viewer is string && request.resource.data.viewer.size() < 100
-                    && request.resource.data.get('blocked', []).size() <= 1;
+                    && newBlocked().size() <= 1;
       allow update: if signedIn()
                     && request.resource.data.keys().hasOnly(['adminAliveAt', 'viewer', 'viewerAt', 'blocked', 'testStartedAt'])
                     && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['viewer', 'viewerAt', 'blocked'])
                     && request.resource.data.viewer is string && request.resource.data.viewer.size() < 100
-                    && !(request.resource.data.viewer in resource.data.get('blocked', []))
-                    && request.resource.data.get('blocked', []).hasAll(resource.data.get('blocked', []))
-                    && request.resource.data.get('blocked', []).size() <= resource.data.get('blocked', []).size() + 1
-                    && request.resource.data.get('blocked', []).size() < 300;
+                    && (testModeOn()
+                        ? newBlocked().hasAll(oldBlocked().removeAll([request.resource.data.viewer]))
+                        : (!(request.resource.data.viewer in oldBlocked()) && newBlocked().hasAll(oldBlocked())))
+                    && newBlocked().size() <= oldBlocked().size() + 1
+                    && newBlocked().size() < 300;
     }
 
     // ===== 관리자 코드 — 목록·수정은 슈퍼관리자만 =====

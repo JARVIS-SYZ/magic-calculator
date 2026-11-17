@@ -1390,7 +1390,7 @@ body.guide-enabled .guide-menu-item { display:flex !important; }
             <button class="sp-btn" id="resetViewersBtn" style="width:100%" onclick="resetAudienceViewers()">관객 연결 초기화</button>
             <div class="sp-hint" id="resetViewersMsg"></div>
             <button class="sp-btn" id="testModeBtn" style="width:100%;margin-top:10px" onclick="toggleAudienceTestMode()">🧪 테스트 모드 (10분)</button>
-            <div class="sp-hint" id="testModeMsg">켜 두면 관리자 앱을 닫아도 10분 동안 관객용 URL을 쓸 수 있어요.</div>
+            <div class="sp-hint" id="testModeMsg">켜 두면 10분 동안 관리자 앱을 닫아도 관객용 URL을 쓸 수 있고, 밀려난 기기도 다시 열면 들어올 수 있어요.</div>
 
             <div class="url-row">
                 <div class="url-display" id="urlOutput"></div>
@@ -2562,13 +2562,13 @@ body.guide-enabled .guide-menu-item { display:flex !important; }
         if (left > 0) {
             const m = Math.floor(left / 60000), sec = Math.floor((left % 60000) / 1000);
             if (btn) btn.textContent = '🧪 테스트 모드 끄기 (' + m + ':' + String(sec).padStart(2, '0') + ' 남음)';
-            if (msg) msg.textContent = '지금은 관리자 앱을 닫아도 관객용 URL이 열려요.';
+            if (msg) msg.textContent = '지금은 관리자 앱을 닫아도 관객용 URL이 열리고, 밀려난 기기도 다시 들어올 수 있어요.';
         } else {
             _testModeEnd = 0;
             try { localStorage.removeItem('admin_test_mode_end'); } catch (e) {}
             if (_testModeTick) { clearInterval(_testModeTick); _testModeTick = null; }
             if (btn) btn.textContent = '🧪 테스트 모드 (10분)';
-            if (msg) msg.textContent = '켜 두면 관리자 앱을 닫아도 10분 동안 관객용 URL을 쓸 수 있어요.';
+            if (msg) msg.textContent = '켜 두면 10분 동안 관리자 앱을 닫아도 관객용 URL을 쓸 수 있고, 밀려난 기기도 다시 열면 들어올 수 있어요.';
         }
     }
     function startTestModeTick() {
