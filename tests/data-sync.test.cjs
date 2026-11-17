@@ -151,8 +151,9 @@ function loadPresence(viewerId) {
     const c = vm.createContext({window:{_adminId:'mine'}, Date:{now:() => now},
         document:{getElementById:() => black}, updateDebugOverlay(){}, resetTrickState(){ c.resets = (c.resets||0)+1; },
         _viewerId:viewerId});
+    vm.runInContext("let _presenceDiag='', _claimDiag='';", c);
     vm.runInContext('let _adminBeatLocal=0,_lastAliveAtMs=0,_aliveCredited=false,_presenceViewer=null,_testUntilLocal=0,_lastTestAt=0; const ADMIN_ALIVE_TIMEOUT_MS=45000, TEST_MODE_MS=600000;'
-        + 'function presenceBlackout(){return document.getElementById();}\n'
+        + 'function setPresenceBlocked(b){ document.getElementById().style.display = b ? \'block\' : \'none\'; }\n'
         + between(audience, '    function applyPresenceState()', '    // 페이지가 열릴 때'), c);
     const at = ms => ({toMillis:() => ms});
     return {c, black, at, advance:ms => { now += ms; }};
@@ -225,6 +226,11 @@ test('only the most recently opened audience device stays active', () => {
     c.handlePresenceDoc({viewer:'someone-else', adminAliveAt:at(100), viewerAt:at(2000)});
     assert.equal(black.style.display, 'block'); assert.equal(c.window._sessionExpired, true);
     assert.equal(c.resets, 1);
+});
+
+test('the audience page starts black in plain HTML before any script runs', () => {
+    assert.match(audience, /<body class="presence-blocked">\s*<div id="_presenceBlack"><\/div>/);
+    assert.match(audience, /body\.presence-blocked > \*:not\(#_presenceBlack\)/);
 });
 
 test('the 30 minute audience expiry is gone', () => {
