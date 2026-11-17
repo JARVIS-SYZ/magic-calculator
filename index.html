@@ -11,17 +11,17 @@
             document.documentElement.classList.add('ios-device');
             // 홈 화면 앱(전체 화면)에서 iOS 27은 화면을 맨 위부터 그리면서도 페이지 높이는
             // 상태바만큼 짧게 준다. 그 차이를 재 두었다가 키패드 아래 여백에서 뺀다.
-            // (키보드가 열린 상태는 피하려고 처음 열 때와 화면 회전 때만 잰다)
+            // (페이지가 다 뜬 뒤와 크기가 바뀔 때 다시 잰다. 키보드로 크게 줄어든 경우는 무시)
             var setGap = function () {
-                var gap = 0;
-                if (navigator.standalone === true) {
-                    var sh = Math.max(screen.height, screen.width) === screen.height ? screen.height : screen.width;
-                    gap = Math.round(sh - window.innerHeight);
-                    if (!(gap > 0 && gap < 100)) gap = 0;
-                }
+                if (navigator.standalone !== true) return;
+                var sh = Math.max(screen.height, screen.width);
+                if (window.innerHeight < window.innerWidth) return;          // 가로 화면은 건드리지 않는다
+                var gap = Math.round(sh - window.innerHeight);
+                if (gap < 0 || gap >= 100) return;                          // 키보드가 열린 경우 등은 무시
                 document.documentElement.style.setProperty('--standalone-gap', gap + 'px');
             };
             setGap();
+            ['DOMContentLoaded', 'load', 'pageshow', 'resize'].forEach(function (ev) { window.addEventListener(ev, setGap); });
             window.addEventListener('orientationchange', function () { setTimeout(setGap, 300); });
         }
     </script>
