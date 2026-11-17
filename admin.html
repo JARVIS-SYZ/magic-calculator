@@ -4367,20 +4367,47 @@ body.guide-enabled .guide-menu-item { display:flex !important; }
         // 힌트는 3초 시점에 한 번만 띄운다. 누를 때마다 바뀌면 오히려 눈에 띈다.
         if (!dtDigits.length) {
             dtReady = false;
-            dtBlockKeypad(DT_BLOCK_MS);   // 자릿수를 다 채웠으니 잠시 더 눌리지 않게 막는다
+            dtBlockKeypad();   // 자릿수를 다 채웠으니 = 를 누를 때까지 다른 입력은 막는다
             setTimeout(() => dtSetArmed(false), DT_BLOCK_MS);
         }
         return d;
     }
 
-    // 자릿수만큼 다 눌린 뒤 잠깐 키패드를 덮어 여분의 입력이 들어가지 않게 한다.
-    // 계속 막지는 않는다 — 잠시 뒤에는 = 를 눌러 결과를 봐야 하기 때문.
-    function dtBlockKeypad(ms) {
+    // 자릿수만큼 다 눌린 뒤 화면 전체를 투명하게 덮어 여분의 입력이 들어가지 않게 한다.
+    // = 자리를 누른 경우만 통과시켜 = 를 대신 눌러 주고, 그때 덮개를 걷는다.
+    function dtBlockKeypad() {
+        const old = document.getElementById('_dtBlock');
+        if (old) old.remove();
         const sh = document.createElement('div');
         sh.id = '_dtBlock';
-        sh.style.cssText = 'position:fixed;inset:0;z-index:900;background:transparent';
+        sh.style.cssText = 'position:fixed;inset:0;z-index:900;background:transparent;touch-action:none';
+        const eq = () => document.getElementById('equalsButton');
+        const onEquals = (x, y) => {
+            const b = eq();
+            if (!b || !b.offsetParent) return false;
+            const r = b.getBoundingClientRect();
+            return x >= r.left && x <= r.right && y >= r.top && y <= r.bottom;
+        };
+        const swallow = (e) => { e.preventDefault(); e.stopPropagation(); };
+        ['touchstart', 'touchmove', 'touchend', 'mousedown', 'mouseup', 'pointerdown', 'pointerup', 'dblclick', 'contextmenu']
+            .forEach((t) => sh.addEventListener(t, swallow, { passive: false }));
+        // touchend의 preventDefault로 click이 생기지 않는 기기도 있어 touchend에서도 판정한다
+        let fired = false;
+        const tryEquals = (x, y) => {
+            if (fired || !onEquals(x, y)) return;
+            fired = true;
+            sh.remove();
+            const b = eq();
+            b.style.opacity = '0.6';
+            setTimeout(() => { b.style.opacity = ''; }, 150);
+            b.click();
+        };
+        sh.addEventListener('touchend', (e) => {
+            const t = e.changedTouches && e.changedTouches[0];
+            if (t) tryEquals(t.clientX, t.clientY);
+        }, { passive: false });
+        sh.addEventListener('click', (e) => { swallow(e); tryEquals(e.clientX, e.clientY); });
         document.body.appendChild(sh);
-        setTimeout(() => { try { sh.remove(); } catch (e) {} }, ms);
     }
 
     (function dtInitSetting() {
