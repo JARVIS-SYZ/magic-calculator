@@ -425,6 +425,26 @@ body.ios26-theme .display-text { font-weight: 500; }
 body.ios26-theme #calcIconSvg { display: none; }
 body.ios26-theme #calcIconPlusMinus { display: block; }
 
+/* ===== iOS 27 테마 =====
+   배치는 iOS 26과 같고, 실제 iOS 27.2 계산기 화면에서 뽑은 색으로 평평하게 칠한다.
+   (기능 #616161 · 숫자 #363636 · 연산 #FF9500, 광택 없음, 글자는 가늘게) */
+#calcIconPm27 { display: none; }
+body.ios27-theme .button.number,
+body.ios27-theme .button.calc-icon { background: #363636; }
+body.ios27-theme .button.function  { background: #616161; }
+body.ios27-theme .button.operator  { background: #ff9500; }
+body.ios27-theme .button::before   { border-color: rgba(255,255,255,0.07); box-shadow: none; }
+/* 글자 크기는 실제 화면의 글자 높이를 픽셀로 재서 맞춘 값 */
+body.ios27-theme .button-content   { font-weight: 400; font-size: calc(var(--btn-w) * 0.425); }
+body.ios27-theme .button.function .button-content { font-size: calc(var(--btn-w) * 0.43); font-weight: 400; }
+body.ios27-theme .button.percent-button .button-content { font-size: calc(var(--btn-w) * 0.54); }
+body.ios27-theme .button.operator .button-content { font-size: calc(var(--btn-w) * 0.64); font-weight: 300; }
+body.ios27-theme .backspace-icon   { width: calc(var(--btn-w) * 0.55); height: calc(var(--btn-w) * 0.55); }
+body.ios27-theme .display-text     { font-weight: 300; }
+body.ios27-theme #calcIconPlusMinus { display: none; }
+body.ios27-theme #calcIconPm27     { display: flex; align-items: center; justify-content: center; }
+body.ios27-theme #calcIconPm27 .pm-icon { width: calc(var(--btn-w) * 0.63); height: calc(var(--btn-w) * 0.63); }
+
 /* ===== Android(갤럭시 One UI 계산기) 테마 - 라이트 =====
  * html/body 배경은 검정 그대로 둠 - 블랙스크린 트릭이 .calculator를 투명하게 만들어
  * body 배경을 그대로 노출시키기 때문에 여기 색을 넣으면 검은 화면이 회색이 됨 */
@@ -1120,6 +1140,7 @@ body.guide-enabled .guide-menu-item { display:flex !important; }
                         <circle cx="15.5" cy="18.8" r="1.2" fill="#333"/>
                     </svg>
                     <span id="calcIconPlusMinus">±</span>
+                    <span id="calcIconPm27"><svg class="pm-icon" viewBox="0 0 24 24"><line x1="6" y1="18" x2="18" y2="6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><line x1="7" y1="5.2" x2="7" y2="10.2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><line x1="4.2" y1="7.7" x2="9.8" y2="7.7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><line x1="12.2" y1="17.8" x2="17.2" y2="17.8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></span>
                 </div>
                 <div class="delay-dot"></div>
             </button>
@@ -1231,7 +1252,8 @@ body.guide-enabled .guide-menu-item { display:flex !important; }
         <select class="version-select" id="iosVersionSelectMenu" onchange="onIosVersionChange(this.value)" style="width:auto;padding:6px 32px 6px 12px;font-size:14px;border-radius:8px">
             <option value="auto">자동</option>
             <option value="18">iOS 18</option>
-            <option value="26">iOS 26 이상</option>
+            <option value="26">iOS 26</option>
+            <option value="27">iOS 27</option>
         </select>
     </div>
     <div class="side-menu-list">
@@ -2327,11 +2349,17 @@ body.guide-enabled .guide-menu-item { display:flex !important; }
     }
 
     // 최신 iOS는 PWA에서 OS 버전을 구버전처럼 보고할 수 있다.
-    // 자동 모드는 최신(iOS 26 이상) 화면을 기본으로 하고, iOS 18은 메뉴에서 직접 선택한다.
+    // 자동 모드는 최신(iOS 27) 화면을 기본으로 하고, iOS 18/26은 메뉴에서 직접 선택한다.
     function resolveIos26(val) {
-        if (String(val) === 'auto') return true;
-        return String(val) === '26';
+        const v = String(val);
+        return v === 'auto' || v === '26' || v === '27';
     }
+    // 자동은 최신(iOS 27) 화면. 26/27은 기기에서 구분할 수 없어 메뉴에서 고른다.
+    function resolveIos27(val) {
+        const v = String(val);
+        return v === 'auto' || v === '27';
+    }
+    let ios27Mode = false;
 
 
     // ===== 코드 인증 시스템 =====
@@ -3884,6 +3912,7 @@ body.guide-enabled .guide-menu-item { display:flex !important; }
 
     function applyLayoutMode() {
         document.body.classList.toggle('ios26-theme', ios26Mode);
+        document.body.classList.toggle('ios27-theme', ios26Mode && ios27Mode && !document.body.classList.contains('android-mode'));
         if (ios26Mode) pmContent.textContent = 'AC';
         else pmContent.innerHTML = pmOriginalHTML;
         updateClearButtonState(); updateModeIndicator();
@@ -4059,7 +4088,7 @@ body.guide-enabled .guide-menu-item { display:flex !important; }
     displayTapZone.addEventListener('click', () => { if (!('ontouchstart' in window)) onDisplayTap(); });
 
     window.onIosVersionChange = function(val) {
-        ios26Mode = resolveIos26(val);
+        ios26Mode = resolveIos26(val); ios27Mode = resolveIos27(val);
         localStorage.setItem('admin_ios_version', val);
         const s1 = document.getElementById('iosVersionSelect');
         const s2 = document.getElementById('iosVersionSelectMenu');
@@ -4071,7 +4100,7 @@ body.guide-enabled .guide-menu-item { display:flex !important; }
 
     // iOS 버전 초기 로드
     const savedIosVersion = localStorage.getItem('admin_ios_version') || 'auto';
-    ios26Mode = resolveIos26(savedIosVersion);
+    ios26Mode = resolveIos26(savedIosVersion); ios27Mode = resolveIos27(savedIosVersion);
     const iosVersionSelect = document.getElementById('iosVersionSelect');
     const iosVersionSelectMenu = document.getElementById('iosVersionSelectMenu');
     if (iosVersionSelect) iosVersionSelect.value = savedIosVersion;
