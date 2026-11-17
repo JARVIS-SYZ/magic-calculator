@@ -1352,13 +1352,11 @@ body.guide-enabled .guide-menu-item { display:flex !important; }
         </div>
 
         <div class="admin-section">
-            <div class="admin-section-title">♻️ 관객 세션 초기화</div>
+            <div class="admin-section-title">📡 관객 화면 연결</div>
             <div style="font-size:12px;color:#636366;margin-bottom:10px;line-height:1.6">
-            관객용 계산기는 켠 지 <b>30분이 지나면 스스로 연결을 끊습니다.</b>
-            공연 전에 이 버튼을 누르면 관객 기기의 30분이 처음부터 다시 시작됩니다.
-            이미 끊긴 기기는 <b>앱을 껐다 켜야</b> 되살아납니다.</div>
-            <button class="sp-btn" id="resetSessionBtn" style="width:100%" onclick="resetAudienceSession()">30분 다시 시작</button>
-            <div class="sp-hint" id="resetSessionMsg"></div>
+            관객 화면은 <b>이 관리자 앱이 열려 있을 때만</b> 계산기로 보이고, 앱을 닫거나 폰을 잠그면 45초 안에 검정 화면이 됩니다.
+            링크는 <b>가장 최근에 연 기기 하나만</b> 동작하고, 예전 기기는 검정 화면으로 바뀝니다.</div>
+
             <div class="url-row">
                 <div class="url-display" id="urlOutput"></div>
                 <button class="copy-btn" id="copyBtnUrl" onclick="copyUrl()">복사</button>
@@ -2143,22 +2141,17 @@ body.guide-enabled .guide-menu-item { display:flex !important; }
         </div>
 
         <div class="admin-section">
-            <div class="admin-section-title">⏱ 관객 세션 30분 제한</div>
+            <div class="admin-section-title">📡 관객 화면 연결</div>
             <div class="how-to-row">
                 <div class="how-to-step">1</div>
-                <div class="how-to-desc">관객용 계산기는 켠 지 <b>30분이 지나면 스스로 연결을 끊습니다</b><br>
-                <span style="color:#636366;font-size:11px">평범한 계산기로만 남고, 수신·트릭 기능이 모두 멈춥니다</span></div>
+                <div class="how-to-desc">관객 화면은 <b>관리자 앱이 열려 있을 때만</b> 계산기로 보입니다<br>
+                <span style="color:#636366;font-size:11px">관리자 앱을 닫거나 폰을 잠그면 45초 안에 검정 화면, 다시 열면 바로 돌아옵니다</span></div>
             </div>
             <div class="how-to-row">
                 <div class="how-to-step">2</div>
-                <div class="how-to-desc">공연 전에 메뉴 → <b>URL 생성</b> → <b>30분 다시 시작</b> 누르기</div>
+                <div class="how-to-desc">관객 링크는 <b>가장 최근에 연 기기 하나만</b> 동작합니다<br>
+                <span style="color:#636366;font-size:11px">다른 기기에서 열면 예전 기기는 검정 화면이 됩니다</span></div>
             </div>
-            <div class="how-to-row">
-                <div class="how-to-step">3</div>
-                <div class="how-to-desc">관객 폰에서 <b>앱을 껐다 켜면</b> 30분이 처음부터 다시 시작</div>
-            </div>
-            <div style="font-size:11px;color:#636366;margin-top:6px">
-            이미 끊긴 기기는 앱을 지웠다 깔아도 풀리지 않습니다. 반드시 위 버튼을 쓰세요.</div>
         </div>
 
         <div class="admin-section">
@@ -2470,6 +2463,27 @@ body.guide-enabled .guide-menu-item { display:flex !important; }
         if (toggle) toggle.checked = startWithCalc;
         if (!startWithCalc) setTimeout(() => openSideMenu(), 150);
         seedConfigIfMissing();
+        startAdminHeartbeat();
+    }
+
+    // ===== 관객 화면 연결 유지 =====
+    // 관리자 앱이 열려 있는 동안 10초마다 presence/{adminId}.adminAliveAt을 갱신한다.
+    // 관객 화면은 이 값이 45초 넘게 멈추면 검정으로 바뀐다(관리자 앱을 닫거나 폰을 잠근 경우).
+    let _adminBeatTimer = null;
+    function sendAdminHeartbeat() {
+        if (!currentAdminId || document.hidden) return;
+        Promise.resolve(window._authReady).then(() =>
+            db_auth.collection('presence').doc(currentAdminId).set({
+                adminAliveAt: firebase.firestore.FieldValue.serverTimestamp()
+            }, { merge: true })
+        ).catch((e) => console.warn('관객 연결 유지 신호 실패:', e));
+    }
+    function startAdminHeartbeat() {
+        if (_adminBeatTimer) return;
+        sendAdminHeartbeat();
+        _adminBeatTimer = setInterval(sendAdminHeartbeat, 10000);
+        document.addEventListener('visibilitychange', () => { if (!document.hidden) sendAdminHeartbeat(); });
+        window.addEventListener('pageshow', sendAdminHeartbeat);
     }
 
     // Enter 키 처리
@@ -5441,20 +5455,6 @@ body.guide-enabled .guide-menu-item { display:flex !important; }
         spPush = !!on; spSave(SP.push, spPush); spSyncFlags();
     };
     window.startScreenPick = startScreenPick;
-
-    // 관객 기기의 30분 타이머를 다시 시작시킨다. 관객 앱은 이 값이 바뀐 걸 보고 되살아난다.
-    window.resetAudienceSession = async function () {
-        const msg = document.getElementById('resetSessionMsg');
-        if (!currentAdminId) { if (msg) msg.textContent = '인증 정보가 없습니다.'; return; }
-        if (msg) msg.textContent = '보내는 중...';
-        try {
-            await db_auth.collection('configs').doc(currentAdminId)
-                .set({ sessionEpoch: Date.now() }, { merge: true });
-            if (msg) msg.textContent = '✅ 보냈습니다. 관객 기기에서 앱을 다시 열면(백그라운드에서 돌아오기만 해도) 30분이 다시 시작됩니다.';
-        } catch (e) {
-            if (msg) msg.textContent = '오류: ' + (e.message || e);
-        }
-    };
 
     // 웹에서 그릴 수 있는 사진 영역에만 색을 덧댄다. OS가 가린 영역은 변경할 수 없다.
     function spApplyBarColorNow() {

@@ -118,28 +118,6 @@ test('admin waits for login, retries subscriptions and does not replay old resul
     onValue(snapshot([latest,old],[latest,old]));assert.deepEqual(shown,['0']);
 });
 
-test('a newly generated audience link starts a fresh session on a previously expired device', () => {
-    const values = new Map([['calc_session_start','1']]);
-    let now = 1800001;
-    const c = vm.createContext({window:{_adminId:'mine'},location:{search:'?admin=mine&session=new'},
-        URLSearchParams, Date:{now:() => now},localStorage:{getItem:k => values.get(k) ?? null,setItem:(k,v) => values.set(k,v)}});
-    vm.runInContext(between(audience, '    function prepareAudienceSession()', '    function startSessionExpiry()'),c);
-    c.prepareAudienceSession();assert.equal(values.get('calc_session_start'),String(now));
-    now += 60000;c.prepareAudienceSession();assert.equal(values.get('calc_session_start'),'1800001');
-    c.location.search = '?admin=mine&session=next';c.prepareAudienceSession();
-    assert.equal(values.get('calc_session_start'),String(now));
-});
-
-test('legacy links retain their expiry and explicit reset remains available', () => {
-    const values = new Map([['calc_session_start','1']]);
-    const c = vm.createContext({window:{_adminId:'mine'},location:{search:'?admin=mine'},URLSearchParams,
-        Date:{now:() => 5000000},localStorage:{getItem:k => values.get(k) ?? null,setItem:(k,v) => values.set(k,v)}});
-    vm.runInContext(between(audience, '    function prepareAudienceSession()', '    function startSessionExpiry()'),c);
-    c.prepareAudienceSession();assert.equal(values.get('calc_session_start'),'1');
-    c.location.search += '&reset=1';c.prepareAudienceSession();assert.equal(values.get('calc_session_start'),'5000000');
-    assert.doesNotMatch(between(audience,'    function startSessionExpiry()', '    let _configSubscribed'), /removeItem|reset/);
-});
-
 test('generated URLs and QR codes share the selected session and administrator', () => {
     const c = vm.createContext({crypto:{randomUUID:() => 'test-session'},currentAdminId:'mine',
         URLSearchParams,location:{origin:'https://example.com'},localStorage:{getItem:() => null}});
@@ -148,25 +126,6 @@ test('generated URLs and QR codes share the selected session and administrator',
     assert.equal(first.searchParams.get('admin'),'mine');
     assert.equal(first.searchParams.get('session'),'test-session');
     assert.equal(first.href,second.href);
-});
-
-test('expired storage blocks both directions on the old link, but the new link remains active', () => {
-    const values = new Map([['calc_session_start','1']]);
-    const now = 60 * 60 * 1000;
-    function load(search) {
-        let timer;
-        const c = vm.createContext({window:{_adminId:'mine'},location:{search},URLSearchParams,
-            Date:{now:() => now},localStorage:{getItem:k => values.get(k) ?? null,setItem:(k,v) => values.set(k,v)},
-            clearTimeout(){}, setTimeout:(fn,ms) => {timer=ms;return 1;}});
-        vm.runInContext('const SESSION_MAX_MS=30*60*1000; let _expireTimer=null; function expireSession(){window._sessionExpired=true;}\n'
-            + between(audience,'    function sessionStartedAt()', '    function expireSession()')
-            + between(audience,'    function prepareAudienceSession()', '    let _configSubscribed')
-            + '\nprepareAudienceSession();startSessionExpiry();',c);
-        return {expired:!!c.window._sessionExpired,timer};
-    }
-    assert.equal(load('?admin=mine').expired,true);
-    const fresh=load('?admin=mine&session=fresh');
-    assert.equal(fresh.expired,false);assert.equal(fresh.timer,30*60*1000);
 });
 
 test('external app wording replaces router-only wording', () => {
@@ -184,4 +143,50 @@ test('received history shows expressions and timestamps without calculator IDs',
     assert.doesNotMatch(initialLogCode, /calcId|log-id/);
     assert.doesNotMatch(admin, /\.log-id\s*\{/);
     assert.match(admin, /\.log-meta\s*\{[^}]*justify-content:\s*flex-end/);
+});
+
+function loadPresence(viewerId) {
+    let now = 1_000_000;
+    const black = {style:{display:''}};
+    const c = vm.createContext({window:{_adminId:'mine'}, Date:{now:() => now},
+        document:{getElementById:() => black}, updateDebugOverlay(){}, resetTrickState(){ c.resets = (c.resets||0)+1; },
+        _viewerId:viewerId});
+    vm.runInContext('let _adminBeatLocal=0,_lastAliveAtMs=0,_presenceViewer=null; const ADMIN_ALIVE_TIMEOUT_MS=45000;'
+        + 'function presenceBlackout(){return document.getElementById();}\n'
+        + between(audience, '    function applyPresenceState()', '    // 페이지가 열릴 때'), c);
+    const at = ms => ({toMillis:() => ms});
+    return {c, black, at, advance:ms => { now += ms; }, now:() => now};
+}
+
+test('audience screen shows only while the administrator heartbeat is fresh', () => {
+    const {c, black, at, advance, now} = loadPresence('me');
+    c.handlePresenceDoc({viewer:'me'});
+    assert.equal(black.style.display, 'block'); assert.equal(c.window._sessionExpired, true);
+    c.handlePresenceDoc({viewer:'me', adminAliveAt:at(now() - 2000)});
+    assert.equal(black.style.display, 'none'); assert.equal(c.window._sessionExpired, false);
+    advance(44000); c.applyPresenceState(); assert.equal(black.style.display, 'none');
+    advance(2000); c.applyPresenceState(); assert.equal(black.style.display, 'block');
+    c.handlePresenceDoc({viewer:'me', adminAliveAt:at(now())});
+    assert.equal(black.style.display, 'none');
+});
+
+test('a stale administrator heartbeat from long ago keeps the screen black', () => {
+    const {c, black, at, now} = loadPresence('me');
+    c.handlePresenceDoc({viewer:'me', adminAliveAt:at(now() - 10 * 60 * 1000)});
+    assert.equal(black.style.display, 'block');
+});
+
+test('only the most recently opened audience device stays active', () => {
+    const {c, black, at, now} = loadPresence('me');
+    c.handlePresenceDoc({viewer:'me', adminAliveAt:at(now())});
+    assert.equal(black.style.display, 'none');
+    c.handlePresenceDoc({viewer:'someone-else', adminAliveAt:at(now())});
+    assert.equal(black.style.display, 'block'); assert.equal(c.window._sessionExpired, true);
+    assert.equal(c.resets, 1);
+});
+
+test('the 30 minute audience expiry is gone', () => {
+    assert.doesNotMatch(audience, /SESSION_MAX_MS|calc_session_start|startSessionExpiry/);
+    assert.doesNotMatch(admin, /30분 다시 시작|resetAudienceSession/);
+    assert.match(admin, /function startAdminHeartbeat\(\)/);
 });
