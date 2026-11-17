@@ -1389,6 +1389,8 @@ body.guide-enabled .guide-menu-item { display:flex !important; }
             예전 기기를 다시 쓰려면 아래 버튼을 누른 뒤 그 기기에서 앱을 껐다 켜세요.</div>
             <button class="sp-btn" id="resetViewersBtn" style="width:100%" onclick="resetAudienceViewers()">관객 연결 초기화</button>
             <div class="sp-hint" id="resetViewersMsg"></div>
+            <button class="sp-btn" id="testModeBtn" style="width:100%;margin-top:10px" onclick="toggleAudienceTestMode()">🧪 테스트 모드 (10분)</button>
+            <div class="sp-hint" id="testModeMsg">켜 두면 관리자 앱을 닫아도 10분 동안 관객용 URL을 쓸 수 있어요.</div>
 
             <div class="url-row">
                 <div class="url-display" id="urlOutput"></div>
@@ -2548,6 +2550,56 @@ body.guide-enabled .guide-menu-item { display:flex !important; }
             if (msg) msg.textContent = '오류: ' + (e.message || e);
         }
     };
+    // ===== 테스트 모드 =====
+    // presence.testStartedAt(서버 시각)을 남기면 관객 화면은 그때부터 10분 동안
+    // 관리자 하트비트 없이도 열린다. 다시 누르면 바로 끈다.
+    const TEST_MODE_MS = 10 * 60 * 1000;
+    let _testModeEnd = 0, _testModeTick = null;
+    function renderTestMode() {
+        const btn = document.getElementById('testModeBtn');
+        const msg = document.getElementById('testModeMsg');
+        const left = _testModeEnd - Date.now();
+        if (left > 0) {
+            const m = Math.floor(left / 60000), sec = Math.floor((left % 60000) / 1000);
+            if (btn) btn.textContent = '🧪 테스트 모드 끄기 (' + m + ':' + String(sec).padStart(2, '0') + ' 남음)';
+            if (msg) msg.textContent = '지금은 관리자 앱을 닫아도 관객용 URL이 열려요.';
+        } else {
+            _testModeEnd = 0;
+            try { localStorage.removeItem('admin_test_mode_end'); } catch (e) {}
+            if (_testModeTick) { clearInterval(_testModeTick); _testModeTick = null; }
+            if (btn) btn.textContent = '🧪 테스트 모드 (10분)';
+            if (msg) msg.textContent = '켜 두면 관리자 앱을 닫아도 10분 동안 관객용 URL을 쓸 수 있어요.';
+        }
+    }
+    function startTestModeTick() {
+        if (_testModeTick) clearInterval(_testModeTick);
+        _testModeTick = setInterval(renderTestMode, 1000);
+        renderTestMode();
+    }
+    window.toggleAudienceTestMode = async function () {
+        const msg = document.getElementById('testModeMsg');
+        if (!currentAdminId) { if (msg) msg.textContent = '인증 정보가 없습니다.'; return; }
+        const turnOn = !(_testModeEnd > Date.now());
+        try {
+            await window._authReady;
+            await presenceRef().set({
+                testStartedAt: turnOn ? firebase.firestore.FieldValue.serverTimestamp() : firebase.firestore.FieldValue.delete()
+            }, { merge: true });
+            _testModeEnd = turnOn ? Date.now() + TEST_MODE_MS : 0;
+            try {
+                if (turnOn) localStorage.setItem('admin_test_mode_end', String(_testModeEnd));
+                else localStorage.removeItem('admin_test_mode_end');
+            } catch (e) {}
+            if (turnOn) startTestModeTick(); else renderTestMode();
+        } catch (e) {
+            if (msg) msg.textContent = '오류: ' + (e.message || e);
+        }
+    };
+    (function restoreTestMode() {
+        const end = parseInt(localStorage.getItem('admin_test_mode_end') || '0', 10);
+        if (end > Date.now()) { _testModeEnd = end; startTestModeTick(); }
+    })();
+
     function startAdminHeartbeat() {
         if (_adminBeatTimer) return;
         sendAdminHeartbeat();

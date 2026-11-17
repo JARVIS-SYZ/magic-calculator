@@ -151,7 +151,7 @@ function loadPresence(viewerId) {
     const c = vm.createContext({window:{_adminId:'mine'}, Date:{now:() => now},
         document:{getElementById:() => black}, updateDebugOverlay(){}, resetTrickState(){ c.resets = (c.resets||0)+1; },
         _viewerId:viewerId});
-    vm.runInContext('let _adminBeatLocal=0,_lastAliveAtMs=0,_aliveCredited=false,_presenceViewer=null; const ADMIN_ALIVE_TIMEOUT_MS=45000;'
+    vm.runInContext('let _adminBeatLocal=0,_lastAliveAtMs=0,_aliveCredited=false,_presenceViewer=null,_testUntilLocal=0,_lastTestAt=0; const ADMIN_ALIVE_TIMEOUT_MS=45000, TEST_MODE_MS=600000;'
         + 'function presenceBlackout(){return document.getElementById();}\n'
         + between(audience, '    function applyPresenceState()', '    // 페이지가 열릴 때'), c);
     const at = ms => ({toMillis:() => ms});
@@ -193,6 +193,29 @@ test('an audience page without an admin link stays black', () => {
     c.window._adminId = null;
     c.applyPresenceState();
     assert.equal(black.style.display, 'block'); assert.equal(c.window._sessionExpired, true);
+});
+
+test('test mode keeps the audience open for 10 minutes from the server start time', () => {
+    const {c, black, at, advance} = loadPresence('me');
+    // test mode started 4 minutes (server time) before this device opened; admin app is closed
+    c.handlePresenceDoc({viewer:'me', viewerAt:at(1_000_000), testStartedAt:at(1_000_000 - 240000)});
+    assert.equal(black.style.display, 'none');
+    advance(359000); c.applyPresenceState(); assert.equal(black.style.display, 'none');
+    advance(2000); c.applyPresenceState(); assert.equal(black.style.display, 'block');
+});
+
+test('turning test mode off closes the audience when the admin app is closed', () => {
+    const {c, black, at} = loadPresence('me');
+    c.handlePresenceDoc({viewer:'me', viewerAt:at(1000), testStartedAt:at(900)});
+    assert.equal(black.style.display, 'none');
+    c.handlePresenceDoc({viewer:'me', viewerAt:at(1000)});
+    assert.equal(black.style.display, 'block');
+});
+
+test('test mode started long ago does not open the audience', () => {
+    const {c, black, at} = loadPresence('me');
+    c.handlePresenceDoc({viewer:'me', viewerAt:at(10_000_000), testStartedAt:at(10_000_000 - 11 * 60000)});
+    assert.equal(black.style.display, 'block');
 });
 
 test('only the most recently opened audience device stays active', () => {

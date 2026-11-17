@@ -865,7 +865,11 @@ body.android-mode #calcIconPlusMinus::after {
     let _presenceUnsub = null;
     let _adminBeatLocal = 0;        // 관리자 하트비트를 마지막으로 확인한 이 기기 시각
     let _lastAliveAtMs = 0;         // 마지막으로 본 adminAliveAt (서버 시각)
-    let _aliveCredited = false;     // 처음 받은 adminAliveAt을 '지금 살아 있음'으로 인정했는지
+    let _aliveCredited = false;
+    // 테스트 모드: 관리자가 켜면 관리자 앱이 닫혀 있어도 10분 동안 쓸 수 있다
+    const TEST_MODE_MS = 10 * 60 * 1000;
+    let _testUntilLocal = 0;        // 이 기기 기준으로 테스트 모드가 끝나는 시각
+    let _lastTestAt = 0;            // 마지막으로 반영한 testStartedAt (서버 시각)     // 처음 받은 adminAliveAt을 '지금 살아 있음'으로 인정했는지
     let _presenceViewer = null;     // undefined/null = 아직 모름
     const _viewerId = (() => {
         let v = null;
@@ -913,7 +917,8 @@ body.android-mode #calcIconPlusMinus::after {
             presenceBlackout().style.display = 'block';
             return;
         }
-        const adminAlive = _adminBeatLocal > 0 && Date.now() - _adminBeatLocal < ADMIN_ALIVE_TIMEOUT_MS;
+        const testOn = Date.now() < _testUntilLocal;
+        const adminAlive = testOn || (_adminBeatLocal > 0 && Date.now() - _adminBeatLocal < ADMIN_ALIVE_TIMEOUT_MS);
         const mine = _presenceViewer === _viewerId;
         const blocked = !(adminAlive && mine);
         if (blocked && !window._sessionExpired) resetTrickState();
@@ -921,6 +926,7 @@ body.android-mode #calcIconPlusMinus::after {
         presenceBlackout().style.display = blocked ? 'block' : 'none';
         updateDebugOverlay((blocked ? ('차단: ' + (!adminAlive ? '관리자 꺼짐' : '다른 기기가 사용 중')) : '연결됨')
             + ' | 신호 ' + (_adminBeatLocal ? Math.round((Date.now() - _adminBeatLocal) / 1000) + '초 전' : '없음')
+            + (testOn ? ' | 테스트 ' + Math.ceil((_testUntilLocal - Date.now()) / 60000) + '분 남음' : '')
             + ' | 주인 ' + (_presenceViewer ? (mine ? '나' : _presenceViewer.slice(0, 6)) : '없음'), null);
     }
 
@@ -943,6 +949,15 @@ body.android-mode #calcIconPlusMinus::after {
             _aliveCredited = true;
         }
         if (at) _lastAliveAtMs = at;
+        // 테스트 모드 남은 시간도 서버 시각끼리(viewerAt - testStartedAt)로 계산한다
+        const testAt = ms(d.testStartedAt);
+        if (!testAt) {
+            _testUntilLocal = 0; _lastTestAt = 0;
+        } else if (testAt !== _lastTestAt && viewerAt) {
+            const elapsed = viewerAt > testAt ? viewerAt - testAt : 0;   // 보는 중에 켜졌으면 방금 시작
+            _testUntilLocal = Date.now() + Math.max(0, TEST_MODE_MS - elapsed);
+            _lastTestAt = testAt;
+        }
         _presenceViewer = typeof d.viewer === 'string' ? d.viewer : null;
         applyPresenceState();
     }
@@ -977,6 +992,7 @@ body.android-mode #calcIconPlusMinus::after {
         const adminId = window._adminId;
         if (!adminId) return;
         _aliveCredited = false; _adminBeatLocal = 0; _lastAliveAtMs = 0;
+        _testUntilLocal = 0; _lastTestAt = 0;
         applyPresenceState();
         const db = firebase.firestore();
         const ref = db.collection('presence').doc(adminId);
