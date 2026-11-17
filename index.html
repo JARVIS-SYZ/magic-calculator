@@ -367,6 +367,14 @@ body.ios27-theme .display-text     { font-weight: 300; }
 body.ios27-theme #calcIconPlusMinus { display: none; }
 body.ios27-theme #calcIconPm27     { display: flex; align-items: center; justify-content: center; }
 body.ios27-theme #calcIconPm27 .pm-icon { width: calc(var(--btn-w) * 0.63); height: calc(var(--btn-w) * 0.63); }
+/* 홈 화면 앱(전체 화면) 배치 — 실제 iOS 27.2 계산기(iPhone 16 Pro)를 pt 단위로 재서 맞춤
+   위쪽 아이콘: 안전영역 바로 아래, 지름 43pt, 좌우 16pt / 키패드 아래 여백: 안전영역 + 29pt */
+html.ios-device body.ios27-theme .calculator { padding-top: env(safe-area-inset-top); }
+body.ios27-theme .header { padding-left: 16px; padding-right: 16px; height: 43px; }
+body.ios27-theme .top-icon { width: 43px; height: 43px; }
+html.ios-device body.ios27-theme .button-grid { padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 29px); }
+body.ios27-theme .display { padding-bottom: 14px; padding-right: 20px; }
+body.ios27-theme .expression-text { font-size: clamp(27px, 6.8vw, 39px); margin-bottom: 6px; }
 
 /* ===== Android(갤럭시 One UI 계산기) 테마 - 라이트 =====
  * html/body 배경은 검정 그대로 둔다 */
