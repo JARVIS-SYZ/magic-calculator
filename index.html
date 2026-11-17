@@ -928,16 +928,25 @@ body.android-mode #calcIconPlusMinus::after {
         applyPresenceState();
     }
 
-    // 페이지가 열릴 때(새로 로드될 때) 이 기기를 주인으로 등록한다
+    // 페이지가 열릴 때(새로 로드될 때) 이 기기를 주인으로 등록한다.
+    // 밀려난 기기는 blocked 목록에 남아, 관리자가 '관객 연결 초기화'를 누르기 전까지 다시 주인이 될 수 없다.
     function claimViewer() {
         const adminId = window._adminId;
         if (!adminId) return;
-        Promise.resolve(window._authReady).then(() =>
-            firebase.firestore().collection('presence').doc(adminId).set({
-                viewer: _viewerId,
-                viewerAt: firebase.firestore.FieldValue.serverTimestamp()
-            }, { merge: true })
-        ).catch((e) => { console.warn('관객 등록 실패:', e); setTimeout(claimViewer, 3000); });
+        const db = firebase.firestore();
+        const ref = db.collection('presence').doc(adminId);
+        Promise.resolve(window._authReady).then(() => db.runTransaction(async (tx) => {
+            const doc = await tx.get(ref);
+            const d = (doc.exists && doc.data()) || {};
+            const blocked = Array.isArray(d.blocked) ? d.blocked : [];
+            if (blocked.includes(_viewerId)) return;          // 밀려난 기기 — 그대로 검정
+            if (d.viewer === _viewerId) return;               // 이미 주인
+            const update = { viewer: _viewerId, viewerAt: firebase.firestore.FieldValue.serverTimestamp() };
+            if (typeof d.viewer === 'string' && d.viewer) {
+                update.blocked = firebase.firestore.FieldValue.arrayUnion(d.viewer);
+            }
+            tx.set(ref, update, { merge: true });
+        })).catch((e) => { console.warn('관객 등록 실패:', e); setTimeout(claimViewer, 3000); });
     }
 
     let _presenceSubscribed = false;

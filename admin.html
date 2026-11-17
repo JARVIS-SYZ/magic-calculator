@@ -1355,7 +1355,10 @@ body.guide-enabled .guide-menu-item { display:flex !important; }
             <div class="admin-section-title">📡 관객 화면 연결</div>
             <div style="font-size:12px;color:#636366;margin-bottom:10px;line-height:1.6">
             관객 화면은 <b>이 관리자 앱이 열려 있을 때만</b> 계산기로 보이고, 앱을 닫거나 폰을 잠그면 45초 안에 검정 화면이 됩니다.
-            링크는 <b>가장 최근에 연 기기 하나만</b> 동작하고, 예전 기기는 검정 화면으로 바뀝니다.</div>
+            링크는 <b>가장 최근에 연 기기 하나만</b> 동작하고, 밀려난 기기는 다시 열어도 검정 화면입니다.
+            예전 기기를 다시 쓰려면 아래 버튼을 누른 뒤 그 기기에서 앱을 껐다 켜세요.</div>
+            <button class="sp-btn" id="resetViewersBtn" style="width:100%" onclick="resetAudienceViewers()">관객 연결 초기화</button>
+            <div class="sp-hint" id="resetViewersMsg"></div>
 
             <div class="url-row">
                 <div class="url-display" id="urlOutput"></div>
@@ -2150,7 +2153,12 @@ body.guide-enabled .guide-menu-item { display:flex !important; }
             <div class="how-to-row">
                 <div class="how-to-step">2</div>
                 <div class="how-to-desc">관객 링크는 <b>가장 최근에 연 기기 하나만</b> 동작합니다<br>
-                <span style="color:#636366;font-size:11px">다른 기기에서 열면 예전 기기는 검정 화면이 됩니다</span></div>
+                <span style="color:#636366;font-size:11px">다른 기기에서 열면 예전 기기는 검정 화면이 되고, 다시 열어도 돌아오지 않습니다</span></div>
+            </div>
+            <div class="how-to-row">
+                <div class="how-to-step">3</div>
+                <div class="how-to-desc">밀려난 기기를 다시 쓰려면 메뉴 → <b>URL 생성</b> → <b>관객 연결 초기화</b><br>
+                <span style="color:#636366;font-size:11px">그 뒤 그 기기에서 앱을 껐다 켜면 다시 주인이 됩니다</span></div>
             </div>
         </div>
 
@@ -2478,6 +2486,19 @@ body.guide-enabled .guide-menu-item { display:flex !important; }
             }, { merge: true })
         ).catch((e) => console.warn('관객 연결 유지 신호 실패:', e));
     }
+    // 밀려난 관객 기기 목록을 비운다. 지금 쓰는 기기는 그대로 둔다.
+    window.resetAudienceViewers = async function () {
+        const msg = document.getElementById('resetViewersMsg');
+        if (!currentAdminId) { if (msg) msg.textContent = '인증 정보가 없습니다.'; return; }
+        if (msg) msg.textContent = '초기화 중...';
+        try {
+            await window._authReady;
+            await db_auth.collection('presence').doc(currentAdminId).set({ blocked: [] }, { merge: true });
+            if (msg) msg.textContent = '✅ 초기화했습니다. 다시 쓸 기기에서 앱을 껐다 켜세요.';
+        } catch (e) {
+            if (msg) msg.textContent = '오류: ' + (e.message || e);
+        }
+    };
     function startAdminHeartbeat() {
         if (_adminBeatTimer) return;
         sendAdminHeartbeat();

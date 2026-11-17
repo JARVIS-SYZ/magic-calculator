@@ -66,15 +66,22 @@ service cloud.firestore {
     match /presence/{adminId} {
       allow get: if signedIn();
       allow list, delete: if false;
+      // 관리자: 하트비트 갱신, 밀려난 기기 목록 초기화
+      allow create, update: if myAdmin() == adminId
+                    && request.resource.data.keys().hasOnly(['adminAliveAt', 'viewer', 'viewerAt', 'blocked']);
+      // 관객: 자기 기기를 주인으로 등록. 밀려난 기기는 다시 등록할 수 없고, 목록에서 지울 수도 없다
       allow create: if signedIn()
-                    && request.resource.data.keys().hasOnly(['adminAliveAt', 'viewer', 'viewerAt'])
-                    && (myAdmin() == adminId || !('adminAliveAt' in request.resource.data))
-                    && (!('viewer' in request.resource.data) || (request.resource.data.viewer is string && request.resource.data.viewer.size() < 100));
+                    && request.resource.data.keys().hasOnly(['viewer', 'viewerAt', 'blocked'])
+                    && request.resource.data.viewer is string && request.resource.data.viewer.size() < 100
+                    && request.resource.data.get('blocked', []).size() <= 1;
       allow update: if signedIn()
-                    && request.resource.data.keys().hasOnly(['adminAliveAt', 'viewer', 'viewerAt'])
-                    && (myAdmin() == adminId
-                        || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['viewer', 'viewerAt']))
-                    && (!('viewer' in request.resource.data) || (request.resource.data.viewer is string && request.resource.data.viewer.size() < 100));
+                    && request.resource.data.keys().hasOnly(['adminAliveAt', 'viewer', 'viewerAt', 'blocked'])
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['viewer', 'viewerAt', 'blocked'])
+                    && request.resource.data.viewer is string && request.resource.data.viewer.size() < 100
+                    && !(request.resource.data.viewer in resource.data.get('blocked', []))
+                    && request.resource.data.get('blocked', []).hasAll(resource.data.get('blocked', []))
+                    && request.resource.data.get('blocked', []).size() <= resource.data.get('blocked', []).size() + 1
+                    && request.resource.data.get('blocked', []).size() < 300;
     }
 
     // ===== 관리자 코드 — 목록·수정은 슈퍼관리자만 =====

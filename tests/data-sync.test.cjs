@@ -189,4 +189,6 @@ test('the 30 minute audience expiry is gone', () => {
     assert.doesNotMatch(audience, /SESSION_MAX_MS|calc_session_start|startSessionExpiry/);
     assert.doesNotMatch(admin, /30분 다시 시작|resetAudienceSession/);
     assert.match(admin, /function startAdminHeartbeat\(\)/);
+    assert.match(admin, /resetAudienceViewers/);
+    assert.match(audience, /blocked.includes\(_viewerId\)/);
 });
