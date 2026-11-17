@@ -151,7 +151,7 @@ function loadPresence(viewerId) {
     const c = vm.createContext({window:{_adminId:'mine'}, Date:{now:() => now},
         document:{getElementById:() => black}, updateDebugOverlay(){}, resetTrickState(){ c.resets = (c.resets||0)+1; },
         _viewerId:viewerId});
-    vm.runInContext("let _presenceDiag='', _claimDiag='';", c);
+    vm.runInContext("let _presenceDiag='', _claimDiag='', _openedAtMs=0;", c);
     vm.runInContext('let _adminBeatLocal=0,_lastAliveAtMs=0,_aliveCredited=false,_presenceViewer=null,_testUntilLocal=0,_lastTestAt=0; const ADMIN_ALIVE_TIMEOUT_MS=45000, TEST_MODE_MS=600000;'
         + 'function setPresenceBlocked(b){ document.getElementById().style.display = b ? \'block\' : \'none\'; }\n'
         + between(audience, '    function applyPresenceState()', '    // 페이지가 열릴 때'), c);
