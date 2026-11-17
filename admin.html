@@ -469,10 +469,11 @@ body.ios27-theme #calcIconPm27     { display: flex; align-items: center; justify
 body.ios27-theme #calcIconPm27 .pm-icon { width: calc(var(--btn-w) * 0.63); height: calc(var(--btn-w) * 0.63); }
 /* 홈 화면 앱(전체 화면) 배치 — 실제 iOS 27.2 계산기(iPhone 16 Pro)를 pt 단위로 재서 맞춤
    위쪽 아이콘: 안전영역 바로 아래, 지름 43pt, 좌우 16pt / 키패드 아래 여백: 안전영역 + 29pt */
-html.ios-device body.ios27-theme .calculator { padding-top: env(safe-area-inset-top); }
-body.ios27-theme .header { padding-left: 16px; padding-right: 16px; height: 43px; }
-body.ios27-theme .top-icon { width: 43px; height: 43px; }
-html.ios-device body.ios27-theme .button-grid { padding-bottom: max(0px, calc(env(safe-area-inset-bottom, 0px) + 29px - var(--standalone-gap, 0px))); }
+/* (iOS 26 화면도 같은 배치를 쓴다 — 키 크기·간격이 같고, 홈 화면 앱에서 상태바를 불투명으로 바꿨기 때문) */
+html.ios-device body.ios26-theme:not(.android-mode) .calculator { padding-top: env(safe-area-inset-top); }
+body.ios26-theme:not(.android-mode) .header { padding-left: 16px; padding-right: 16px; height: 43px; }
+body.ios26-theme:not(.android-mode) .top-icon { width: 43px; height: 43px; }
+html.ios-device body.ios26-theme:not(.android-mode) .button-grid { padding-bottom: max(0px, calc(env(safe-area-inset-bottom, 0px) + 29px - var(--standalone-gap, 0px))); }
 body.ios27-theme .display { padding-bottom: 14px; padding-right: 20px; }
 body.ios27-theme .expression-text { font-size: clamp(27px, 6.8vw, 39px); margin-bottom: 6px; }
 
@@ -3944,11 +3945,12 @@ body.guide-enabled .guide-menu-item { display:flex !important; }
     function applyLayoutMode() {
         document.body.classList.toggle('ios26-theme', ios26Mode);
         document.body.classList.toggle('ios27-theme', ios26Mode && ios27Mode && !document.body.classList.contains('android-mode'));
-        // iOS 27 홈 화면 웹앱은 상태바를 반투명(black-translucent)으로 두면 위쪽이 흐리게 덮인다.
+        // iOS 26·27 홈 화면 웹앱은 상태바를 반투명(black-translucent)으로 두면 위쪽이 흐리게 덮인다.
         // 불투명(black)이면 흐림이 없다. 이 값은 홈 화면에 추가하는 순간 저장된다.
         try {
             const sb = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
-            if (sb) sb.setAttribute('content', document.body.classList.contains('ios27-theme') ? 'black' : 'black-translucent');
+            const opaque = ios26Mode && !document.body.classList.contains('android-mode');   // iOS 26·27 화면
+            if (sb) sb.setAttribute('content', opaque ? 'black' : 'black-translucent');
         } catch (e) {}
         if (ios26Mode) pmContent.textContent = 'AC';
         else pmContent.innerHTML = pmOriginalHTML;
