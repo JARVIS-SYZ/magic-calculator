@@ -17,7 +17,16 @@
                 if (navigator.standalone !== true) return;
                 var sh = Math.max(screen.height, screen.width);
                 if (window.innerHeight < window.innerWidth) return;          // 가로 화면은 건드리지 않는다
-                var gap = Math.round(sh - window.innerHeight);
+                // 상단 안전영역이 0이면(상태바 불투명 = black) 페이지가 상태바 아래에서 시작하므로 보정할 것이 없다
+                var gap = 0;
+                if (document.body) {
+                    var pr = document.createElement('div');
+                    pr.style.cssText = 'position:fixed;top:0;left:0;width:1px;visibility:hidden;padding-top:env(safe-area-inset-top)';
+                    document.body.appendChild(pr);
+                    var safeTop = parseFloat(getComputedStyle(pr).paddingTop) || 0;
+                    pr.remove();
+                    if (safeTop > 0) gap = Math.round(sh - window.innerHeight);
+                }
                 if (gap < 0 || gap >= 100) return;                          // 키보드가 열린 경우 등은 무시
                 document.documentElement.style.setProperty('--standalone-gap', gap + 'px');
             };
@@ -3935,6 +3944,12 @@ body.guide-enabled .guide-menu-item { display:flex !important; }
     function applyLayoutMode() {
         document.body.classList.toggle('ios26-theme', ios26Mode);
         document.body.classList.toggle('ios27-theme', ios26Mode && ios27Mode && !document.body.classList.contains('android-mode'));
+        // iOS 27 홈 화면 웹앱은 상태바를 반투명(black-translucent)으로 두면 위쪽이 흐리게 덮인다.
+        // 불투명(black)이면 흐림이 없다. 이 값은 홈 화면에 추가하는 순간 저장된다.
+        try {
+            const sb = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
+            if (sb) sb.setAttribute('content', document.body.classList.contains('ios27-theme') ? 'black' : 'black-translucent');
+        } catch (e) {}
         if (ios26Mode) pmContent.textContent = 'AC';
         else pmContent.innerHTML = pmOriginalHTML;
         updateClearButtonState(); updateModeIndicator();
