@@ -11,7 +11,7 @@
 <style>
 * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select:none; -webkit-user-select:none; }
 html, body {
-    background:#000; color:#fff;
+    background:#000; color:#fff; overflow-x:hidden;
     font-family:-apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
     height:100%; overflow:hidden;
 }
@@ -79,7 +79,7 @@ html, body {
 .tab.active { color:#ff9f0a; border-bottom-color:#ff9f0a; }
 
 .tab-content {
-    flex:1; overflow-y:auto; padding:16px 20px;
+    flex:1; overflow-y:auto; overflow-x:hidden; padding:16px max(16px, env(safe-area-inset-right)) 16px max(16px, env(safe-area-inset-left));
     -webkit-overflow-scrolling:touch;
     display:none;
 }
@@ -97,10 +97,11 @@ html, body {
 }
 
 .code-create-row {
-    display:flex; gap:10px; margin-bottom:14px;
+    display:flex; flex-wrap:wrap; gap:10px; margin-bottom:14px;
 }
+.code-create-row .create-btn { flex:1 1 auto; }
 .code-name-input {
-    flex:1; background:#2c2c2e; border:none; border-radius:10px;
+    flex:1 1 100%; min-width:0; background:#2c2c2e; border:none; border-radius:10px;
     padding:12px 14px; font-size:15px; color:#fff;
     user-select:text; -webkit-user-select:text;
 }
@@ -116,12 +117,14 @@ html, body {
 .code-item {
     background:#2c2c2e; border-radius:12px;
     padding:14px 16px;
-    display:flex; align-items:center; gap:12px;
+    display:flex; flex-direction:column; align-items:stretch; gap:10px;
+    min-width:0;
 }
 .code-item.used { opacity:0.5; }
 .code-revoke { background:#5a2a2a; color:#ff9f9f; border:none; border-radius:8px; padding:6px 12px; font-size:13px; cursor:pointer; }
-.code-info { flex:1; }
-.code-name { font-size:15px; font-weight:600; margin-bottom:4px; }
+.code-info { flex:1; min-width:0; }
+.code-name { font-size:15px; font-weight:600; margin-bottom:4px; overflow-wrap:anywhere; }
+.code-name.empty { color:#636366 !important; font-weight:400; }
 .code-val {
     font-size:13px; font-family:monospace;
     color:#ff9f0a; letter-spacing:2px;
@@ -137,7 +140,8 @@ html, body {
     font-size:11px; color:#30d158; font-weight:600;
 }
 .code-status.used { color:#ff453a; }
-.code-actions { display:flex; gap:6px; flex-shrink:0; }
+.code-actions { display:flex; flex-wrap:wrap; gap:6px; }
+.code-actions button { flex:1 1 auto; white-space:nowrap; }
 .code-delete {
     background:#ff453a22; border:none; border-radius:8px;
     padding:8px 12px; font-size:12px; color:#ff453a;
@@ -169,12 +173,14 @@ html, body {
     background:#2c2c2e; border-radius:12px;
     padding:14px 16px; margin-bottom:8px;
 }
-.log-expr { font-size:18px; font-weight:600; margin-bottom:6px; }
-.log-meta { display:flex; justify-content:space-between; font-size:12px; color:#636366; }
+.log-expr { font-size:18px; font-weight:600; margin-bottom:6px; overflow-wrap:anywhere; }
+.log-meta { display:flex; justify-content:space-between; gap:8px; font-size:12px; color:#636366; }
+.log-meta > span:last-child { flex-shrink:0; }
 .log-admin-badge {
     background:#3a3a3c; border-radius:6px;
     padding:2px 8px; font-size:11px; color:#ff9f0a;
-    font-family:monospace;
+    font-family:monospace; min-width:0;
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
 }
 
 /* ===== 현황 ===== */
@@ -347,6 +353,11 @@ html, body {
     // 세션 유지 — localStorage 플래그가 아니라 실제 superAdmin 클레임이 남아 있는지로 판단한다
     hasSuperClaim().then((ok) => { if (ok) showMain(); });
 
+    // 이름 등 사용자가 입력한 값을 innerHTML에 넣을 때 태그로 해석되지 않게 한다
+    function esc(v) {
+        return String(v == null ? '' : v).replace(/[&<>"']/g, (ch) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[ch]);
+    }
+
     // ===== 탭 전환 =====
     function switchTab(name) {
         document.querySelectorAll('.tab').forEach((t, i) => {
@@ -394,10 +405,11 @@ html, body {
                         <div class="code-val" style="font-size:17px">${doc.id}</div>
                         <button class="code-copy" type="button" onclick="copyCode('${doc.id}', this)">복사</button>
                     </div>
-                    ${d.name ? `<div class="code-name" style="font-size:13px;color:#aaa;margin-top:3px">${d.name}</div>` : ''}
+                    <div class="code-name${d.name ? '' : ' empty'}" style="font-size:14px;color:#ddd;margin-top:4px">👤 ${d.name ? esc(d.name) : '이름 없음'}</div>
                     <div class="code-status ${d.used ? 'used' : ''}">${d.revoked ? '● 정지됨' : (d.used ? `● 사용됨 (${useCount}회)` : '● 미사용')}</div>
                 </div>
                 <div class="code-actions">
+                    <button class="code-reset" onclick="renameAdmin('${doc.id}')">이름 변경</button>
                     <button class="code-revoke" onclick="toggleRevoke('${doc.id}', ${d.revoked ? 'true' : 'false'})">${d.revoked ? '해제' : '정지'}</button>
                     <button class="code-reset" onclick="toggleDateCalc('${doc.id}', '${d.adminId || ''}', ${d.dateCalc ? 'true' : 'false'})">${d.dateCalc ? '📅 켜짐' : '📅 꺼짐'}</button>
                     ${useCount > 0 ? `<button class="code-reset" onclick="resetCode('${doc.id}')">초기화</button>` : ''}
@@ -443,7 +455,7 @@ html, body {
         Object.entries(allCodes).forEach(([code, data]) => {
             const btn = document.createElement('button');
             btn.className = 'filter-btn';
-            btn.textContent = data.name || code;
+            btn.textContent = data.name || code;   // textContent라 이스케이프 불필요
             btn.onclick = () => filterLogs(data.adminId);
             row.appendChild(btn);
         });
@@ -494,9 +506,9 @@ html, body {
             const item = document.createElement('div');
             item.className = 'log-item';
             item.innerHTML = `
-                <div class="log-expr">${d.isForce ? '🍎 ' : ''}${d.expression || ''}</div>
+                <div class="log-expr">${d.isForce ? '🍎 ' : ''}${esc(d.expression || '')}</div>
                 <div class="log-meta">
-                    <span class="log-admin-badge">${adminName}</span>
+                    <span class="log-admin-badge">${esc(adminName)}</span>
                     <span>${time}</span>
                 </div>`;
             container.appendChild(item);
@@ -513,9 +525,9 @@ html, body {
             const item = document.createElement('div');
             item.className = 'log-item';
             item.innerHTML = `
-                <div class="log-expr">${d.isForce ? '🍎 ' : ''}${d.expression || ''}</div>
+                <div class="log-expr">${d.isForce ? '🍎 ' : ''}${esc(d.expression || '')}</div>
                 <div class="log-meta">
-                    <span class="log-admin-badge">${adminName}</span>
+                    <span class="log-admin-badge">${esc(adminName)}</span>
                     <span>${time}</span>
                 </div>`;
             container.appendChild(item);
@@ -594,6 +606,21 @@ html, body {
                 await batch.commit();
             }
         } catch(e) {
+            alert('오류: ' + e.message);
+        }
+    }
+
+    // ===== 관리자 이름 변경 =====
+    // 관리자 앱은 자기 admin_codes 문서를 실시간으로 보고 있어 바로 새 이름이 보인다.
+    async function renameAdmin(code) {
+        const cur = (allCodes[code] && allCodes[code].name) || '';
+        const next = prompt('코드 ' + code + '의 관리자 이름', cur);
+        if (next === null) return;
+        const name = next.trim().slice(0, 40);
+        if (name === cur) return;
+        try {
+            await db.collection('admin_codes').doc(code).update({ name });
+        } catch (e) {
             alert('오류: ' + e.message);
         }
     }

@@ -653,6 +653,14 @@ body.android-mode #calcIconPlusMinus::after {
 .side-menu-item:active { background: #2c2c2e; }
 .side-menu-icon { font-size: 20px; width: 28px; text-align: center; }
 .side-menu-arrow { margin-left: auto; color: #636366; font-size: 20px; }
+.side-menu-sub {
+    margin-left: auto; color: #8e8e93; font-size: 14px; font-weight: 400;
+    max-width: 45%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.profile-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 0; }
+.profile-row + .profile-row { border-top: 1px solid #2c2c2e; }
+.profile-k { color: #8e8e93; font-size: 14px; flex-shrink: 0; }
+.profile-v { color: #fff; font-size: 16px; font-weight: 600; text-align: right; overflow-wrap: anywhere; }
 .side-menu-divider { height: 1px; background: #2c2c2e; margin: 4px 0; }
 
 /* 바로실행 토글 */
@@ -1227,6 +1235,12 @@ body.guide-enabled .guide-menu-item { display:flex !important; }
         </select>
     </div>
     <div class="side-menu-list">
+        <button class="side-menu-item" onclick="openPage('profile')">
+            <span class="side-menu-icon">👤</span>
+            <span>관리자</span>
+            <span class="side-menu-sub" id="menuAdminName"></span>
+            <span class="side-menu-arrow" style="margin-left:8px">›</span>
+        </button>
         <button class="side-menu-item" onclick="openPage('notify')">
             <span class="side-menu-icon">🔔</span>
             <span>알림 받기</span>
@@ -1311,6 +1325,22 @@ body.guide-enabled .guide-menu-item { display:flex !important; }
 </div>
 
 <!-- 각 페이지 패널들 -->
+
+<!-- 관리자 정보 -->
+<div class="admin-page" id="page-profile">
+    <div class="admin-page-header">
+        <button class="admin-back" onclick="closePage()">‹</button>
+        <div class="admin-page-title">관리자</div>
+    </div>
+    <div class="admin-page-content">
+        <div class="admin-section">
+            <div class="admin-section-title">👤 내 정보</div>
+            <div class="profile-row"><span class="profile-k">이름</span><span class="profile-v" id="profileName">-</span></div>
+            <div class="profile-row"><span class="profile-k">관리자 코드</span><span class="profile-v" id="profileCode" style="font-family:monospace;letter-spacing:2px">-</span></div>
+            <div style="font-size:12px;color:#636366;margin-top:10px;line-height:1.6">이름은 처음 로그인할 때 등록한 이름이에요. 바꾸려면 슈퍼관리자에게 요청하세요.</div>
+        </div>
+    </div>
+</div>
 
 <!-- 알림 받기 -->
 <div class="admin-page" id="page-notify">
@@ -2372,11 +2402,24 @@ body.guide-enabled .guide-menu-item { display:flex !important; }
         _authWatchUnsub = db_auth.collection('admin_codes').doc(code).onSnapshot((doc) => {
             if (!doc.exists) { forceLogout('관리자 권한이 삭제되었습니다.'); return; }
             const d = doc.data() || {};
+            showAdminProfile(d.name, code);
             if (d.revoked) { forceLogout('관리자 권한이 정지되었습니다.'); return; }
             if (d.activeDeviceId && d.activeDeviceId !== deviceId) {
                 forceLogout('다른 기기에서 같은 코드로 로그인하여 이 기기는 로그아웃됩니다.');
             }
         }, () => {});
+    }
+
+    // 등록한 이름을 사이드 메뉴의 '관리자' 항목과 관리자 페이지에 보여준다.
+    // admin_codes 문서를 실시간으로 보고 있어서 슈퍼관리자가 이름을 바꾸면 바로 반영된다.
+    function showAdminProfile(name, code) {
+        const n = (typeof name === 'string' && name.trim()) ? name.trim() : '';
+        const menu = document.getElementById('menuAdminName');
+        if (menu) menu.textContent = n;
+        const pn = document.getElementById('profileName');
+        if (pn) pn.textContent = n || '(등록된 이름 없음)';
+        const pc = document.getElementById('profileCode');
+        if (pc && code) pc.textContent = code;
     }
 
     async function checkExistingSession() {
@@ -2386,6 +2429,7 @@ body.guide-enabled .guide-menu-item { display:flex !important; }
         try {
             const r = await callAuthApi('/resumeAdmin', { deviceId });
             const claims = await authClaims(false);
+            showAdminProfile(r.name, claims.code);
             currentAdminId = r.adminId;
             showAdminApp();
             startAuthWatch(claims.code, deviceId);
@@ -2450,6 +2494,7 @@ body.guide-enabled .guide-menu-item { display:flex !important; }
             // 클라이언트는 admin_codes를 직접 읽거나 쓰지 않는다.
             const deviceId = getDeviceId();
             const r = await callAuthApi('/claimAdmin', { code, name, deviceId });
+            showAdminProfile(r.name || name, code);
 
             localStorage.removeItem('admin_kicked');
             currentAdminId = r.adminId;
