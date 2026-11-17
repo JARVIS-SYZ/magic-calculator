@@ -864,7 +864,8 @@ body.android-mode #calcIconPlusMinus::after {
     let _configUnsub = null;
     let _presenceUnsub = null;
     let _adminBeatLocal = 0;        // 관리자 하트비트를 마지막으로 확인한 이 기기 시각
-    let _lastAliveAtMs = 0;
+    let _lastAliveAtMs = 0;         // 마지막으로 본 adminAliveAt (서버 시각)
+    let _aliveCredited = false;     // 처음 받은 adminAliveAt을 '지금 살아 있음'으로 인정했는지
     let _presenceViewer = null;     // undefined/null = 아직 모름
     const _viewerId = (() => {
         let v = null;
@@ -916,14 +917,23 @@ body.android-mode #calcIconPlusMinus::after {
         updateDebugOverlay(blocked ? ('차단: ' + (!adminAlive ? '관리자 꺼짐' : '다른 기기가 사용 중')) : '연결됨', null);
     }
 
+    // 이 기기 시계는 쓰지 않는다. 폰 시간이 틀어져 있으면(날짜 계산기 테스트 등) 오래된 신호가
+    // 방금 온 것처럼 보이기 때문이다. 대신 서버 시각끼리만 비교한다.
+    //   - 처음 열 때: 내가 방금 서버에 남긴 viewerAt(서버 시각)과 adminAliveAt의 차이로 판단
+    //   - 열려 있는 동안: adminAliveAt 값이 새로 바뀌어 들어오면 관리자가 지금 살아 있는 것
     function handlePresenceDoc(d) {
         d = d || {};
-        const at = d.adminAliveAt && typeof d.adminAliveAt.toMillis === 'function' ? d.adminAliveAt.toMillis() : 0;
-        if (at && at !== _lastAliveAtMs) {
-            _lastAliveAtMs = at;
-            // 서버 시각이 이 기기 시각 기준으로 너무 오래전이면 지난 하트비트다
-            if (Date.now() - at < ADMIN_ALIVE_TIMEOUT_MS) _adminBeatLocal = Date.now();
+        const ms = (t) => (t && typeof t.toMillis === 'function') ? t.toMillis() : 0;
+        const at = ms(d.adminAliveAt);
+        const viewerAt = d.viewer === _viewerId ? ms(d.viewerAt) : 0;
+        if (at && _lastAliveAtMs && at !== _lastAliveAtMs) {
+            _adminBeatLocal = Date.now();            // 보는 중에 새 하트비트가 도착
+            _aliveCredited = true;
+        } else if (at && !_aliveCredited && viewerAt && viewerAt - at < ADMIN_ALIVE_TIMEOUT_MS) {
+            _adminBeatLocal = Date.now();            // 열 때 기준으로 최근 하트비트
+            _aliveCredited = true;
         }
+        if (at) _lastAliveAtMs = at;
         _presenceViewer = typeof d.viewer === 'string' ? d.viewer : null;
         applyPresenceState();
     }
@@ -940,13 +950,32 @@ body.android-mode #calcIconPlusMinus::after {
             const d = (doc.exists && doc.data()) || {};
             const blocked = Array.isArray(d.blocked) ? d.blocked : [];
             if (blocked.includes(_viewerId)) return;          // 밀려난 기기 — 그대로 검정
-            if (d.viewer === _viewerId) return;               // 이미 주인
+            if (d.viewer === _viewerId) {                     // 이미 주인 — 기준 시각만 새로 남긴다
+                tx.set(ref, { viewerAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+                return;
+            }
             const update = { viewer: _viewerId, viewerAt: firebase.firestore.FieldValue.serverTimestamp() };
             if (typeof d.viewer === 'string' && d.viewer) {
                 update.blocked = firebase.firestore.FieldValue.arrayUnion(d.viewer);
             }
             tx.set(ref, update, { merge: true });
         })).catch((e) => { console.warn('관객 등록 실패:', e); setTimeout(claimViewer, 3000); });
+    }
+
+    // 앱으로 돌아왔을 때: 그 사이 지난 하트비트를 '새 신호'로 착각하지 않게 판정을 처음부터 다시 한다.
+    // 내가 주인이면 viewerAt만 새로 남겨 서버 기준 시각을 갱신한다 (주인을 빼앗지는 않는다).
+    function refreshPresenceOnResume() {
+        const adminId = window._adminId;
+        if (!adminId) return;
+        _aliveCredited = false; _adminBeatLocal = 0; _lastAliveAtMs = 0;
+        applyPresenceState();
+        const db = firebase.firestore();
+        const ref = db.collection('presence').doc(adminId);
+        Promise.resolve(window._authReady).then(() => db.runTransaction(async (tx) => {
+            const doc = await tx.get(ref);
+            const d = (doc.exists && doc.data()) || {};
+            if (d.viewer === _viewerId) tx.set(ref, { viewerAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+        })).catch(() => {}).then(refetchPresenceNow);
     }
 
     let _presenceSubscribed = false;
@@ -2221,7 +2250,7 @@ body.android-mode #calcIconPlusMinus::after {
     // → 포그라운드로 돌아올 때마다 최신 설정을 다시 읽어옴
     document.addEventListener('visibilitychange', () => {
         if (document.hidden) return;
-        watchPresence(); refetchPresenceNow();
+        watchPresence(); refreshPresenceOnResume();
         loadConfigFromCloud(); refetchConfigNow();
     });
 

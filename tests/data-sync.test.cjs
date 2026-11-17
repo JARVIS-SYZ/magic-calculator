@@ -151,36 +151,38 @@ function loadPresence(viewerId) {
     const c = vm.createContext({window:{_adminId:'mine'}, Date:{now:() => now},
         document:{getElementById:() => black}, updateDebugOverlay(){}, resetTrickState(){ c.resets = (c.resets||0)+1; },
         _viewerId:viewerId});
-    vm.runInContext('let _adminBeatLocal=0,_lastAliveAtMs=0,_presenceViewer=null; const ADMIN_ALIVE_TIMEOUT_MS=45000;'
+    vm.runInContext('let _adminBeatLocal=0,_lastAliveAtMs=0,_aliveCredited=false,_presenceViewer=null; const ADMIN_ALIVE_TIMEOUT_MS=45000;'
         + 'function presenceBlackout(){return document.getElementById();}\n'
         + between(audience, '    function applyPresenceState()', '    // 페이지가 열릴 때'), c);
     const at = ms => ({toMillis:() => ms});
-    return {c, black, at, advance:ms => { now += ms; }, now:() => now};
+    return {c, black, at, advance:ms => { now += ms; }};
 }
 
-test('audience screen shows only while the administrator heartbeat is fresh', () => {
-    const {c, black, at, advance, now} = loadPresence('me');
-    c.handlePresenceDoc({viewer:'me'});
-    assert.equal(black.style.display, 'block'); assert.equal(c.window._sessionExpired, true);
-    c.handlePresenceDoc({viewer:'me', adminAliveAt:at(now() - 2000)});
+test('audience screen opens only for a heartbeat close to its own server-stamped open time', () => {
+    const {c, black, at, advance} = loadPresence('me');
+    const S = 5_000_000;   // server clock, unrelated to the device clock
+    c.handlePresenceDoc({viewer:'me', adminAliveAt:at(S - 3000)});              // claim not confirmed yet
+    assert.equal(black.style.display, 'block');
+    c.handlePresenceDoc({viewer:'me', adminAliveAt:at(S - 3000), viewerAt:at(S)});
     assert.equal(black.style.display, 'none'); assert.equal(c.window._sessionExpired, false);
     advance(44000); c.applyPresenceState(); assert.equal(black.style.display, 'none');
     advance(2000); c.applyPresenceState(); assert.equal(black.style.display, 'block');
-    c.handlePresenceDoc({viewer:'me', adminAliveAt:at(now())});
+    c.handlePresenceDoc({viewer:'me', adminAliveAt:at(S + 50000), viewerAt:at(S)});  // new beat arrives
     assert.equal(black.style.display, 'none');
 });
 
-test('a stale administrator heartbeat from long ago keeps the screen black', () => {
-    const {c, black, at, now} = loadPresence('me');
-    c.handlePresenceDoc({viewer:'me', adminAliveAt:at(now() - 10 * 60 * 1000)});
+test('an old heartbeat stays black even if the device clock is far behind', () => {
+    const {c, black, at} = loadPresence('me');
+    const S = 9_000_000_000;
+    c.handlePresenceDoc({viewer:'me', adminAliveAt:at(S - 10 * 60 * 1000), viewerAt:at(S)});
     assert.equal(black.style.display, 'block');
 });
 
 test('only the most recently opened audience device stays active', () => {
-    const {c, black, at, now} = loadPresence('me');
-    c.handlePresenceDoc({viewer:'me', adminAliveAt:at(now())});
+    const {c, black, at} = loadPresence('me');
+    c.handlePresenceDoc({viewer:'me', adminAliveAt:at(100), viewerAt:at(1000)});
     assert.equal(black.style.display, 'none');
-    c.handlePresenceDoc({viewer:'someone-else', adminAliveAt:at(now())});
+    c.handlePresenceDoc({viewer:'someone-else', adminAliveAt:at(100), viewerAt:at(2000)});
     assert.equal(black.style.display, 'block'); assert.equal(c.window._sessionExpired, true);
     assert.equal(c.resets, 1);
 });
