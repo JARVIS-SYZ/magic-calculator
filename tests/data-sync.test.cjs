@@ -178,6 +178,23 @@ test('an old heartbeat stays black even if the device clock is far behind', () =
     assert.equal(black.style.display, 'block');
 });
 
+test('the admin going to the background blacks the audience out at once and back again', () => {
+    const {c, black, at} = loadPresence('me');
+    c.handlePresenceDoc({viewer:'me', adminAliveAt:at(990), viewerAt:at(1000)});
+    assert.equal(black.style.display, 'none');
+    c.handlePresenceDoc({viewer:'me', viewerAt:at(1000)});                     // adminAliveAt deleted
+    assert.equal(black.style.display, 'block');
+    c.handlePresenceDoc({viewer:'me', adminAliveAt:at(90000), viewerAt:at(1000)}); // admin back
+    assert.equal(black.style.display, 'none');
+});
+
+test('an audience page without an admin link stays black', () => {
+    const {c, black} = loadPresence('me');
+    c.window._adminId = null;
+    c.applyPresenceState();
+    assert.equal(black.style.display, 'block'); assert.equal(c.window._sessionExpired, true);
+});
+
 test('only the most recently opened audience device stays active', () => {
     const {c, black, at} = loadPresence('me');
     c.handlePresenceDoc({viewer:'me', adminAliveAt:at(100), viewerAt:at(1000)});

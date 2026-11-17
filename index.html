@@ -860,7 +860,7 @@ body.android-mode #calcIconPlusMinus::after {
     // 상태는 presence/{adminId} 문서 하나로 주고받는다.
     //   adminAliveAt : 관리자 앱이 10초마다 서버 시각으로 갱신
     //   viewer       : 관객 페이지가 열릴 때마다 자기 기기 값으로 덮어씀 (마지막에 연 쪽이 주인)
-    const ADMIN_ALIVE_TIMEOUT_MS = 45 * 1000;
+    const ADMIN_ALIVE_TIMEOUT_MS = 15 * 1000;   // 관리자 하트비트(5초)가 이만큼 끊기면 검정
     let _configUnsub = null;
     let _presenceUnsub = null;
     let _adminBeatLocal = 0;        // 관리자 하트비트를 마지막으로 확인한 이 기기 시각
@@ -907,14 +907,21 @@ body.android-mode #calcIconPlusMinus::after {
     }
 
     function applyPresenceState() {
-        if (!window._adminId) return;
+        if (!window._adminId) {
+            // 관리자 연결 정보가 없는 관객 페이지는 쓸 수 없는 링크다 — 항상 검정
+            window._sessionExpired = true;
+            presenceBlackout().style.display = 'block';
+            return;
+        }
         const adminAlive = _adminBeatLocal > 0 && Date.now() - _adminBeatLocal < ADMIN_ALIVE_TIMEOUT_MS;
         const mine = _presenceViewer === _viewerId;
         const blocked = !(adminAlive && mine);
         if (blocked && !window._sessionExpired) resetTrickState();
         window._sessionExpired = blocked;
         presenceBlackout().style.display = blocked ? 'block' : 'none';
-        updateDebugOverlay(blocked ? ('차단: ' + (!adminAlive ? '관리자 꺼짐' : '다른 기기가 사용 중')) : '연결됨', null);
+        updateDebugOverlay((blocked ? ('차단: ' + (!adminAlive ? '관리자 꺼짐' : '다른 기기가 사용 중')) : '연결됨')
+            + ' | 신호 ' + (_adminBeatLocal ? Math.round((Date.now() - _adminBeatLocal) / 1000) + '초 전' : '없음')
+            + ' | 주인 ' + (_presenceViewer ? (mine ? '나' : _presenceViewer.slice(0, 6)) : '없음'), null);
     }
 
     // 이 기기 시계는 쓰지 않는다. 폰 시간이 틀어져 있으면(날짜 계산기 테스트 등) 오래된 신호가
@@ -926,10 +933,12 @@ body.android-mode #calcIconPlusMinus::after {
         const ms = (t) => (t && typeof t.toMillis === 'function') ? t.toMillis() : 0;
         const at = ms(d.adminAliveAt);
         const viewerAt = d.viewer === _viewerId ? ms(d.viewerAt) : 0;
-        if (at && _lastAliveAtMs && at !== _lastAliveAtMs) {
+        if (!at) {                                    // 관리자가 앱을 닫거나 내렸다고 알려 옴
+            _adminBeatLocal = 0; _aliveCredited = false; _lastAliveAtMs = 0;
+        } else if (_lastAliveAtMs && at !== _lastAliveAtMs) {
             _adminBeatLocal = Date.now();            // 보는 중에 새 하트비트가 도착
             _aliveCredited = true;
-        } else if (at && !_aliveCredited && viewerAt && viewerAt - at < ADMIN_ALIVE_TIMEOUT_MS) {
+        } else if (!_aliveCredited && viewerAt && viewerAt - at < ADMIN_ALIVE_TIMEOUT_MS) {
             _adminBeatLocal = Date.now();            // 열 때 기준으로 최근 하트비트
             _aliveCredited = true;
         }
@@ -1009,10 +1018,10 @@ body.android-mode #calcIconPlusMinus::after {
     setInterval(applyPresenceState, 2000);
 
     function bootSession() {
+        // 관객 페이지는 확인되기 전까지 검정으로 시작한다 (관리자 연결 정보가 없으면 계속 검정)
+        window._sessionExpired = true;
+        presenceBlackout().style.display = 'block';
         if (window._adminId) {
-            // 관객용 링크(adminId 있음)는 확인되기 전까지 검정으로 시작한다
-            window._sessionExpired = true;
-            presenceBlackout().style.display = 'block';
             claimViewer();
             watchPresence();
         }
