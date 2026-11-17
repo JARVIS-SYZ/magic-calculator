@@ -3118,6 +3118,7 @@ body.guide-enabled .guide-menu-item { display:flex !important; }
         const el = document.getElementById('qrcodeUrl');
         if (!el || typeof QRCode === 'undefined') return;
         el.innerHTML = '';
+        if (!currentAdminId) return;   // 관리자 ID 없는 링크는 QR로도 만들지 않는다
         new QRCode(el, {
             text: buildCalcUrl(),
             width: 160, height: 160,
@@ -3152,8 +3153,7 @@ body.guide-enabled .guide-menu-item { display:flex !important; }
         if (pageId === 'url') {
             calcLinkSession = crypto.randomUUID();
             setTimeout(() => {
-                document.getElementById('urlOutput').textContent = buildCalcUrl();
-                restoreQR();
+                renderCalcUrl();
                 refreshCloudConfig();
             }, 100);
         }
@@ -3163,10 +3163,33 @@ body.guide-enabled .guide-menu-item { display:flex !important; }
         }
     };
 
+    // 관리자 ID가 확인되기 전(앱을 켠 직후 로그인 확인 중)에는 링크를 만들지 않는다.
+    // 예전에는 이때 admin= 이 빈 링크가 만들어져, 그 링크로 연 관객 화면은 관리자를 찾지 못했다.
+    function renderCalcUrl() {
+        const out = document.getElementById('urlOutput');
+        if (!out) return;
+        if (!currentAdminId) {
+            out.textContent = '로그인 확인 중… 잠시 후 링크가 나타나요';
+            out.dataset.ready = '';
+            const wrap = document.getElementById('qrcodeUrl');
+            if (wrap) wrap.innerHTML = '';
+            adminReady.then(() => {
+                const page = document.getElementById('page-url');
+                if (page && page.classList.contains('active')) renderCalcUrl();
+            });
+            return;
+        }
+        out.textContent = buildCalcUrl();
+        out.dataset.ready = '1';
+        restoreQR();
+    }
+
     // URL 복사
     window.copyUrl = function() {
-        const url = document.getElementById('urlOutput').textContent;
-        if (!url) return;
+        const out = document.getElementById('urlOutput');
+        if (!currentAdminId || !out || out.dataset.ready !== '1') { renderCalcUrl(); return; }
+        const url = buildCalcUrl();
+        out.textContent = url;
         const btn = document.getElementById('copyBtnUrl');
         const showOk = () => { const orig = btn.textContent; btn.textContent = '✅'; setTimeout(() => btn.textContent = orig, 1500); };
         if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -3408,9 +3431,7 @@ body.guide-enabled .guide-menu-item { display:flex !important; }
         return `${location.origin}/magic-calculator/index.html?${params.toString()}`;
     }
 
-    window.generateUrl = () => {
-        document.getElementById('urlOutput').textContent = buildCalcUrl();
-    };
+    window.generateUrl = () => renderCalcUrl();
 
     // 클라우드(Firestore)에 저장된 설정을 읽어와 화면에 표시
     window.refreshCloudConfig = async () => {
