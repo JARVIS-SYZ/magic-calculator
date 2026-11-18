@@ -5818,11 +5818,9 @@ body.guide-enabled .guide-menu-item { display:flex !important; }
             // 헤더 메뉴 아이콘을 눌러 설정창이 열렸다. 그래서 touchstart에서는 기본 동작만
             // 막아 두고(= click 자체가 만들어지지 않게), 실제로 나가는 건 touchend에서 한다.
             let armed = false, lastFire = 0;
-            const hit = (clientX, clientY) => {
-                const r = stageEl.getBoundingClientRect();
-                if (clientX - r.left < 72 && clientY - r.top < 72) return false;  // 나가기 모서리
-                return inTapZone(clientX, clientY);
-            };
+            // 터치 영역이 우선이다. 상태바가 불투명이면 페이지가 상태바 아래에서 시작해
+            // '나가기 모서리'가 계산기 왼쪽 위 시계 아이콘 자리와 겹친다. 거기에 둔 터치 영역도 먹어야 한다.
+            const hit = (clientX, clientY) => inTapZone(clientX, clientY);
             // 손이 닿는 순간 바로 나간다. 뒤따르는 click은 preventDefault와 방패가 막는다.
             // (설정창이 뜨던 건 통과 클릭이 아니라 closePage의 메뉴 재열기가 원인이었다.)
             stageEl.addEventListener('touchstart', (e) => {
