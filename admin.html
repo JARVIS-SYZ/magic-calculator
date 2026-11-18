@@ -4889,7 +4889,10 @@ body.guide-enabled .guide-menu-item { display:flex !important; }
                         // 화면 픽: 실시간이 꺼져 있으면 결과값만, 켜져 있으면 수식과 함께
                         if (window.screenPickShow) {
                             const liveOn = window.screenPickLiveOn && window.screenPickLiveOn();
-                            window.screenPickShow(liveOn ? (d.expression + ' = ' + d.result) : String(d.result));
+                            // 관객 폰은 식에 '= 결과'까지 붙여 보낸다. 이미 붙어 있으면 다시 붙이지 않는다.
+                            const expr = String(d.expression || '');
+                            const full = /=/.test(expr) ? expr : (expr + ' = ' + d.result);
+                            window.screenPickShow(liveOn ? full : String(d.result));
                         }
 
                         // % 대기 상태면 자동 실행
