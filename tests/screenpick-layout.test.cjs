@@ -44,10 +44,10 @@ test('a same-device screenshot occupies the full screen without rescaling or off
     assert.equal(image.oy, 0);
 });
 
-test('an OS-owned top inset keeps the screenshot anchored at its visible top edge', () => {
+test('with an opaque status bar the screenshot is lifted under the status bar to match the real screen', () => {
     const c = fixture({ height: 812, safeTop: 0 });
     const f = c.spViewportFrame();
-    assert.equal(f.top, 0);
+    assert.equal(f.top, -62);
     assert.equal(f.excludedTop, 62);
     assert.equal(f.height, 874);
     assert.equal(c.spImgLayout(f).dh, 874);

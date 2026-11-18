@@ -5189,11 +5189,14 @@ body.guide-enabled .guide-menu-item { display:flex !important; }
         const extendToScreen = installed
             && Math.abs(screen.width - width) <= 1 && gap > 0 && gap <= 100
             && (!window.visualViewport || Math.abs(window.visualViewport.scale - 1) < 0.01);
+        // 상태바가 불투명(black)이면 페이지가 상태바 아래에서 시작한다(safeTop 0).
+        // 캡처 사진은 화면 맨 위부터 찍혀 있으므로, 상태바 높이만큼 위로 올려야 실제 화면과 겹친다.
+        const excludedTop = extendToScreen && safeTop === 0 ? gap : 0;
         return {
             width,
             height: height + (extendToScreen ? gap : 0),
-            top: 0,
-            excludedTop: extendToScreen && safeTop === 0 ? gap : 0,
+            top: excludedTop ? -excludedTop : 0,
+            excludedTop,
             viewportGap: extendToScreen ? gap : 0,
             safeTop
         };
@@ -5250,9 +5253,9 @@ body.guide-enabled .guide-menu-item { display:flex !important; }
         document.documentElement.style.setProperty('--sp-screen-height', f.height + 'px');
         const stage = document.getElementById('screenPickStage');
         stage.style.width = f.width + 'px';
-        stage.style.height = f.height + 'px';
+        stage.style.height = (f.height + f.top) + 'px';         // 페이지에 보이는 부분만
         const surface = document.getElementById('spStageSurface');
-        surface.style.top = '0px';
+        surface.style.top = f.top + 'px';                         // 상태바 뒤로 숨는 만큼 위로
         surface.style.height = f.height + 'px';
         const layout = spImgLayout({ width: f.width, height: f.height });
         const image = document.getElementById('spStageImg');
