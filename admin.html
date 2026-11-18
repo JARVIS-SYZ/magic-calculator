@@ -505,7 +505,6 @@ body.android-mode .android-row { display: flex !important; }
 /* 고스트 신호는 시계를 숨기지 않고 바늘 방향만 바꾼다 (updateModeIndicator) */
 
 /* 안드로이드는 android-mode CSS가 화면을 전부 덮으므로 iOS 버전 설정이 무의미하다 */
-body.android-mode .side-menu-toggle-row:has(#iosVersionSelectMenu) { display: none; }
 
 /* One UI에는 계산기 위 헤더가 없다. 헤더의 두 아이콘이 하던 역할은
  * 도구줄로 옮겼다 - 시계 = 모드 인디케이터, 자 = 포스 설정 진입 */
@@ -1286,12 +1285,13 @@ body.guide-enabled .guide-menu-item { display:flex !important; }
         </label>
     </div>
     <div class="side-menu-toggle-row">
-        <span class="side-menu-toggle-label">iOS 버전</span>
+        <span class="side-menu-toggle-label">기기 화면</span>
         <select class="version-select" id="iosVersionSelectMenu" onchange="onIosVersionChange(this.value)" style="width:auto;padding:6px 32px 6px 12px;font-size:14px;border-radius:8px">
             <option value="auto">자동</option>
             <option value="18">iOS 18</option>
             <option value="26">iOS 26</option>
             <option value="27">iOS 27</option>
+            <option value="android">안드로이드</option>
         </select>
     </div>
     <div class="side-menu-list">
@@ -2347,7 +2347,12 @@ body.guide-enabled .guide-menu-item { display:flex !important; }
     // ===== 플랫폼 감지 =====
     // index.html과 동일하게 ?platform= 파라미터를 userAgent보다 우선 적용
     const _platformParam = new URLSearchParams(location.search).get('platform');
-    const _isAndroid = _platformParam === 'android' || (!_platformParam && /android/i.test(navigator.userAgent));
+    // 연습용으로 기기와 다른 화면을 고를 수 있다 (메뉴 → 기기 화면). 이 값은 이 기기에만 저장된다.
+    //   admin_platform: 'android' | 'ios' | 없음(자동 = 기기에 맞춤)
+    const _platformPref = localStorage.getItem('admin_platform');
+    const _deviceAndroid = /android/i.test(navigator.userAgent);
+    const _isAndroid = _platformParam === 'android'
+        || (!_platformParam && (_platformPref ? _platformPref === 'android' : _deviceAndroid));
     if (_isAndroid) {
         document.body.classList.add('android-mode');
         // One UI 테마는 밝은 화면이라 상태바 색도 맞춰준다
@@ -4135,8 +4140,20 @@ body.guide-enabled .guide-menu-item { display:flex !important; }
     displayTapZone.addEventListener('click', () => { if (!('ontouchstart' in window)) onDisplayTap(); });
 
     window.onIosVersionChange = function(val) {
+        // 안드로이드 / iOS 화면 전환은 화면 전체 테마가 바뀌므로 저장 후 다시 불러온다.
+        // '안드로이드'는 관객 폰의 iOS 버전 설정(클라우드)에는 손대지 않는다.
+        const wasAndroid = document.body.classList.contains('android-mode');
+        if (val === 'android') {
+            localStorage.setItem('admin_platform', 'android');
+            if (!wasAndroid) location.reload();
+            return;
+        }
+        if (val === 'auto') localStorage.removeItem('admin_platform');
+        else localStorage.setItem('admin_platform', 'ios');
+        const wantAndroid = val === 'auto' && /android/i.test(navigator.userAgent);
         ios26Mode = resolveIos26(val); ios27Mode = resolveIos27(val);
         localStorage.setItem('admin_ios_version', val);
+        if (wantAndroid !== wasAndroid) { Promise.resolve(syncConfigToCloud()).finally(() => location.reload()); return; }
         const s1 = document.getElementById('iosVersionSelect');
         const s2 = document.getElementById('iosVersionSelectMenu');
         if (s1) s1.value = val;
@@ -4150,8 +4167,9 @@ body.guide-enabled .guide-menu-item { display:flex !important; }
     ios26Mode = resolveIos26(savedIosVersion); ios27Mode = resolveIos27(savedIosVersion);
     const iosVersionSelect = document.getElementById('iosVersionSelect');
     const iosVersionSelectMenu = document.getElementById('iosVersionSelectMenu');
-    if (iosVersionSelect) iosVersionSelect.value = savedIosVersion;
-    if (iosVersionSelectMenu) iosVersionSelectMenu.value = savedIosVersion;
+    const shownChoice = localStorage.getItem('admin_platform') === 'android' ? 'android' : savedIosVersion;
+    if (iosVersionSelect) iosVersionSelect.value = shownChoice;
+    if (iosVersionSelectMenu) iosVersionSelectMenu.value = shownChoice;
     applyLayoutMode();
 
 
