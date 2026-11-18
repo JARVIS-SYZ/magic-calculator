@@ -755,6 +755,12 @@ body.android-mode #calcIconPlusMinus::after {
     border-bottom: 1px solid #1c1c1e;
     flex-shrink: 0;
 }
+.sp-header-start {
+    margin-left: auto; flex-shrink: 0;
+    background: #ff9f0a; color: #000; border: none; border-radius: 999px;
+    padding: 8px 16px; font-size: 15px; font-weight: 700; cursor: pointer;
+}
+.sp-header-start:active { opacity: 0.8; }
 .admin-back {
     background: none; border: none; color: #ff9f0a;
     font-size: 28px; font-weight: 300; cursor: pointer;
@@ -1514,6 +1520,8 @@ body.guide-enabled .guide-menu-item { display:flex !important; }
     <div class="admin-page-header">
         <button class="admin-back" onclick="closePage()">‹</button>
         <div class="admin-page-title">화면 픽</div>
+        <!-- 설정을 아래로 내려도 항상 보이도록 헤더 오른쪽에 고정 -->
+        <button type="button" class="sp-header-start" onclick="startScreenPick()">▶ 시작하기</button>
     </div>
     <div class="admin-page-content">
         <div class="admin-section">
