@@ -2394,16 +2394,25 @@ body.guide-enabled .guide-menu-item { display:flex !important; }
     }
 
     // 최신 iOS는 PWA에서 OS 버전을 구버전처럼 보고할 수 있다.
-    // 자동 모드는 최신(iOS 27) 화면을 기본으로 하고, iOS 18/26은 메뉴에서 직접 선택한다.
-    function resolveIos26(val) {
-        const v = String(val);
-        return v === 'auto' || v === '26' || v === '27';
+    // 버전은 아래 detectIosScreen()이 기기를 보고 정한다.
+    // 이 기기의 iOS 계산기 화면 버전을 스스로 감지한다.
+    // iOS 26부터 Safari는 OS 버전을 18_7로 고정해 알려 주고, 홈 화면 앱은 Safari 버전(Version/NN)도 빼므로
+    // 지원 기능으로 가린다 (iOS 17.5 / 26.2 / 27.0 시뮬레이터에서 확인):
+    //   iOS 27 — display:grid-lanes, appearance:base-select, WebTransport
+    //   iOS 26 — anchor-name (위치 지정) / 그 아래는 iOS 18 화면
+    function detectIosScreen() {
+        try {
+            const m = navigator.userAgent.match(/Version\/(\d+)/);
+            if (m) { const v = +m[1]; return v >= 27 ? '27' : v >= 26 ? '26' : '18'; }
+            const sup = (c) => window.CSS && CSS.supports && CSS.supports(c);
+            if (sup('display: grid-lanes') || sup('appearance: base-select') || typeof window.WebTransport === 'function') return '27';
+            if (sup('anchor-name: --a')) return '26';
+        } catch (e) {}
+        return '18';
     }
-    // 자동은 최신(iOS 27) 화면. 26/27은 기기에서 구분할 수 없어 메뉴에서 고른다.
-    function resolveIos27(val) {
-        const v = String(val);
-        return v === 'auto' || v === '27';
-    }
+    // '자동'이면 이 기기를 감지한 버전, 아니면 메뉴에서 고른 버전
+    function resolveIos26(val) { const v = String(val) === 'auto' ? detectIosScreen() : String(val); return v === '26' || v === '27'; }
+    function resolveIos27(val) { const v = String(val) === 'auto' ? detectIosScreen() : String(val); return v === '27'; }
     let ios27Mode = false;
 
 
@@ -3492,13 +3501,11 @@ body.guide-enabled .guide-menu-item { display:flex !important; }
         const d3  = localStorage.getItem('delay666_s3') || '5';
         const ctd = localStorage.getItem('admin_counting_trigger_delay') || '1';
 
-        const ios = localStorage.getItem('admin_ios_version') || 'auto';
 
         const params = new URLSearchParams({
             id: 'magic2024',
             session: calcLinkSession,
             d1, d2, d3, ctd,
-            ios,
             admin: currentAdminId || ''
         });
         return `${location.origin}/magic-calculator/index.html?${params.toString()}`;

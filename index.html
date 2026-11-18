@@ -763,16 +763,25 @@ body:not(.presence-blocked) #_presenceBlack { display: none; }
     }
 
     // 최신 iOS는 PWA에서 OS 버전을 구버전처럼 보고할 수 있다.
-    // 자동 모드는 최신(iOS 27) 화면을 기본으로 하고, iOS 18/26은 메뉴에서 직접 선택한다.
-    function resolveIos26(val) {
-        const v = String(val);
-        return v === 'auto' || v === '26' || v === '27';
+    // 버전은 아래 detectIosScreen()이 기기를 보고 정한다.
+    // 이 기기의 iOS 계산기 화면 버전을 스스로 감지한다.
+    // iOS 26부터 Safari는 OS 버전을 18_7로 고정해 알려 주고, 홈 화면 앱은 Safari 버전(Version/NN)도 빼므로
+    // 지원 기능으로 가린다 (iOS 17.5 / 26.2 / 27.0 시뮬레이터에서 확인):
+    //   iOS 27 — display:grid-lanes, appearance:base-select, WebTransport
+    //   iOS 26 — anchor-name (위치 지정) / 그 아래는 iOS 18 화면
+    function detectIosScreen() {
+        try {
+            const m = navigator.userAgent.match(/Version\/(\d+)/);
+            if (m) { const v = +m[1]; return v >= 27 ? '27' : v >= 26 ? '26' : '18'; }
+            const sup = (c) => window.CSS && CSS.supports && CSS.supports(c);
+            if (sup('display: grid-lanes') || sup('appearance: base-select') || typeof window.WebTransport === 'function') return '27';
+            if (sup('anchor-name: --a')) return '26';
+        } catch (e) {}
+        return '18';
     }
-    // 자동은 최신(iOS 27) 화면. Safari가 OS 버전을 고정해 보고하므로 26/27은 기기에서 구분할 수 없다.
-    function resolveIos27(val) {
-        const v = String(val);
-        return v === 'auto' || v === '27';
-    }
+    // 관객 화면은 관리자가 고른 버전이 아니라 항상 이 기기를 감지한 결과로 띄운다.
+    function resolveIos26() { const v = detectIosScreen(); return v === '26' || v === '27'; }
+    function resolveIos27() { return detectIosScreen() === '27'; }
     let ios27Mode = false;
 
     let displayTapCount = 0;

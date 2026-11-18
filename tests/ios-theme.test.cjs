@@ -10,20 +10,31 @@ function read(name) {
     return fs.readFileSync(path.join(root, name), 'utf8');
 }
 
-function resolveFunction(html) {
-    const match = html.match(/function resolveIos26\(val\) \{[\s\S]*?\n    \}/);
-    assert.ok(match, 'resolveIos26 function must exist');
-    return vm.runInNewContext(`(${match[0]})`);
+// 기기 감지 함수만 떼어 내 가짜 기기 정보로 돌려 본다
+function detector(html, { ua, supports = [], webTransport = false }) {
+    const match = html.match(/function detectIosScreen\(\) \{[\s\S]*?\n    \}/);
+    assert.ok(match, 'detectIosScreen function must exist');
+    const ctx = vm.createContext({
+        navigator: { userAgent: ua },
+        window: { CSS: { supports: (c) => supports.includes(c) }, WebTransport: webTransport ? function () {} : undefined },
+        CSS: { supports: (c) => supports.includes(c) }
+    });
+    vm.runInContext(match[0], ctx);
+    return ctx.detectIosScreen();
 }
+const FROZEN = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148';
 
 for (const file of ['index.html', 'admin.html']) {
-    test(`${file}: automatic mode uses the iOS 26+ interface`, () => {
+    test(`${file}: the iOS screen version is detected from the device`, () => {
         const html = read(file);
-        const resolveIos26 = resolveFunction(html);
-
-        assert.equal(resolveIos26('auto'), true);
-        assert.equal(resolveIos26('26'), true);
-        assert.equal(resolveIos26('18'), false);
+        // Safari는 Version 토큰으로
+        assert.equal(detector(html, { ua: FROZEN.replace('Mobile/', 'Version/27.0 Mobile/') }), '27');
+        assert.equal(detector(html, { ua: FROZEN.replace('Mobile/', 'Version/26.2 Mobile/') }), '26');
+        assert.equal(detector(html, { ua: FROZEN.replace('Mobile/', 'Version/18.6 Mobile/') }), '18');
+        // 홈 화면 앱(Version 없음)은 지원 기능으로 (iOS 17.5 / 26.2 / 27.0 시뮬레이터 측정값)
+        assert.equal(detector(html, { ua: FROZEN, supports: ['anchor-name: --a', 'display: grid-lanes', 'appearance: base-select'], webTransport: true }), '27');
+        assert.equal(detector(html, { ua: FROZEN, supports: ['anchor-name: --a'] }), '26');
+        assert.equal(detector(html, { ua: FROZEN }), '18');
     });
 
     test(`${file}: iOS 26+ keypad matches the native spacing`, () => {
@@ -44,4 +55,9 @@ for (const file of ['index.html', 'admin.html']) {
 
 test('admin automatic selection is not overwritten after detection', () => {
     assert.doesNotMatch(read('admin.html'), /ios26Mode\s*=\s*\(savedIosVersion\s*===\s*['"]26['"]\)/);
+});
+
+test('the audience screen ignores the admin version choice and the link has no ios param', () => {
+    assert.match(read('index.html'), /function resolveIos26\(\) \{ const v = detectIosScreen\(\);/);
+    assert.doesNotMatch(read('admin.html'), /\n\s*ios,\n\s*admin: currentAdminId/);
 });
