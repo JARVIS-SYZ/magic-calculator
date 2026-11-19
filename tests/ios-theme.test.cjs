@@ -61,3 +61,13 @@ test('the audience screen ignores the admin version choice and the link has no i
     assert.match(read('index.html'), /function resolveIos26\(\) \{ const v = detectIosScreen\(\);/);
     assert.doesNotMatch(read('admin.html'), /\n\s*ios,\n\s*admin: currentAdminId/);
 });
+
+for (const file of ['index.html', 'admin.html']) {
+    test(`${file}: the status bar style is decided in <head> before the first paint`, () => {
+        const html = read(file);
+        const head = html.slice(0, html.indexOf('</head>'));
+        // 뜬 뒤에 바꾸면 iOS 27 홈 화면 앱에서 터치 위치가 화면과 어긋난다
+        assert.match(head, /sb\.setAttribute\('content', opaque \? 'black' : 'black-translucent'\)/);
+        assert.match(html, /sb\.getAttribute\('content'\) !== want[\s\S]{0,400}location\.reload\(\)/);
+    });
+}

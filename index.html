@@ -6,6 +6,30 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <script>
+        // 상태바 스타일은 첫 화면이 그려지기 전에 정한다. 뜬 뒤에 바꾸면 iOS 27 홈 화면 앱에서
+        // 화면은 상태바 아래로 내려가는데 터치 판정은 그대로 남아 한 칸 아래 버튼이 눌린다.
+        (function () {
+            function det() {
+                try {
+                    var m = navigator.userAgent.match(/Version\/(\d+)/);
+                    if (m) { var n = +m[1]; return n >= 27 ? '27' : n >= 26 ? '26' : '18'; }
+                    var sup = function (c) { return window.CSS && CSS.supports && CSS.supports(c); };
+                    if (sup('display: grid-lanes') || sup('appearance: base-select') || typeof window.WebTransport === 'function') return '27';
+                    if (sup('anchor-name: --a')) return '26';
+                } catch (e) {}
+                return '18';
+            }
+            try {
+                var q = new URLSearchParams(location.search).get('platform');
+                var android = q === 'android' || (!q && /android/i.test(navigator.userAgent));
+                var v = det();
+                var opaque = !android && (v === '26' || v === '27');
+                var sb = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
+                if (sb) sb.setAttribute('content', opaque ? 'black' : 'black-translucent');
+            } catch (e) {}
+        })();
+    </script>
+    <script>
         if (/iPhone|iPad|iPod/i.test(navigator.userAgent)
             || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)) {
             document.documentElement.classList.add('ios-device');
@@ -1572,7 +1596,18 @@ body:not(.presence-blocked) #_presenceBlack { display: none; }
         try {
             const sb = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
             const opaque = ios26Mode && !document.body.classList.contains('android-mode');   // iOS 26·27 화면
-            if (sb) sb.setAttribute('content', opaque ? 'black' : 'black-translucent');
+            const want = opaque ? 'black' : 'black-translucent';
+            // 머리말에서 이미 맞춰 두었다. 뜬 뒤에 달라지면(연습용 화면 전환 등) 바꾼 뒤 다시 불러와야
+            // 터치 위치가 화면과 맞는다. 혹시 계속 어긋나도 10초 안에는 한 번만 다시 불러온다.
+            if (sb && sb.getAttribute('content') !== want) {
+                sb.setAttribute('content', want);
+                let last = 0;
+                try { last = +sessionStorage.getItem('sb_reload_at') || 0; } catch (e) {}
+                if (navigator.standalone === true && Date.now() - last > 10000) {
+                    try { sessionStorage.setItem('sb_reload_at', String(Date.now())); } catch (e) {}
+                    location.reload();
+                }
+            }
         } catch (e) {}
         if (ios26Mode) {
             pmContent.textContent = 'AC';
